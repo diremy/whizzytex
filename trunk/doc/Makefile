@@ -9,4 +9,5 @@ clean:
 	rm -f manual.{aux,log,dvi,dview,wiz,fmt}
 	rm -f manual.{haux,htoc}
 	rm -rf .advi
+	rm -rf .waux
 

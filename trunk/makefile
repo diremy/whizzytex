@@ -1,41 +1,53 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.00
-VERSION=1.00i
+VERSION=1.00iii
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
+PACKDIR=packdir
 
 
 SRCFILES=whizzytex whizzytex.el start.el whizzytex.sty
 
-TARFILES = $(patsubst %,src/%,$(SRCFILES)) \
-	    GPL COPYING INSTALL VERSION CHANGES\
-	    Makefile.config.in byte-compile.el configure configure.el \
-            Makefile Manager doc examples 
-       
-EXPORTS = index.html animation.html \
+TARSOURCES = $(patsubst %,src/%,$(SRCFILES)) \
+	    GPL COPYING CHANGES \
+            Makefile Manager Makefile.config.in \
+	    byte-compile.el configure.el \
+            configure checkconfig
+
+TARPRODUCED =  INSTALL VERSION 
+
+TARDIRS = doc examples 
+
+TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
+
+
+XXXPORTS = CHANGES FAQ.html FAQ
+
+EXPORTS = index.html animation.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
-	   $(NAME).tgz  manual.dvi doc/manual.html \
-           CHANGES COPYING GPL INSTALL VERSION FAQ.html FAQ
+	   manual.dvi doc/manual.html \
+	   COPYING GPL INSTALL VERSION \
+	   $(XXXPORTS) $(NAME).tgz  
 
 PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
 
 whatelse: 
-	@echo 'make what ? [pack export]'
+	@echo 'make what ? [pack xxxport Export ]'
 
-pack: check $(EXPORTS) tardir/whizzytex.elc
+pack: FILES $(EXPORTS) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
 
 doc/manual.dvi: doc/manual.tex VERSION 
 	cd doc; make manual.dvi
 
-manual.dvi: doc/manual.dvi
+manual.dvi: doc/manual.tex
 	cp $< $@
 
-FAQ: FAQ.html
+FAQ: FAQ.html 
 	lynx -dump $< > $@
 
-FAQ.html: FAQ.tex
-	hevea -o $@ -exec xxdate.exe $<
+FAQ.html: FAQ.tex version.tex
+	hevea -o $@ -fix -exec xxdate.exe $<
 
 index.html: index.htm makefile
 	sed -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' $< > $@
@@ -55,7 +67,12 @@ activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 
 
 doc/manual.html: doc/manual.tex manual.dvi
-	hevea -o $@ $<
+	hevea -fix -o $@ $<
+
+INSTALL.txt: doc/manual.html
+	lynx -dump $< | sed -f INSTALL.sed > $@
+
+
 
 
 VERSION: makefile
@@ -63,7 +80,7 @@ VERSION: makefile
 	echo $(VERSION) > $@
 
 FILES: $(TARFILES) makefile
-	make clean
+	make smallclean
 	(echo FILES; echo $(TAG); tar zcvf /dev/null $(TARFILES)) \
 	  | grep -v CVS | grep -v '/$$' > $@
 
@@ -74,7 +91,7 @@ $(NAME).tgz: FILES makefile
 	tar zcvf $@ $(NAME)
 	rm -r $(NAME)
 
-check: whizzytex.elc
+$(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES)
 	@echo ' --- Checking examples'
 	cd examples; make >/dev/null
 	@echo ' --- src/whizzytex.el'
@@ -85,31 +102,37 @@ check: whizzytex.elc
 	@echo ' --- src/whizzytex'
 	grep -e '^PACKAGE=[/a-z.][/a-z.]*$$' src/whizzytex
 	grep -e '^DVIPS=[a-z][a-z]*$$' src/whizzytex
+	touch $@
 
-tardir:
-	mkdir -p tardir
+$(PACKDIR)/.exists:
+	mkdir -p $(PACKDIR)
+	touch $@
 
-tardir/whizzytex.el: src/whizzytex.el tardir
+$(PACKDIR)/whizzytex.el: src/whizzytex.el $(PACKDIR)
 	cp $< $@
 
-tardir/whizzytex.elc: tardir/whizzytex.el 
-	cd tardir; emacs --batch -q -l ../byte-compile.el 2> log && \
+$(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el 
+	cd $(PACKDIR); emacs --batch -q -l ../byte-compile.el 2> log && \
 	cat log && \
 	if grep -e '\*\*' log; then rm -f $@; cat log; false; \
-	else rm log; fi
-	cd tardir; xemacs -batch -q -l ../byte-compile.el 2>log && \
+	fi
+	cd $(PACKDIR); xemacs -batch -q -l ../byte-compile.el 2>log && \
 	cat log && \
 	if grep -e '\*\*' log; then rm -f $@; false; \
-	else rm log; fi
+	fi
 
-export: $(EXPORTS) xxxport
+Export: $(EXPORTS) xxxport
 	rcp $(EXPORTS) $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
 
-xxxport: 
+Release: Export 
+	cp Announce archive/Announce-$(RELEASE)
+	rcp Announce $(PAUILLAC)
+
+xxxport: $(EXPORTS) 
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
-	rcp whizzytex-xxx.tgz $(PAUILLAC)
+	rcp $(XXXPORTS) whizzytex-xxx.tgz $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean
@@ -117,15 +140,18 @@ smallclean:
 
 clean:: smallclean
 	rm -rf doc/{*~,.#*,#*#} manual.{aux,log} doc/_whizzy_manual*
-	rm -rf tardir
+	rm -rf $(PACKDIR)
 
-superclean: clean
+superclean:: clean
 	rm -f doc/ocaml.html $(TAG) $(NAME).tgz manual.dvi \
 	rm -f *~ .#* #*# FILES 
 
 .in.out:
 	./configure < $<
 
+.PHONY: Export xxxport pack
+
 .SUFFIXES: .tgz .in .out .htm .tex .html .gif
+
 
 include Makefile

@@ -1,0 +1,2507 @@
+;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
+;; 
+;; Copyright (C) 2001, 2002 INRIA.
+;; 
+;; Author         : Didier Remy <Didier.Remy@inria.fr>
+;; Version        : 1.0a
+;; Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+;; Web Site       : http://cristal/inria.fr/~remy
+;; 
+;; WhizzyTeX is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 2, or (at your option)
+;; any later version.
+;; 
+;; WhizzyTeX is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details
+;; (enclosed in the file GPL).
+;; 
+;; See the file COPYING enclosed with the distribution.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  File whizzytex.el (Emacs-lisp code)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;; Commentary:
+;;
+;; WhizzyTeX is a minor Emacs mode for previewing LaTeX while your editing
+;;
+;; To install whizzytex, your also need its two companion files
+;;   
+;;   whizzytex             (A bash shell-script)
+;;   whizzytex.sty         (A LaTeX macro package)
+;;
+;; The variable whizzy-command-name should be the relative or full path
+;; of the executable shell-script, which should itself contain provide the
+;; full or relative part of whizzytex.sty in its PACKAGE variable.
+;;
+;; To install whizzytex, then add to your ~/.emacs file:
+;;
+;;   (autoload 'whizzytex-mode "whizzytex"
+;;        "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+;; 
+;; To launch WhizzyTeX, tyoe Esc-x whizzytex-mode
+;; This applies only to the current buffer.
+;;
+;; Some user variable control the setting.
+;; See the documentation for details by typing (once autoloaded)
+;; 
+;;    Esc-x describe-function whizzytex-mode
+;;
+
+
+;;; History:
+;; 
+
+;;; Code:
+
+(require 'comint)
+
+;;; Bindings
+(defvar whizzytex-mode-hook 'whizzy-default-bindings
+  "*Hook run when `whizzytex-mode' is turned on (before default setting).
+By default it is equal to `whizzy-default-bindings' which setup useful 
+bindings, including a menu bar.  If you wish to cancel default bindings, 
+just add in your Emacs configuration file (usually ~/.emacs.el):
+
+    (set-default 'whizzytex-mode-hook nil)
+
+To customize whizzytex, you can
+
+    (set-default 'whizzytex-mode-hook
+       '(lambda () ... <your settings> ...))
+
+where <your settings> should include `whizzy-default-bindings' if you wish
+to keep default bindings, since your value of the hook will be used instead
+of default one.  You can use `whizzy-unset-options' to unset almost most
+default options.")
+
+;;; User variables
+
+(defvar whizzy-command-name "whizzytex"
+  "*Short or full name of the WhizzyTeX deamon.")
+
+(defvar whizzy-viewers
+  '(
+    ("-advi" "advi -html Start-Document") ("-dvi" "xdvi")
+    ("-ps" "gv")
+   )
+  "*Alist definin accepted previewers and default previewer commands.
+
+This alist should contained at least one element.
+The first element of the alist is used as the default previewer.
+
+Each element of the alist is of the form
+
+  <type> <command> <option list>
+
+where
+
+  <type> can only be \"-advi\", \"-xdvi\", or \"-ps\"
+
+  <command>
+
+    is a string that defines the default previwer command for that previewer
+    type, including its command line options, but the filename will be added
+    by whizzytex.
+  
+  <option list>
+
+    is a list of strings that defines the default options to pass to
+    whizzytex for that previewer type. Liktely to be nil, since options
+    passed to whizzytex are usually file dependant.
+    (see `whizzy-write-configuration' for details)
+    
+Moreover, <type> and <default-command> should agree in the following way:
+
+  -dvi and -advi
+
+    tell whizzytex to produce DVI files and to use signal SIGUSR1 to tell
+    the previewer to reload the file. Examples are xdvi and advi.
+
+  -ps
+
+    tells whizzytex to produce Postscript files (using dvips) and to use
+    signal SIGHUP to tell the previewer to reload the file. Example is gv.
+
+In addition -advi tell whizzytex to tell latex to dump source line number
+and file name information into the DVI file as additional \\special commands
+of the form
+
+    line: <line number> <file name>
+
+See also `whizzy-write-configuration'.")
+
+(defvar whizzy-slicing-commands
+  (list 'set-mark-command)
+  "*List of commands that should force a slice, anyway.
+Should remain small for efficiency...")
+
+(defvar whizzy-line t
+  "*Tell whether DVI should be instrumented with source line numbers.
+
+Only useful with advi type of previwers.
+
+A click in the previewr can then be turn into a possition into the source
+file (and a file), to which Emacs will jump.
+
+However, this makes WhizzyTeX more fragile, because the slice must be
+instrumented with additiocal code, which at some position may unfortunaly
+make the slice erroneous.
+
+This can be toggle locally from the menu bar.")
+(make-variable-buffer-local 'whizzy-line)
+
+(defvar whizzy-point-visible t
+  "*Make point visible (and refresh when not too busy)
+
+However, this makes WhizzyTeX more fragile, because the slice must be
+instrumented with additiocal code, which at some position may unfortunaly
+make the slice erroneous.
+
+This can be toggle locally from the menu bar.
+
+The value can also be function, which should then return  the position 
+of where the point active char should be inserted or nil if point should 
+not be printed  in the current slice.")
+
+(make-variable-buffer-local 'whizzy-point-visible)
+
+(defvar whizzy-paragraph-regexp "\n *\n *\n"
+  "*Regexp for paragraph mode.")
+(make-variable-buffer-local 'whizzy-paragraph-regexp)
+
+(defvar whizzy-overlays
+  (and (functionp 'make-overlay)
+       (functionp 'delete-overlay)
+       (functionp 'overlay-put))
+  "*If true  WhizzyTeX will overlay LaTeX errors.")
+
+
+(defvar whizzy-pop-up-windows nil
+  "*Local value of `pop-up-windows' for WhizzyTeX.
+If set, WhizzyTeX can split windows when visiting new buffers.")
+
+(defvar whizzy-auto-visit 'whizzytex
+  "*Determine what WhizzyTeX should do when a slace buffer is visited.
+
+Nil means nothing, 'whizzytex means turn WhizzyTeX mode on, 'ask means ask
+using y-or-no before turning on, and t means visit the  buffer, but do
+not turn WhizzyTeX mode on.")
+
+(defvar whizzy-save-buffers nil
+  "*Determine whether WhizzyTeX should save buffer when starting.
+If set to 'ask will prompt the user with y-or-n, otherwise will save or
+not according to the value of this variable."
+)
+
+(defvar whizzy-auto-raise t
+  "*If true WhizzyTeX will raise the frame a WhizzyTeX buffer is visited.")
+
+(defvar whizzy-mode-regexp-alist
+  (append
+   (list (cons 'paragraph whizzy-paragraph-regexp))
+   '(
+     (letter .  "\\(^\\|%WHIZZY\\)\\\\begin{letter}")
+     (slide . "\\(^\\|%WHIZZY\\)\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide}\\|newslide\\)")
+     (subsubsection .  "\\(^\\|%WHIZZY\\)\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)\\b")
+     (subsection .  "\\(^\\|%WHIZZY\\)\\\\\\(subsection\\|section\\|chapter\\)\\b")
+     (section .  "\\(^\\|%WHIZZY\\)\\\\\\(section\\|chapter\\)\\b")
+     (chapter .  "\\(^\\|%WHIZZY\\)\\\\\\(chapter\\)\\b")
+     (document .  "\\(^\\|%WHIZZY\\)\\\\begin{document}\\(.*\n\\)+")
+     (none . nil)
+     )
+   )
+  "*An alist defining slicing modes.
+
+Each element is a pair (<mode> .  regexp) that defines for the regexp that
+separates slices in mode <mode>.
+
+If keyword whizzy-paragraph is defined in the header of the current buffer,
+it overrides this regexp locally, even if the slicing mode is not paragraph.")
+
+(defvar whizzy-class-mode-alist
+  (list
+    (cons "seminar" 'slide)
+    (cons "letter"  'letter)
+    (cons "article" 'section)
+    (cons "book" 'chapter)
+    )
+  "*Alist mapping latex document class to slicing modes.
+(See also `whizzy-mode-regexp-alist')"
+)
+
+(defvar whizzy-select-mode-regexp-alist
+  (list
+    (cons "^ *\\\\begin *{slide}" 'slide )
+    (cons "^ *\\\\begin *{letter}" 'letter )
+    (cons "^ *\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)" 'section)
+   )
+  "*Alist selecting modes from regexp.  Used to find mode automatically."
+)
+
+(defvar whizzy-auto-show-output t
+  "*Control autimatic display of the process buffer.
+
+When true process buffer will be shown when an latex error is persistent,
+and hidden when the error disapears.")
+
+;;; End of user variables
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Xemacs compatibility
+
+(defun whizzy-sit-for (seconds &optional milliseconds display)
+  (sit-for seconds milliseconds display))
+
+(defvar whizzy-xemacsp (string-match "XEmacs" emacs-version)
+  "Non-nil if we are running in the XEmacs environment.")
+(cond
+ (whizzy-xemacsp
+  (require 'overlay)
+  (defun window-buffer-height (&optional window)
+    (save-selected-window
+      (set-buffer (window-buffer window))
+      (count-lines (point-min) (point-max))))
+  (defun whizzy-sit-for (seconds &optional milliseconds display)
+    (sit-for
+     (if milliseconds (+ (float seconds) (/ (float milliseconds) 1000))
+       seconds)
+     display))
+  ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; More variables
+
+(defconst whizzy-file-prefix "_whizzy_")
+(defvar whizzy-speed-string "?")
+(defvar whizzy-error-string "")
+(defvar whizzytex-mode-line-string
+  (list " Whizzy" 'whizzy-error-string "." 'whizzy-speed-string))
+
+
+;; A vector of whizzytex parameters, shared between all buffers related to the
+;; same session. This variable is made buffer local, but its content is
+;; shared between all related buffers.
+
+(defvar whizzy-status nil)
+(make-variable-buffer-local 'whizzy-status)
+
+;; fields of the status vector
+
+(defconst whizzy-running 0)
+(defconst whizzy-master-buffer 1)
+(defconst whizzy-active-buffer 2)
+(defconst whizzy-process-buffer 3)
+(defconst whizzy-process-window 4)
+(defconst whizzy-process 5)
+
+(defconst whizzy-dir 7)
+(defconst whizzy-input-dir 8)
+(defconst whizzy-output-dir 9)
+(defconst whizzy-filename 10)
+(defconst whizzy-basename 11)
+(defconst whizzy-slicename 12)
+(defconst whizzy-slaves 13)
+
+(defconst whizzy-slice-start 14)
+(defconst whizzy-slice-time 15)
+(defconst whizzy-slice-date 16)
+(defconst whizzy-slice-error 17)
+(defconst whizzy-slice-fed 18)
+
+(defconst whizzy-slicing-mode 19)
+(defconst whizzy-view-mode 20)
+
+(defconst whizzy-sections 21)
+(defconst whizzy-layers 22)
+(defconst whizzy-log-buffer 23)
+
+
+(defconst whizzy-length 25)
+(defun whizzy-get (f)
+  (if whizzy-status (elt whizzy-status f)
+     ;; (error "whizzy-get")
+     ))
+(defun whizzy-set (f v)
+  (if whizzy-status (aset whizzy-status f v)
+    (error "Attempting to set field %d when whizzy-status is nil" f)))
+
+(defun whizzy-describe (f)
+  (interactive "S")
+  (with-output-to-temp-buffer "*Help*"
+    (print (whizzy-get f))))
+      
+;; Tell if buffer is a slave and give its relative name to the master dir
+
+(defvar whizzy-slave nil)
+(make-variable-buffer-local 'whizzy-slave)
+
+
+(defvar whizzy-local-sections nil
+  "Sections belonging to the current file.")
+(make-variable-buffer-local 'whizzy-local-sections)
+
+
+(defun whizzy-read-sections (&optional arg)
+  (if (or (whizzy-get whizzy-sections) arg)
+      (save-excursion
+        (set-buffer (whizzy-get whizzy-master-buffer))
+        (let* ((dirname (whizzy-get whizzy-dir))
+               (filename (concat (whizzy-get whizzy-output-dir) "sections"))
+               (tmp-buffer) (tmp))
+          (if (file-exists-p filename) (load-file filename)
+            (message "File %s not found" filename))
+          (whizzy-set whizzy-sections tmp)
+          (while (consp tmp)
+            (and (setq tmp-buffer
+                       (find-buffer-visiting
+                        (concat dirname (caar tmp))))
+                 (set-buffer tmp-buffer)
+                 (setq whizzy-local-sections (cdar tmp)))
+            (setq tmp (cdr tmp)))
+          ))))
+
+(defun whizzy-start-process (args)
+  (let ((buf (concat "*" (buffer-name) "*"))
+        (status whizzy-status))
+    (if (get-buffer buf)
+        (save-excursion
+          (set-buffer buf)
+          (erase-buffer)
+          (setq whizzy-status status)
+          (cd (whizzy-get whizzy-dir))
+          (if (get-buffer-process buf)
+              (progn
+                (quit-process (get-buffer-process buf))
+                (if (get-buffer-process buf)
+                    (progn 
+                      (message "Did not quit on QUIT. Sending KILL")
+                      (kill-process (get-buffer-process buf)))
+                  (message "Quitted"))
+                ))))
+    (setq buf (apply 'make-comint (buffer-name)
+                     whizzy-command-name nil args))
+    (whizzy-set whizzy-process-buffer buf)
+    (whizzy-set whizzy-process (get-buffer-process buf))
+    (save-excursion
+      (set-buffer buf)
+      (setq whizzy-status status)
+      (setq comint-output-filter-functions
+            (list (function whizzy-filter-output)))
+      )
+    ))
+ 
+(defun whizzy-clean-shell ()
+  (save-excursion
+    (if (whizzy-get whizzy-process-buffer)
+        (progn
+          (set-buffer (whizzy-get whizzy-process-buffer))
+          (goto-char (point-max))
+          (if (or (> (buffer-size) 10000))
+               (re-search-backward "Output written on" (point-min) t)
+              (erase-buffer))))))
+
+
+(make-variable-buffer-local 'write-region-annotate-functions)
+(defvar whizzy-write-at-begin-document nil)
+
+(defun whizzy-backward-comment ()
+  (let ((here (point)))
+    (if (looking-at "%") (forward-char 1))
+    (while (re-search-backward "[^\\\\]%[^\n]*\\=" (- here 100) t)
+      (or (looking-at "\n%") (forward-char 1)))
+    (if (and (looking-at "^\n%") (< (point) here)) (forward-char 1))
+    (<  (point) here)))
+
+(defun whizzy-in-comment-p ()
+  (save-excursion (whizzy-backward-comment)))
+
+(defun whizzy-backward-space ()
+  (let ((here (point)))
+    (skip-chars-backward " \t")
+    (while (and (looking-at "^[ \t]*\\([^ \t\n]\\|%\\)")
+                (> (point) (point-min))
+                (progn (backward-char 1) t))
+      (whizzy-backward-comment)
+      (skip-chars-backward " \t")
+      )
+    (if (< (point) here)
+        (if (and (looking-at "^[ \t]*\n") (<= (match-end 0) here))
+            (goto-char (match-end 0))
+          t)                        
+    (looking-at "[ \t]")
+    )))
+
+(defun whizzy-backward-word ()
+  (let ((here (point)))
+    (or (and (skip-syntax-backward "w.")
+             (looking-at "\\(\\sw\\|\\s.\\)"))
+        (progn (goto-char here) nil))
+    ))
+
+(defun whizzy-backward-command ()
+  (let ((here (point)) begin)
+    (whizzy-backward-space)
+    (re-search-backward "\\\\\\([^a-zA-Z]?\\|[a-zA-Z]*\\)\\="
+                        (- (point) 100) t)
+    (setq begin (point))
+    (skip-chars-backward "\\\\")
+    (re-search-forward "\\(\\\\\\\\\\)" begin t)
+    (or (and (looking-at "\\\\\\([^a-zA-Z]\\|[a-zA-Z]+\\)")
+             (match-end 0))
+        (progn (goto-char here) nil)
+        )))
+
+(defun whizzy-in-command-p ()
+  (save-excursion (whizzy-backward-command)))
+
+(defun whizzy-in-fragile-arg-p ()
+  (or
+   (save-excursion
+     (and (re-search-backward
+           "{\\([^{} \t\n]*{[^{} \t\n]*}\\)*[^{} \t\n]*\\=" (- (point) 100) t)
+          (looking-at  "{\\([^{} \t\n]*{[^{} \t\n]*}\\)*[^{} \t\n]*}")))
+   (save-excursion
+     (and (re-search-backward "\\(\\[\\|^ *\\)[^][ \t\n]*\\="
+                              (- (point) 100) t)
+          (looking-at  "\\(\\[\\|^ *\\)[^][ \t\n]*\\(\\]\\|[^\\\\]%\\)"))
+     )
+   ))
+
+(defun whizzy-between-args-p ()
+  (save-excursion
+    (and (looking-at "[ \n\t][ \t]*[[{]")
+         (whizzy-backward-space)
+         (or (and (< (skip-chars-backward "}]") 0)
+                  (looking-at "[]}][ \t]*[ \t\n][ \t]*[[{]"))
+             (whizzy-backward-command)))
+    ))
+
+(defun whizzy-dimen-p ()
+  (looking-at
+   "[ \t]*\\(by +\\|to +\\)?[+-]?\\([0-9]*[.,]\\)?[0-9]+ *[epibcmds][tcnmpdu]"
+  ))
+
+(defun whizzy-backward-arg ()
+  (let ((here (point)))
+    (whizzy-backward-space)
+    (or (and (re-search-backward "}\\=" (- (point) 100) t)
+             (= (mod (skip-chars-backward "\\\\") 2) 0)
+             (and (re-search-backward
+                   "[^\\\\]{[^{}]*\\=" (- (point) 400) t)
+                  (progn (forward-char 1) t))
+             )
+        (progn (goto-char here) nil))))
+
+(defun whizzy-backward-script ()
+  (let ((here (point)))
+    (skip-chars-backward " \t")
+    (or (< (skip-chars-backward "_^" (- (point) 1)) 0)
+        (progn (goto-char here) nil))
+    ))
+
+(defun whizzy-backward-atom ()
+  (let ((here (point)) (limit))
+    (whizzy-backward-space)
+    (setq limit (- (point) 100))
+    (cond
+     ((re-search-backward "\\\\\[[]()]\\=" limit t) 'math)
+     ((re-search-backward "[^\\\\]#[1-9]?\\=" limit t)
+      (forward-char 1) 'param)
+     ((whizzy-backward-arg) 'arg)
+     ((whizzy-backward-script) 'script)
+     ((and (whizzy-backward-command) (< (point) here)) 'command)
+     ((re-search-backward "[^\\\\$]\\$?\\$\\=" limit t)
+      (forward-char 1) 'math)
+     ((< (skip-syntax-backward "w." (- (point) 1)) 0) 'letter)
+     ((< (skip-syntax-backward "_" (- (point) 1)) 0) 'symbol)
+     ((< (skip-chars-backward "[][(){]" (- (point) 1)) 0) 'symbol)
+     ((re-search-backward "[^ \t\n][ \t\n]*\n\\=" (- (point) 200) t)
+      (forward-char 1) 'par)
+     (t 'unknow)
+     )))
+
+(defun whizzy-backward-safe ()
+  (save-excursion
+    (if  (whizzy-dimen-p) nil
+      (whizzy-backward-space)
+      (let ((here (point))
+            (back (whizzy-backward-atom)))
+        (cond
+         ((equal back 'math) t)
+         ((equal back 'par) t)
+         ((equal back 'param) nil)
+         ((equal back 'script) 'script)
+         ((equal back 'symbol) t)
+         ((equal back 'letter)
+          (skip-syntax-backward "w")
+          (not (whizzy-dimen-p)))
+         ((equal back 'arg)
+          (and (< (point) here) (whizzy-backward-safe)))
+         ((equal back 'command)
+          (whizzy-backward-script))
+         )))))
+
+;; replaces whizzy-show-position
+
+
+(defun whizzy-show-point ()
+  (save-excursion
+    (if (looking-at "[ \t]\\|^[ \t]*$") (whizzy-backward-space))
+    (let ((back))
+      (cond
+       ;; do not put cursor inside fragile args
+       ;; useless if in comment...
+       ((whizzy-in-comment-p) nil)
+       ;; (that maybe arguments of  \label, \cite, \begin, \end etc.)
+       ((whizzy-in-fragile-arg-p) nil)
+       ;; do not put cursor between args
+       ((whizzy-between-args-p) nil)
+       ;; difficult case: commands
+       (t
+        (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
+        (setq back (whizzy-backward-atom))
+        ;; (message "[%S]" back)
+        (cond
+         ((equal back 'math) (point))
+         ((equal back 'par)
+          (skip-chars-forward " \t\n") (point))
+         ((equal back 'script)
+          (cond
+           ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
+            (list (cons (match-beginning 1) "{")
+                  (cons (match-end 1) "}")))
+           ((looking-at "[_^][ \t]*{") (match-end 0))
+           ))
+         ((equal back 'arg))
+         ((or (equal back 'command) (equal back 'letter))
+          (let ((tmp (whizzy-backward-safe)))
+            (cond
+             ((and (equal tmp 'script)
+                   (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
+              (list (cons (match-beginning 0)
+                          "{") (cons (match-end 0) "}")))
+             (tmp (point))
+             )))
+         ))
+       ))))
+
+(defun whizzy-show-point-safer ()
+  (save-excursion
+    (let ((here (point)) (tmp) (spaces))
+      (setq spaces (skip-syntax-backward "w"))
+      (cond
+       ;; nil if it could be a command
+       ((< (skip-chars-backward "\\\\") 0) nil)
+       ;; fine if it starts a paragraph
+       ((and (< (setq tmp (skip-chars-backward " \t\n")) -1)
+             (looking-at "[ \t]*\n[ \t]*\n"))
+        here)
+       ;; so far, we have skip letters and all space backward
+       ;; file if it end/starts math, could extend to latex versions.
+       ((< (setq tmp (skip-chars-backward "$")) -1)
+        (and (> tmp -3) (= (skip-chars-backward "\\\\") 0)
+             here))
+       ;; fine if there is at least another word
+       ((and (setq tmp (point))
+             (skip-chars-backward ",;:--.!?()")
+             (< (skip-syntax-backward "w") 0)
+             (skip-chars-backward ",;:--.!?()")
+             (< (skip-chars-backward " \t\n") 0)
+             (< (+ tmp spaces) -1)
+             )
+        here)
+       ;; Otherwise nil
+       ))))
+
+(defun whizzy-test-show ()
+  (let ((there
+         (if (functionp whizzy-point-visible)
+             (funcall whizzy-point-visible)
+           (whizzy-show-point))))
+    (if (numberp there) (whizzy-overlay-region (- there 1) there)
+      (if (consp there)
+          (whizzy-overlay-region (car (car there)) (car (cadr there)))
+      (whizzy-delete-error-overlay)))))
+
+; slicing
+
+(defvar whizzy-write-annotate t
+  "*Tells whether `write-region-annotate-functions' can be used.
+
+This is the normal way to append annotations strings during write, 
+which is used during slicing, by default.  However, some packages, 
+such as x-symbol, do not treat this properly. 
+
+When set to nil, slicing proceeds by inserted the annotations before 
+write and deleting then after.
+
+Calls `call-with-transparent-undo' which assumes version 21 or above.")
+
+(defun whizzy-write-slice (from to &optional local word)
+  (if local
+      (if (or whizzy-write-annotate
+              (not (functionp 'call-with-transparent-undo)))
+          ;; we insert annotations on the fly
+          (let ((old write-region-annotate-functions)
+                ;; (coding coding-system-for-write)
+                )
+            (setq write-region-annotate-functions
+                  (cons 'whizzy-write-region-annotate
+                        write-region-annotate-functions))
+            (setq whizzy-write-at-begin-document word)
+            (condition-case nil
+                (unwind-protect
+                    (write-region from to (whizzy-get whizzy-slicename)
+                                  nil 'ignore)
+                  (setq write-region-annotate-functions old)
+                  )
+              (quit (message "Quit occured during slicing has been ignored"))
+              ))
+        ;; insert and delete
+        (setq whizzy-write-at-begin-document word)
+        (let ((insertions (whizzy-write-region-annotate from to))
+              (shift 0))
+          (save-excursion 
+            (call-with-transparent-undo
+             (lambda ()
+               (while (consp insertions)
+                 (goto-char (+ (caar insertions) shift))
+                 (insert (cdar insertions))
+                 (setq shift (- (point) (caar insertions)))
+                 (setq insertions (cdr insertions)))
+               (write-region from (+ to shift) (whizzy-get whizzy-slicename)
+                             nil 'ignore)
+               ))
+            )))
+  ;; there are no annotatinos
+  (write-region from to (whizzy-get whizzy-slicename) nil 'ignore))
+  (whizzy-wakeup))
+
+(defun whizzy-write-region-annotate (start end)
+  (let ((empty-lines (count-lines (point-min) start))
+        (full-lines (count-lines start (point)))
+        (word (and whizzy-point-visible
+                   (if (functionp whizzy-point-visible)
+                       (funcall whizzy-point-visible)
+                       (whizzy-show-point)))
+        ))
+    ;; (message "WWABD=%S word="%S"  whizzy-write-at-begin-document word)
+    (let ((line
+           (if whizzy-line              ; (not whizzy-point-visible)
+               (concat
+                "\\WhizzyLine{"
+                (int-to-string (+ empty-lines full-lines))
+                "}")))
+          )
+      (append
+       (list
+        (cons start
+              (concat
+               "\\begin{document}\\WhizzySkip"
+               whizzy-write-at-begin-document
+               (make-string empty-lines 10)
+               (if whizzy-slave
+                   (concat "\\WhizzyMaster{" whizzy-slave "}"))
+               "\\WhizzyStart" line)))
+       (cond ((numberp word) (list (cons word "")))
+             ((consp word) word))       
+       (list (cons end "\n\\end{document}\n")))
+      )
+    ))
+
+(defvar whizzytex-mode nil)
+(make-variable-buffer-local 'whizzytex-mode)
+(let ((mode (assq 'whizzytex-mode minor-mode-alist))
+      (value  (list whizzytex-mode-line-string)))
+  (if mode (setcdr mode value)
+    (setq  minor-mode-alist
+          (cons (cons 'whizzytex-mode value) minor-mode-alist))))
+
+
+(defun whizzy-call (command)
+  (if (and whizzytex-mode (whizzy-get whizzy-running))
+      (let ((p (whizzy-get whizzy-process)))
+        (if (and p (processp p))
+            (progn
+              (continue-process p)
+              (process-send-string p (concat command "\n")))
+          ))))
+
+
+;; variables for slicing
+
+(defvar whizzy-last-tick 0)
+(defvar whizzy-last-saved 0)
+(defvar whizzy-last-point 0)
+(defvar whizzy-last-slice-begin 0)
+(defvar whizzy-last-slice-end 0)
+(defvar whizzy-last-layer 0)
+(make-variable-buffer-local 'whizzy-last-tick)
+(make-variable-buffer-local 'whizzy-last-saved)
+(make-variable-buffer-local 'whizzy-last-point)
+(make-variable-buffer-local 'whizzy-last-slice-begin)
+(make-variable-buffer-local 'whizzy-last-slice-end)
+(make-variable-buffer-local 'whizzy-last-layer)
+
+;; regexp beginning a slice
+(defvar whizzy-begin nil)
+(make-variable-buffer-local 'whizzy-begin)
+
+(defun whizzy-local ()
+  (not (equal (whizzy-get whizzy-slicing-mode) 'none)))
+
+(defun whizzy-backward (&optional n)
+  (if (re-search-backward whizzy-begin (point-min) t (or n 1))
+      (let ((max (match-end 0)))
+        (if (re-search-backward whizzy-begin (point-min) 'move)
+            (goto-char (match-end 0)))
+        (re-search-forward whizzy-begin max t)
+        (goto-char (match-beginning 0))
+        )))
+
+(defvar whizzy-section-regexp
+  "^\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)[^\n]*$")
+
+(defun whizzy-slice (layer)
+  (if (> (whizzy-get whizzy-slice-time) 0)
+      (setq whizzy-speed-string
+            (int-to-string (/ (whizzy-get whizzy-slice-time) 100))))
+  (if (equal (whizzy-get whizzy-slicing-mode) 'none) ; no slice
+      (whizzy-write-slice (point-min) (point-max))
+    (let ((here (point)) word)
+      (if (or (whizzy-backward) ; could find the beginning of the slice
+              (and
+               (re-search-backward "\\\\begin{document}" (point-min) t)
+               (goto-char (match-end 0)))
+              (and whizzy-slave
+                   (goto-char (point-min))))
+          (progn
+            (if (looking-at "\\\\begin{document}[ \t\n]*")
+                (goto-char (match-end 0)))
+            (let ((from (point)) (next (match-end 0)) (line))
+              (if (consp whizzy-local-sections)
+                  (if (and (looking-at whizzy-section-regexp)
+                           (setq line (assoc (match-string 0)
+                                             whizzy-local-sections))
+                           )
+                      (setq word (cdr line))
+                    (if (and
+                         (re-search-backward whizzy-section-regexp
+                                             (point-min) t)
+                         (setq line (assoc (match-string 0)
+                                           whizzy-local-sections)))
+                        (setq word (concat (cdr line) (car line)
+                                           "[...]\\par\\medskip"))
+                      )))
+              (goto-char next)
+              (if (and
+                   (or (re-search-forward whizzy-begin (point-max) t)
+                       (and whizzy-slave
+                            (goto-char (point-max))
+                            (re-search-forward "$"))
+                       (re-search-forward "\\\\end *{document}" (point-max) t))
+                   (goto-char (match-beginning 0)))
+                  (let ((to (point)))
+                    (goto-char here)
+                    (setq whizzy-last-slice-begin from)
+                    (setq whizzy-last-slice-end to)
+                    (setq whizzy-last-point here)
+                    (whizzy-move-slice-overlays)
+                    (if layer
+                        (setq word
+                              (concat "\\WhizzySlide[" layer "]{"
+                                      (int-to-string
+                                       (count-lines (point-min) here))
+                                      "}")))
+                    (setq whizzy-last-layer layer)
+                    (whizzy-write-slice from to t word)))
+              ))
+        (goto-char here)
+        ))
+    ))
+
+(defun whizzy-current-time ()
+  (let ((time (current-time)))
+     (+ (* (mod (cadr time) 1000) 1000)
+                  (/ (cadr (cdr time)) 1000))))
+
+(defun whizzy-set-time (arg)
+  (let* ((this (whizzy-current-time))
+         (start (whizzy-get whizzy-slice-start))
+         )
+    (if arg
+        (if (= start 0) nil
+          (whizzy-set whizzy-slice-start 0)
+          (whizzy-set whizzy-slice-time (- this start))
+          )
+      (if (= start 0)
+          (whizzy-set whizzy-slice-start this)
+        (message "Inconsistent time"))
+      )))
+
+(defun whizzy-wakeup ()
+  (let* ((p (whizzy-get whizzy-process))
+         (s (and p (processp p) (process-status p))))
+    (whizzy-set whizzy-slice-date (whizzy-current-time))
+    (if (equal s 'stop) (continue-process p))
+    (if (or (null p) (equal s 'exit))
+        (progn
+          (message "*** Mode turned off while slicing. ")
+          (whizzy-mode-off))
+      (whizzy-set whizzy-slice-fed t)
+      (comint-send-string p "\n"))
+    ))
+
+(defun whizzy-kill (&optional arg)
+  (let* ((buf (whizzy-get whizzy-process-buffer))
+         (p (whizzy-get whizzy-process)))
+    (if arg
+        (progn
+          (shell-command
+             (concat whizzy-command-name " -kill "
+                     (whizzy-get whizzy-filename)
+                     "2>/dev/null"))
+          (kill-buffer buf))
+      (and p (member (process-status p) '(run stop))
+           (quit-process p 'SIGQUIT)
+           ;; (if (equal (process-status p) 'exit) nil (kill-process pid))
+           ))))
+
+(defun whizzy-suspend (&optional arg)
+  "Suspend or resume slicing in the current buffer.
+
+Suspend WhizzyTeX if `whizzytex-mode' is t and set it to 'suspended.
+Resume WhizzyTeX if `whizzytex-mode' is 'suspended and set it to t.
+Otherwise, it raises an error.
+
+Optional ARG, is ignored. 
+
+This only stop slicing and does not kill WhizzyTeX.  It can be useful to do
+a sequence of editing while slicing could be distracting or annoying."
+  (interactive "P")
+  (cond
+   ((null whizzytex-mode)
+    (error "WhizzyTeX is not on"))
+   ((equal whizzytex-mode t)
+    (remove-hook  'post-command-hook 'whizzy-observe-changes t)
+    (setq whizzy-speed-string "Z")
+    (force-mode-line-update)
+    (setq whizzytex-mode 'suspended))
+   ((equal whizzytex-mode 'suspended)
+    (add-hook  'post-command-hook 'whizzy-observe-changes t t)
+    (setq whizzy-speed-string "?")
+    (force-mode-line-update)
+    (setq whizzytex-mode t))
+   (t
+    (error "Unknown whizzytex-mode %S" whizzytex-mode)))
+  )
+
+(defvar whizzy-load-factor 0.6
+  "Control the interval between slicing as a factor of the slicing REAL time.
+Decreasing this will slice slower and let Emacs
+or other processus be more responsive.")
+
+(defun whizzy-load-factor (&optional arg)
+  "Change the whizzy-load-factor.
+Set to `whizzy-load-factor' to ARG, if this is a float.
+Otherwise, according to prefix-numeric value of ARG (or value returned
+interactively):
+
+ 1 (nil) ask the user
+ 4 (default) set load factor to default value 0.6
+ 9 (lower) divide load factor by 2
+ 0 (higher) multiply load factor by 2
+
+The function maintain values in the range of 0.1 - 10.
+Other can only be set assigned to `whizzy-load-factor' by hand."
+  (interactive "P")
+  (let ((p (prefix-numeric-value arg)))
+    (cond
+     ((floatp arg) (setq whizzy-load-factor arg))
+     ((equal p 4)
+      (setq whizzy-load-factor 0.6))
+     ((equal p 9)
+      (setq whizzy-load-factor (max (/ whizzy-load-factor 2) 0.1)))
+     ((equal p 0)
+      (setq whizzy-load-factor (min (* whizzy-load-factor 2) 10.0)))
+     ((or (equal arg nil) (equal p 1))
+      (let ((table '(("lower" . 9) ("default" . 4) ("higher" . 0))))
+        (whizzy-load-factor
+         (or (cdr (assoc (completing-read "load factor: "
+                                          table nil t) table))
+             whizzy-load-factor))))
+     ))
+  (message "%.1f" whizzy-load-factor)
+  )
+
+(defun whizzy-wait (priority)
+  (let* ((now  (whizzy-current-time))
+         (date (or (whizzy-get whizzy-slice-date) now))
+         (slice (or (whizzy-get whizzy-slice-time) 1))
+         (timeout (- (round (/ slice whizzy-load-factor priority))
+                     (max 0 (- now date))))
+         )
+    ;;     (message "Waiting priority=%S timeout=%S date=%S now=%S slicing=%S load=%S"
+    ;;              priority timeout
+    ;;              (whizzy-get whizzy-slice-date)
+    ;;              (whizzy-current-time)
+    ;;              (whizzy-get whizzy-slice-time)
+    ;;              whizzy-load-factor)
+    (let ((res
+           (or (<= timeout 0) (whizzy-sit-for 0 timeout))
+           ))
+      ;;  (message "%s" (if res "exhausted" "aborted"))
+      res)
+    ))
+
+(defun whizzy-duplex ()
+  "Launch another previewer on the whole document."
+  (interactive)
+  (whizzy-call "duplex"))
+
+(defun whizzy-observe-changes (&optional ignore-check)
+  (if executing-kbd-macro  t
+    (if (or (and whizzytex-mode (whizzy-get whizzy-running)) ignore-check)
+        (let ((tick (buffer-modified-tick))
+              (ticks (- (buffer-modified-tick) whizzy-last-tick))
+              (pos (point)) (layer) (tmp)
+              (error t))
+          (unwind-protect
+              (progn
+                (if (or
+                     (and
+                      (or (if (or (/= ticks 0)
+                                  (not (equal (whizzy-get whizzy-active-buffer)
+                                              (current-buffer))))
+                              t
+                            (if (or (buffer-modified-p)
+                                    (= tick whizzy-last-saved))
+                                nil
+                              (setq whizzy-last-saved tick)
+                              (whizzy-wakeup) ; rerun same slice
+                              nil))
+                          (and (whizzy-local)
+                               (or
+                                (< pos whizzy-last-slice-begin)
+                                (> pos whizzy-last-slice-end)))
+                          (and whizzy-layers
+                               (progn
+                                 (beginning-of-line)
+                                 (setq tmp (point))
+                                 (goto-char pos)
+                                 (if (re-search-backward
+                                      "\\\\overlay *{?\\([0-9*]\\)" tmp t)
+                                     (setq layer (match-string 1)))
+                                 (goto-char pos)
+                                 (not (equal layer whizzy-last-layer))))
+                          (or (member this-command whizzy-slicing-commands))
+                          )
+                      (or (whizzy-wait
+                           (/ (+ ticks
+                                 (if (whizzy-get whizzy-slice-error) 1 3))
+                              4.0))
+                          (> ticks (/ 10 whizzy-load-factor))))
+                     (and whizzy-point-visible
+                          (not (equal (point) whizzy-last-point))
+                          (whizzy-wait (/ (+ 1 ticks) 4.0)))
+                     )
+                    (progn
+                      (whizzy-set whizzy-active-buffer (current-buffer))
+                      (whizzy-slice layer)
+                      (setq whizzy-last-tick tick)
+                      ))
+                (setq error nil))
+            (if (and error whizzytex-mode)
+                (progn
+                  (message "*** Fatal Error while slicing. Mode turned off")
+                  (whizzy-mode-off)))
+            ))
+      (whizzy-mode-off))))
+
+
+;;;###autoload
+(defun whizzytex-mode (&optional arg)
+  "Switch whizzytex mode according to ARG.
+
+Turn mode off is ARG is null.
+Otherwise, according to the numeric value of ARG it turns mode off (< 0)
+or on (>= 0).  If the mode is turn on while already on, it is first turn on,
+then on.
+
+Turning the mode on assigns (or reassigns) values to whizzytex
+parameters researching for configuration in the current file
+(see `whizzy-write-configuration'), using global values
+(see `whizzy-viewers' and `whizzy-class-mode-alist'), or prompting
+the user when information is missing.
+
+If ARG is 4, the user is always asked to confirm/change the
+default setting, interactively. (See also `whizzy-change-mode')
+
+This command also evaluates `whizzytex-mode-hook' before setting up
+file dependent variables. By default is equal to `whizzy-default-bindings'
+and used to set up some bindings.
+
+You can also set default values to WhizzyTeX user variables in your eamcs
+configuration file (usually ~/.emacs) to customize...
+
+ - Settings:
+
+    `whizzy-command-name'
+    `whizzy-slicing-commands'
+    `whizzy-viewers'
+    `whizzy-class-mode-alist'
+    `whizzy-mode-regexp-alist'
+    `whizzy-select-mode-regexp-alist'
+    `whizzy-paragraph-regexp'
+
+ - Power:
+
+    `whizzy-line'
+    `whizzy-point-visible'
+    `whizzy-overlays'
+
+ - Interaction:
+
+    `whizzy-save-buffers'
+    `whizzy-auto-visit'
+    `whizzy-auto-raise'
+    `whizzy-auto-show-output'
+    `whizzy-pop-up-windows'
+
+ - Downgrade performance for compatibility with other packages
+
+    `whizzy-write-annotate'
+
+You can override default values for any of these variables by including
+lines such as:
+
+    (set-default 'whizzy-command-name
+                 \"/usr/local/lib/whizzytex/bin/whizzytex\")
+
+in you emacs startup file (usually ~/.emacs)."
+
+  (interactive "P")
+  (let ((new-mode
+          (if (null arg)
+              (not whizzytex-mode)
+              (>= (prefix-numeric-value arg) 0))))
+    (if (and whizzytex-mode
+             (or (not new-mode) (not (null arg))))
+        (progn (whizzy-mode-off) (whizzy-sit-for 1)))
+    (if (and new-mode (not whizzytex-mode))
+        (whizzy-mode-on (prefix-numeric-value arg))))
+  whizzytex-mode)
+
+(defvar whizzytex-mode-map nil
+  "*Keymap used in `whizzytex-mode'.")
+
+(defvar whizzy-bad-extensions
+  '("log" "aux" "bib" "dvi" "ps" "fmt" "waux" "wdvi")
+    "List of forbidden extension (used internally).")
+
+(defun whizzy-mode-on (&optional query)
+  (if whizzytex-mode nil
+    (or whizzy-status
+        (setq whizzy-status (make-vector whizzy-length nil)))
+    (unwind-protect
+        (if (not (whizzy-setup  (= query 4)))
+            (progn
+              (message "Setup failed. Turning mode off")
+              (whizzy-mode-off))
+          (if (and (buffer-modified-p)
+                   (if (equal whizzy-save-buffers 'ask)
+                     (y-or-n-p "Save buffer? "))
+                    whizzy-save-buffers)
+              (save-buffer))
+          (whizzy-create-slice-overlays)
+          (make-local-hook 'post-command-hook)
+          (make-local-hook 'kill-buffer-hook)
+          (add-hook 'post-command-hook 'whizzy-observe-changes t t)
+          (add-hook 'kill-buffer-hook 'whizzy-mode-off t t)
+          (whizzy-setup-mode (whizzy-get whizzy-slicing-mode))
+          (if whizzy-slave
+              (let ((sections (whizzy-get whizzy-sections))
+                    (marks) (filename buffer-file-name) (basename))
+                (whizzy-set whizzy-slaves
+                            (cons (current-buffer) (whizzy-get whizzy-slaves)))
+                (setq basename
+                      (concat
+                       (regexp-quote
+                        (file-name-directory (buffer-file-name)))
+                       "\\(.*\\)"))
+                (if (string-match basename filename)
+                    (setq marks
+                          (and (listp sections)
+                               (assoc (match-string 1 filename) sections)))
+                  )
+                (if (and (consp marks) (cdr marks))
+                    (setq whizzy-local-sections (cdr marks))))
+            (whizzy-set whizzy-master-buffer (current-buffer))
+            (let* ((filename
+                    (file-name-nondirectory
+                     (or buffer-file-name
+                         (error "Buffer has no associated file name"))))
+                   (dir (concat (file-name-directory buffer-file-name)))
+                   (basename (concat whizzy-file-prefix
+                                     (file-name-sans-extension filename)))
+                   (subdir (concat dir basename "_d/"))
+                   (input (concat subdir "input/"))
+                   (output (concat subdir "output/"))
+                   (slicename (concat input basename ".new"))
+                   (logname (concat output "log"))
+                   )
+              (if (and (string-match "\\.\\([^.]*\\)$" filename)
+                       (member (match-string 1 filename)
+                               whizzy-bad-extensions))
+                  (error
+                   "File name %s has forbidden extension %s"
+                   filename (match-string 1 filename))
+                )
+              (whizzy-set whizzy-slicename slicename)
+              (whizzy-set whizzy-filename filename)
+              (whizzy-set whizzy-basename basename)
+              (whizzy-set whizzy-dir dir)
+              (whizzy-set whizzy-input-dir input)
+              (whizzy-set whizzy-output-dir output)
+              (whizzy-set whizzy-log-buffer logname)
+              (if (let* ((p (whizzy-get whizzy-process))
+                         (s (and p (process-status p))))
+                    (or (equal s 'run) (equal s 'stop)))
+                  (whizzy-kill t))
+              ;; file-accessible-directory-p ?
+              (or (file-exists-p subdir) (make-directory subdir))
+              (or (file-exists-p output) (make-directory output))
+              (or (file-exists-p input) (make-directory input))
+              ;; do we want this? YYY
+              (whizzy-set whizzy-slaves nil)
+              (let ((arg
+                     (append
+                      (if (equal (whizzy-get whizzy-slicing-mode) 'slide) nil
+                        (list "-marks"))
+                      (append (whizzy-get whizzy-view-mode) (list filename))
+                      )))
+                (whizzy-start-process arg))
+
+              ))
+          (whizzy-set whizzy-slice-date (whizzy-current-time))
+          (whizzy-set whizzy-slice-start 0)
+          (whizzy-set whizzy-slice-time 0)
+          (whizzy-observe-changes t)
+          (setq whizzy-last-tick -1)
+          ;; (use-local-map whizzytex-mode-map)
+          (whizzy-set whizzy-running t)
+          (setq whizzytex-mode t)
+          (whizzy-set whizzy-slice-error nil)
+          ;; (if (not (member (current-buffer) whizzy-buffers))
+          ;; (setq whizzy-buffers (cons (current-buffer) whizzy-buffers)))
+          )
+      (or whizzytex-mode (setq whizzy-status nil))
+      )))
+
+(defun whizzy-mode-off (&optional arg)
+  "Turn WhizzyTeX mode off."
+  (interactive "p")
+  (if (not whizzytex-mode) nil
+    (remove-hook  'post-command-hook 'whizzy-observe-changes t)
+    (remove-hook  'kill-buffer-hook 'whizzy-mode-off t)
+    (whizzy-delete-slice-overlays)
+    (whizzy-delete-error-overlay)
+    (if whizzy-slave
+        (whizzy-set whizzy-slaves (cdr (whizzy-get whizzy-slaves)))
+      (whizzy-set whizzy-running nil)
+      (whizzy-kill)
+      (while (consp (whizzy-get whizzy-slaves))
+        (let ((buf (car (whizzy-get whizzy-slaves))))
+          (if (buffer-live-p buf)
+              (save-excursion (set-buffer buf) (whizzy-mode-off))))
+      ))
+    (setq whizzytex-mode nil)))
+
+
+(defun whizzy-auto-mode ()
+  (save-excursion
+    (goto-char (point-min))
+    (let ((mode nil)
+          (regexp whizzy-select-mode-regexp-alist))
+      (if (re-search-forward
+           "^ *\\\\documentclass[^{}\n]*{\\([a-zA-Z]+\\)}"
+           (point-max) t)
+          (setq mode (assoc (match-string 1) whizzy-class-mode-alist)))
+      (if (consp mode)
+          (cdr mode)
+        (while
+            (and (not mode) (consp regexp))
+          (if (re-search-forward (car (car regexp)) (point-max) t)
+              (setq mode (cdr (car regexp)))
+            (setq regexp (cdr regexp))))
+        (or mode 'document)
+        ))))
+
+(defun whizzy-setup-mode (mode)
+  "Adjust local variables according to MODE."
+  (setq whizzy-begin (cdr (assoc mode whizzy-mode-regexp-alist)))
+  (cond
+   ((null mode)
+    (error "Mode should be a non-nil atom"))
+
+   ((member mode '(subsubsection subsection section chapter document none))
+    (whizzy-set whizzy-sections (or (whizzy-get whizzy-sections) t)))
+
+   ((equal mode 'paragraph)
+    (whizzy-set whizzy-sections (or (whizzy-get whizzy-sections) t))
+    (let ((str (whizzy-read-file-config "whizzy-paragraph")))
+      (setq whizzy-begin
+            (or (and str  (car (read-from-string str)))
+                (cdr (assoc mode whizzy-mode-regexp-alist))
+                whizzy-begin)))
+    )
+
+   ((equal mode 'slide)
+    (whizzy-set whizzy-sections nil)
+    (save-excursion
+      (goto-char (point-min))
+      (if (or (re-search-forward
+               "^\\\\documentclass *\\[\\([^]{}\n]*,\\)*semlayer\\(,[^]{}\n]*\\)*\\]"
+               (point-max) t)
+              (re-search-forward "\\\\overlay *{?[0-9*]" (point-max) t))
+          (whizzy-set whizzy-layers t))))
+   ((equal mode 'letter)
+    (whizzy-set whizzy-sections nil))
+   (t
+    (error "Ill-formed mode"))
+   )
+  (if (and (null whizzy-begin) (not (equal mode 'none)))
+      (error "Ill-formed slicing mode or incomplete whizzy-mode-regexp-alist"))
+  (whizzy-set whizzy-slicing-mode mode)
+  )
+
+(defun whizzy-read-mode (&optional default)
+  (interactive)
+  (let* ((table
+          (mapcar (lambda (x) (cons (symbol-name (car x)) (car x)))
+                  whizzy-mode-regexp-alist))
+         (mode
+          (completing-read (format "Mode [%S] : " default) table nil t nil))
+         (elem)
+         )
+    (if (setq elem (and mode (assoc mode table))) (cdr elem) default)))
+
+(defun whizzy-change-mode (&optional arg)
+  "If ARG is a symbol, set mode to to ARG.
+If ARG is null read mode interactively
+Otherwise, if set mode to section unit acording to the prefix value of ARG:
+6, 7, and 8 set mode to document, paragraph and none.
+0 and 9 behaves as -1 and 1.
+Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
+
+ (See `whizzy-mode-regexp-alist' for the list of all modes)."
+  (interactive "P")
+  (let ((p (prefix-numeric-value arg))
+        (m (whizzy-get whizzy-slicing-mode))
+        (mode) (modes))
+    (if (= p 0) (setq p -1)
+      (if (= p 9) (setq p 1)))
+    (setq mode
+          (cond
+           ((null arg) (whizzy-read-mode m))
+           ((symbolp arg) arg)
+           ((= p 8) 'none)
+           ((= p 7) 'paragraph)
+           ((= p 6) 'document)
+           ((and (> p -5) (< p 5) m)
+            (setq modes (nthcdr 3 (mapcar 'car whizzy-mode-regexp-alist)))
+            (if (> p 0) (nth p (member m modes))
+              (nth (- 0 p) (member m (reverse modes)))))
+           (t (whizzy-read-mode m))
+           ))
+      (message "Setting mode to: %S" (or mode m))
+      (if (not mode) nil
+        (if (not (assoc mode whizzy-mode-regexp-alist))
+            (error "Ill formed mode")
+          (whizzy-setup-mode mode)
+          (whizzy-delete-slice-overlays)
+          (setq whizzy-last-slice-begin 0)
+          (setq whizzy-last-slice-end 0)
+          (setq whizzy-last-tick -1)
+          ))))
+
+(defun whizzy-read-mode-from-file ()
+  (let* ((mode-string (whizzy-read-file-config "whizzy"))
+         (mode-begin) (mode-end) (mode))
+    (if (and mode-string (string-match "^ *\\([a-z]+\\)" mode-string))
+        (progn
+          (setq mode-string (match-string 1 mode-string))
+          (setq mode-begin (match-beginning 1))
+          (setq mode-end (match-end 1))
+          )
+      (setq mode-string nil))
+    (if mode-string
+        (if (setq mode
+                  (assoc mode-string
+                         (mapcar (lambda (x) (cons (symbol-name (car x))
+                                                   (car x)))
+                                 whizzy-mode-regexp-alist)))
+            (setq mode (cdr mode))
+          (goto-char mode-begin)
+          (set-mark mode-end)
+          (error
+           (concat
+            "Slicing mode ``" mode-string
+            "'' is not valid. Use: document, section, slide, or paragraph")))
+      (setq mode (whizzy-auto-mode)))
+    mode))
+    
+
+; (defun whizzy-basename (name &optional ext)
+;   (file-name-sans-extension name))
+;   (if (or (string-match
+;            (concat "\\(.*\\)" (regexp-quote (or ext ".tex"))) name)
+;           (string-match
+;            (concat "\\(.*\\)" (regexp-quote (or ext ".ltx"))) name))
+;         (match-string 1 name)
+;       name))
+
+(defun whizzy-unquote (arg)
+  (if (stringp arg)
+      (progn
+        (if (string-match " *\\(.*[^ ]\\) *" arg)
+          (setq arg (match-string 1 arg)))
+        (if (string-match "\"\\(.*\\)\"" arg)
+          (setq arg (match-string 1 arg)))))
+  arg)
+
+(defun whizzy-read-view-from-file ()
+  (let ((string (whizzy-read-file-config "whizzy")) (start 0) (view))
+    (and
+     string
+     (string-match "\\([a-z]+ +\\)?-" string)
+     (progn
+       (setq start (- (match-end 0) 1))
+       (if (string-match "\\(-a?dvi\\|-ps\\) *" string start)
+           (progn
+             (setq view (cons (match-string 1 string) view))
+             (setq start (match-end 0)))
+         (setq view (cons nil view)))
+       (let ((options
+              '(("-pre" . t) ("-initex" . t) ("-latex" . t) ("-fmt" . t)
+                ("-duplex")))
+             (option) (argp))
+         (while (consp options)
+           (setq option (caar options))
+           (setq argp (cdar options))
+           (if (string-match
+                (concat "\\(\\(.*[^ ]\\) +\\)?" option (if argp " +" " *"))
+                string start)
+               (progn
+                 (setq view (cons option (cons (match-string 2 string) view)))
+                 (setq start (match-end 0))))
+           (setq options (cdr options))))
+       (cond
+        ((and (consp view) (equal "-duplex" (car view)))
+         (if (< start (length string))
+             (error "Do not know what to do with trailing command argument %s"
+                    (substring string start))))
+        (t 
+         (setq view
+               (cons (if (< start (length string)) (substring string start))
+                     view))))
+       (reverse (mapcar 'whizzy-unquote view))
+       ))))
+
+(defun whizzy-setup (&optional query)
+  (run-hooks 'whizzytex-mode-hook)
+  (cond
+   ((or whizzy-slave (whizzy-read-file-config "whizzy *-master"))
+    (whizzy-setup-slave))
+   ((or
+     (equal (current-buffer) (whizzy-get whizzy-master-buffer))
+     (save-excursion
+       (goto-char (point-min))
+       (or (re-search-forward "^[^%\n]*\\\\begin{document}" (point-max) t)
+           (and
+            (re-search-forward
+             "^[^%\n]*\\(\\\\begin\\(  *\\){document}\\)" (point-max) t)
+            (message "Delete white space from %s" (match-string 1))
+            (delete-region (match-beginning 2) (match-end 2))))))
+    (whizzy-setup-master query))
+   (t
+    (whizzy-setup-slave))
+   ))
+
+
+
+(defun whizzy-setup-master (&optional query)
+  (if whizzy-slave (setq whizzy-slave nil))
+  (let ((slicing (whizzy-get whizzy-slicing-mode))
+        (view (whizzy-get whizzy-view-mode))
+        (view-type) (view-command) (view-options)
+        (tmp))
+    ;; Setting view mode
+    (or
+     ;; do not reset if query and already locally bound
+     (and query view)
+     ;; attempt to reset otherwise
+     (setq view (or (whizzy-read-view-from-file) view))
+     ;; no local binding: do not query if already bound
+     ;; view
+     ;; shoud not set view-mode, who cases.
+     ;; (setq query t)
+    )
+    (setq view-type (car view))
+    (setq view-command (and view-type (cadr view)))
+   (setq view-options (cddr view))
+    (or view-type (setq view-type (caar whizzy-viewers)))
+    (if query
+        (progn
+          (setq view-type
+                (completing-read "Viewer type: "
+                                 whizzy-viewers nil t view-type))
+          (if (equal view-type "")
+              (error "You must specify a viewer type"))
+          ))
+    (setq tmp (cadr (assoc view-type whizzy-viewers)))
+    (or tmp
+        (error (concat "viewer type " (car view) " should be one of "
+                       (mapconcat 'car whizzy-viewers ", "))))
+    (or view-command (equal view-command "") (setq view-command tmp))
+    (if query
+        (progn
+          (setq view-command (read-string "Viewer command: " view-command))
+          (if (equal view-command "")
+              (error "You must specify a viewer command"))
+          )
+      )
+    (setq view (cons view-type (cons view-command view-options)))
+    ;; Setting slicing mode
+    (or
+     ;; do not reset if query or already bound
+     (and query slicing)
+     ;; reset otherwise
+     (setq slicing (whizzy-read-mode-from-file)))
+    (if query (setq slicing (whizzy-read-mode slicing)))
+    (if (and view slicing)
+        (progn
+          (whizzy-set whizzy-view-mode view)
+          (whizzy-set whizzy-slicing-mode slicing)
+          )
+      )
+    view))
+
+
+(defun whizzy-setup-slave ()
+  (save-excursion
+    (let* ((this-buffer (current-buffer))
+           (master-buffer (whizzy-get whizzy-master-buffer))
+           (master-file) (status))
+      ;; master buffer might have been killed
+      (if (buffer-live-p master-buffer) nil
+        (whizzy-set whizzy-master-buffer nil)
+        (setq master-buffer nil))
+      (if master-buffer nil
+        (setq master-file
+              (expand-file-name
+               (or
+                (let ((dir (whizzy-get whizzy-dir))
+                      (file (whizzy-get whizzy-filename)))
+                  (and dir file (concat dir file)))
+                (or (whizzy-unquote (whizzy-read-file-config "whizzy.*master"))
+                    (and (boundp 'TeX-master) (stringp TeX-master) TeX-master)
+                    (read-file-name "Master (main LaTeX file): " nil nil t))
+                )))
+        (or (setq master-buffer (get-file-buffer master-file))
+            (and (or (equal whizzy-auto-visit 'whizzytex)
+                     (y-or-n-p
+                      (format "WhizzyTeX the master file %s? " master-file)))
+                 (save-excursion
+                   (find-file master-file)
+                   (and (whizzytex-mode)
+                        (setq master-buffer
+                              (whizzy-get whizzy-master-buffer)))))
+            (error "Run whizzytex on the master %s first" master-file)))
+      (if (equal master-buffer this-buffer)
+          (error "Ill-formed LaTeX file: must be loaded by (another) Master file. Aborted."))
+      ;; check that master is running whizzytex
+      (set-buffer master-buffer)
+      (or whizzytex-mode
+          (and (or whizzy-auto-visit
+                   (y-or-n-p
+                    (format "WhizzyTeX the master file %s? " master-file)))
+               (whizzytex-mode))
+          whizzytex-mode
+          (error "Please, run whizzytex on the master %s first" master-file))
+      ;; Now on the master run whizzytex
+      (setq status whizzy-status)
+      ;; Come back to slave
+      (set-buffer this-buffer)
+      (setq whizzy-status status)
+      (or (equal (whizzy-get whizzy-master-buffer) master-buffer)
+          (error "Fatal error: Inconsistent master"))
+      ;; we must compute the relative basename of the slave
+      (let* ((this-name
+              (file-name-sans-extension
+               (file-name-nondirectory (buffer-file-name this-buffer))))
+             (this-dir
+              (file-name-directory (buffer-file-name this-buffer)))
+             (master-dir
+              (file-name-directory (buffer-file-name master-buffer)))
+             )
+        (if (string-match (concat (regexp-quote master-dir) "\\(.*\\)")
+                          this-dir)
+            (setq whizzy-slave
+                  (concat (match-string 1 this-dir) this-name))
+          (error
+           "Master file %s is not a parent directory of the slave %s"
+           this-name)))
+      whizzy-slave
+      )))
+
+
+;; to read file-dependend configuration parameters
+
+(defun whizzy-read-file-config (regexp)
+  (save-excursion
+    (beginning-of-buffer)
+    (and
+     (re-search-forward
+      (concat "^%; *" regexp " +\\([^\n]+[^ \n]\\) *\n") 800 t)
+     (match-string 1))))
+
+(defun whizzy-explode-filename (arg)
+  (let ((filename
+         (or (and (stringp arg) (expand-file-name arg))
+             (and (bufferp arg) (buffer-file-name arg)))))
+    (if (and (file-exists-p filename) (not (file-directory-p)))
+        (split-string filename "/")
+      (error "Filename %s does not exists or is a directory" filename))
+    ))
+
+(defun whizzy-relative-dir (from to)
+  (setq from (whizzy-explode-filename from))
+  (setq to  (whizzy-explode-filename to))
+  (while (and from to (equal (car from) (car to)))
+    (setq from (cdr from))
+    (setq to (cdr to)))
+  (concat (mapconcat '(lambda (x) "../") (cdr from) nil)
+          (mapconcat 'identity to "/")))
+          
+(defun whizzy-write-file-config (name string &optional regexp)
+  (save-excursion
+    (goto-char (point-min))
+    (if (re-search-forward
+         (concat "^%; *" (or regexp (regexp-quote name)) " +") 800 t)
+        (progn (end-of-line) (delete-region (match-end 0) (point)))
+      (insert "%; " name  " \n") (backward-char 1))
+    (insert string)))
+
+(defun whizzy-write-configuration ()
+  "Save the whizzytex buffer configuration in the current file.
+
+This makes the configuration persistent so that it can be restored
+next time the file will be visited and WhizzyTeX-ed.
+
+The configuration can also be written by hand in the topmost lines
+of the file (first 1000 characters). A configuration line starts with
+the regexp \"^%; +\" and is followed by a configuration keyword.
+If two configurations lines have the same keyword, only the first one is
+considered. There are three keywords, describe below, together with
+the interpretation of the rest of the line:
+
+%; whizzy-master <name>
+
+  The is used for files mastered by another file. That is, it is not
+  LaTeX-ed directly, but  loaded by another LaTeX file. Conversely, the
+  second and last line are used for master files. For WhizzyTeX, a master
+  file is one that contains a \documentclass command and \begin{document}
+  commands. Other files are treated as mastered.
+
+  <name>
+     is the relative or fullname of the master file
+
+%; whizzy [ <slicing> ] [ <viewer> [ <command> ] ] [ -pre <make> ] [ -fmt <format> ] [ -duplex ]
+
+  All arguments are optional, but if present they must be passed in order:
+
+  <slicing>
+
+     describes the way buffer is sliced (a slice is the region of the
+     buffer under focus and displayed).
+
+     See `whizzy-mode-regexp-alist' for a list of all slicing modes
+     and `whizzy-class-mode-alist' for default mode selection when ommitted.
+
+  <viewer>
+
+     defines the type of previewer used (see `whizzy-viewers').
+     This value is both interpretted by emacs and passed to the whizzytex
+     script.
+
+  <command>
+
+     is only passed to the whizzytex script (not interpreted by emacs)
+     this is the command that whizzytex should call to launch the
+     previewer (see the manual). Command include the name of the
+     previewer as well as its options. It is does not have to be quoted.
+     It extends to the right as must as possible, i.e. ends with the end
+     of line or some recognized option.
+        
+  -pre <make>
+
+     This defines a command to be passed to whizzytex that is used
+     to preprocess the slice, instead of simply renaming the slice.
+     The convention is that WhizzyTeX prepares a slice  BASENAME.new,
+     calls <make> BASENAME.tex, and expects <make> to produce a file
+     BASENAME.tex
+
+     When ommitted, the slice BASENAME.new is simply renamed into BASENAME.tex
+
+  -initex <command>
+
+     This tells whizzytex to use <command> to create the initial format
+     instead of the default (usually initex)
+
+  -latex <command>
+
+     This tells whizzytex to use <command> to compile a slice instead of
+     the default (usually latex)
+
+  -fmt <format>
+
+     This tells whizzytex to use the initial format <format> instead
+     of the default, usually latex (the suffix .fmt is added).
+     For instance, hugelatex may be needed for processing large files.
+
+  -duplex
+
+     This tells WhizzyTeX to also launch the previewer on the whole document.
+
+%; whizzy-paragraph <regexp>
+
+  <regexp>
+     defined overrides the slicing mode to paragraph and locally overrides
+     the default paragraph regexp."
+  (interactive)
+  (let ((master (whizzy-get whizzy-master-buffer)))
+    (cond
+     ((not (buffer-live-p master))
+      (error "Master buffer is undefined or killed"))
+     (whizzy-slave
+      (whizzy-write-file-config
+       "whizzy-master"
+       (whizzy-relative-dir (current-buffer) (whizzy-get whizzy-master-buffer))
+       "whizzy.*-master"))
+     ((equal (current-buffer) master)
+      (let* ((slicing (whizzy-get whizzy-slicing-mode))
+             (view (whizzy-get whizzy-view-mode))
+             (type (car view))
+             (command
+              (if (equal (cadr view) (cadr (assoc type whizzy-viewers))) nil
+                (cadr view)))
+             (options (cddr view)))
+         (whizzy-write-file-config
+          "whizzy"
+          (mapconcat
+           'identity
+           (list (and slicing (symbol-name slicing))
+                 (and (or command (not (equal type (caar whizzy-viewers))))
+                      type)
+                 command
+                 options)
+           " "))
+         ))
+     (t (error "Current buffer is neither master nor slave"))
+     )
+    (if (local-variable-p 'whizzy-paragraph-regexp (current-buffer))
+        (whizzy-write-file-config "whizzy-paragraph"
+                                  (concat "\"" whizzy-paragraph-regexp "\"")))
+    ))
+
+(defun whizzy-string-from-file (keyword count &optional regexp position)
+  (save-excursion
+    (beginning-of-buffer)
+    (or position (setq position 2))
+    (setq regexp (or regexp "\\([^\n]*[^ \n]\\)"))
+    (if (and
+         keyword
+         (re-search-forward
+          (concat "^%; *" keyword " +" regexp " *$")
+          400 'move count))
+        (if (match-beginning position)
+            (match-string position)
+          (match-string 1))
+        
+      nil
+      )))
+
+(defun whizzy-recenter-output-buffer (line)
+  "Redisplay buffer of WhizzyTeX job output.
+
+This makes the most recent output visible.  The last line of the buffer
+is displayed on line LINE of the window, or centered if LINE is nil."
+  (interactive "P")
+  (let ((tex-shell (whizzy-get whizzy-process-buffer))
+        (old-buffer (current-buffer)))
+    (if (null tex-shell)
+        (message "No WhizzyTeX output buffer")
+      (pop-to-buffer tex-shell)
+      (bury-buffer tex-shell)
+      (goto-char (point-max))
+      (recenter (if line
+                    (prefix-numeric-value line)
+                  (/ (window-height) 2)))
+      (pop-to-buffer old-buffer)
+      )))
+
+
+;;; errors
+
+(defvar whizzy-latex-error-regexp
+  "^\\(! Missing \\|! Undefined \\|! LaTeX Error:\\|Runaway argument?\\)")
+
+(defun whizzy-check-errors ()
+  (interactive "p")
+  (let ((source-buffer (whizzy-get whizzy-active-buffer))
+        (shell-buffer (whizzy-get whizzy-process-buffer))
+        (point-min
+         (or (and (window-live-p (whizzy-get whizzy-process-window)) (mark))
+             (point-min)))
+        (error-begin) (error-end) (line-string) (shell-moveto)
+        )
+    (or (buffer-live-p source-buffer)
+        (set source-buffer (current-buffer)))
+    (set-buffer shell-buffer)
+    (goto-char (point-max))
+    (re-search-backward "<Recompilation failed>" point-min 'move)
+    (delete-region point-min (max point-min (- (point) 14)))
+    (if (re-search-forward
+         "^l\\.\\([1-9][0-9]*\\) \\([^\n]*\\)" (point-max) 'move)
+        (progn
+          (setq error-begin (string-to-int (match-string 1)))
+          (setq line-string
+                (buffer-substring
+                 (max (match-beginning 2) (- (match-end 2) 36))
+                 (match-end 2)))
+          (if (re-search-backward whizzy-latex-error-regexp
+                                  (point-min) t)
+              (setq shell-moveto (match-beginning 0))
+            (setq shell-moveto 0))
+          ))
+    (if shell-moveto (unwind-protect (goto-char shell-moveto)))
+    (if (not error-begin)
+        (whizzy-delete-error-overlay)
+      (set-buffer source-buffer)
+      (let ((here (point)))
+        (unwind-protect
+            (progn
+              (goto-line error-begin)
+              (beginning-of-line)
+              (setq error-begin (point))
+              (end-of-line)
+              (if (search-backward line-string (- (point) 200) t)
+                  (progn
+                    (setq error-begin (match-beginning 0))
+                    (setq error-end (match-end 0)))
+                (setq error-end (point)))
+              (whizzy-overlay-region
+               error-begin
+               (if (= 0 whizzy-last-slice-end)
+                   (max error-end (+ error-begin 1))
+                 (min (max error-end (+ error-begin 1))
+                      whizzy-last-slice-end)))
+              )
+          (goto-char here))
+        ))))
+
+;; the whizzy-shell-buffer is shared between several processes.
+;; it is always set to the buffer that saved the most recent slice.
+;; however, occasionally, another concurrent process could report the error
+;; to the wrong buffer.
+;; this could be fixed by echoing the name of the file in the output buffer,
+;; or by using a different buffer for each process.
+
+;; if overlays do not currently work in xemacs.
+;; use the unset options hook and ignore compilation messages.
+
+(defvar whizzy-error-overlay nil)
+(make-variable-buffer-local 'whizzy-error-overlay)
+(defun whizzy-delete-error-overlay ()
+  (if whizzy-error-overlay (delete-overlay  whizzy-error-overlay)))
+                        
+(make-face 'whizzy-error-face)
+(set-face-background 'whizzy-error-face "Khaki")
+
+(defun whizzy-overlay-region (beg end)
+  (if (and whizzy-overlays (< beg end) (< end (point-max)))
+      (progn
+        (if  (not whizzy-error-overlay)
+          (setq whizzy-error-overlay (make-overlay 1 1)))
+        (overlay-put whizzy-error-overlay 'face 'whizzy-error-face)
+        (move-overlay whizzy-error-overlay beg end (current-buffer))
+        )))
+
+
+(defun whizzy-show-wdiff (arg)
+  (if (string-match
+       "\\([0-9]+\\)\\([ac]\\).* Word \\([0-9]+\\)\\([ac]\\).*: \\([^\n]*\\)"
+       arg)
+      (let ((line
+             (+ (string-to-int (match-string 1 arg))
+                (if (equal (match-string 2 arg) "a") 1 0)))
+            (word
+             (- (string-to-int (match-string 3 arg))
+                (if (equal (match-string 4 arg) "a") 0 1)))
+            (words (match-string 5 arg)))
+
+        (save-excursion
+          (goto-line line)
+          (if (or (<= (point) whizzy-last-slice-begin)
+                  (>= (point) whizzy-last-slice-end))
+              nil
+            (beginning-of-line)
+            (if (re-search-forward "[ \n]+" whizzy-last-slice-end t word)
+                (progn
+                  (skip-chars-backward "[ \n]" whizzy-last-slice-begin)
+                  (let ((list-words  (split-string words "[ ]")) (beg (point)))
+                    (while
+                        (and (consp list-words)
+                             (skip-chars-forward "[ \n]")
+                             (looking-at (regexp-quote (car list-words))))
+                      (goto-char (match-end 0))
+                      (setq list-words (cdr list-words)))
+                    (skip-chars-forward "[ \n]" whizzy-last-slice-end)
+                    (whizzy-overlay-region beg (point))
+                    ))
+              )))
+        )))
+
+(defun whizzy-show-interaction (&optional arg)
+  "Display WhizzyTeX process buffer according to ARG.
+Toggle if ARG is ommitted."
+  (interactive "P")
+  (if (or whizzytex-mode (whizzy-get whizzy-active-buffer)) ; 
+      (let* ((buf (current-buffer))
+             (shell  (whizzy-get whizzy-process-buffer))
+             (window (whizzy-get whizzy-process-window))
+             (window-alive
+              (and window
+                   (window-live-p window)
+                   (equal (window-buffer window) shell)))
+             (hide (if (null arg) window-alive
+                     (= (prefix-numeric-value arg) 0)))
+             (height (window-height))
+             (resize))
+        (if (and window-alive
+                 (or (equal (minibuffer-window) window)
+                     (equal (next-window window) window)))
+            (whizzy-set whizzy-process-window nil)
+          (if hide
+              (if window-alive
+                  (progn
+                    (delete-window window)
+                    (bury-buffer shell)
+                    (whizzy-set whizzy-process-window nil)))
+            (if (equal buf (whizzy-get whizzy-active-buffer))
+                (save-selected-window
+                  (if window-alive (select-window window)
+                    (setq height (* (/ height 3) 2))
+                    (split-window-vertically  height)
+                    (select-window (next-window))
+                    (switch-to-buffer shell t)
+                    )
+                  (setq window (selected-window))
+                  (setq resize
+                        (- (window-height)
+                           (max window-min-height
+                                (min (window-buffer-height window)
+                                     (/ (+ (window-height) height) 3)))))
+                  (select-window (previous-window))
+                  (enlarge-window resize)
+                  ))
+            (whizzy-set whizzy-process-window window))
+          )
+        )))
+
+
+(defun whizzy-auto-show (arg)
+  (if (and whizzy-auto-show-output
+           (or (= arg 0)
+               (or (and whizzy-xemacsp
+                        (= whizzy-last-tick (buffer-modified-tick)))
+                   (and (not (whizzy-get whizzy-slice-fed))
+                        (whizzy-sit-for 2))
+                   ))
+           (or (window-live-p (whizzy-get whizzy-process-window))
+               (not (= arg 0)))
+           )
+      (whizzy-show-interaction arg)))
+
+(defun whizzy-goto-line (s)
+  (if (string-match
+"\#line \\([0-9]*\\), \\([0-9]+\\) <<\\(.*\\)>><<\\(.*\\)>> \\([^ \t\n]*\\)"
+       s)
+      (let ((dest-buffer (whizzy-get whizzy-active-buffer))
+            (status whizzy-status)
+            (line (string-to-int (match-string 1 s)))
+            (last (string-to-int (match-string 2 s)))
+            (before (match-string 3 s))
+            (after (match-string 4 s))
+            (file (match-string 5 s))
+            (word) (bound))
+        (if (buffer-live-p dest-buffer)
+            (set-buffer dest-buffer)
+          (setq dest-buffer nil))
+        (and
+         file (not (equal  file ""))
+         (let* ((longname (concat (whizzy-get whizzy-dir) file))
+                (fullname longname))
+           (or (file-readable-p  longname)
+               (file-readable-p
+                (setq fullname (concat longname ".tex")))
+               (setq fullname longname))           
+           (or (setq dest-buffer (find-buffer-visiting fullname))
+               (and (or (and (equal whizzy-auto-visit 'ask)
+                             (y-or-n-p (format "Visit file %s? " fullname)))
+                        whizzy-auto-visit)
+                    (if (setq dest-buffer (find-file-noselect fullname))
+                        (save-excursion
+                          (set-buffer dest-buffer)
+                          (setq whizzy-status status)
+                          (setq whizzy-slave t)
+                          t)
+                      (message "File %s does not exits" fullname)
+                      nil))))
+         (progn
+           (unless (minibuffer-window-active-p (minibuffer-window))
+             (let ((temp pop-up-windows))
+               (setq pop-up-windows whizzy-pop-up-windows)
+               (pop-to-buffer dest-buffer)
+               (setq pop-up-windows temp)
+               (if whizzy-auto-raise (raise-frame))
+               ))
+           (set-buffer dest-buffer)
+           (unless whizzytex-mode
+             (or whizzy-status (setq whizzy-status status))
+             (or whizzy-slave (setq whizzy-slave t))
+             (if (equal whizzy-auto-visit 'whizzytex)
+                 (whizzytex-mode)
+               (message
+                (substitute-command-keys
+                 "Type \\[whizzytex-mode] to whizzytex this file"
+                 ))))
+           ))
+        (unless (or (not dest-buffer) (and (> line last) (/= last 0)))
+          (setq word
+                (concat "[^A-Za-z0-9]\\(" (regexp-quote before)
+                        "\\)\\(" (regexp-quote after)
+                        "\\)[^A-Za-z0-9]"))
+          (let ((here (point)))
+            (cond
+             ((> last 0)
+              (goto-line line) (beginning-of-line) (setq bound (point))
+              (goto-line last) (end-of-line)
+              (if (re-search-backward word bound t)
+                  (goto-char (match-end 1))
+                (if (re-search-backward
+                     (concat "\\(" word "\\|" "\n\n\\)")
+                     (max 0 (- bound 1000)) t)
+                    (goto-char
+                     (if (looking-at word)  (match-end 1) here))
+                  (goto-char here))))
+             ((> line 0)
+              (if (= last 0) (setq bound (point-max))
+                (goto-line last) (end-of-line) (setq bound (point)))
+              (goto-line line) (beginning-of-line)
+              (if (not (re-search-forward word bound t))
+                  (goto-char here)
+                (goto-char (match-end 1)))
+              )
+             (t))
+            (whizzy-observe-changes))
+          )
+        )))
+
+
+(defun whizzy-error (error &optional clean)
+  (let* ((old (whizzy-get whizzy-slice-error))
+         (new (cond
+               ((null old) (if clean nil error))
+               ((not clean)
+                (cond
+                 ((or (equal error 'fmt) (equal old 'fmt)) 'fmt)
+                 ((or (equal error 'whole) (equal old 'whole)) 'whole)
+                 (t error)))
+               ((equal old 'fmt) (if (equal error 'fmt) 'whole old))
+               ((equal old 'whole)
+                (if (equal error 'fmt) error
+                  (if (equal error 'whole) 'tex old)))
+               ((equal old 'tex) (if (equal error 'tex) nil old))
+               )))
+    (if (equal new old) nil
+      (whizzy-set whizzy-slice-error new)
+      (setq whizzy-error-string
+            (if new (concat "-" (symbol-name new)) "")))
+    ))
+
+(defun whizzy-set-active-buffer ()
+  (and (whizzy-get whizzy-running)
+       (let ((buffer (whizzy-get whizzy-active-buffer)))
+         (and (buffer-live-p buffer) (set-buffer buffer)))))
+          
+        
+(defun whizzy-filter-output (s)
+  (cond
+   ((not (whizzy-get whizzy-running)))
+   ((string-match "^<Compilation succeeded>" s)
+    (goto-char (point-max))
+    (let ((point-min
+           (or (and (window-live-p (whizzy-get whizzy-process-window))
+                    (mark))
+               (point-min))))
+      (re-search-backward "<Recompilation failed>" point-min 'move)
+      (delete-region point-min (max point-min (- (point-max) 35))))
+    (if (whizzy-set-active-buffer)
+        (progn
+          (whizzy-delete-error-overlay)
+          (whizzy-auto-show 0)
+          (whizzy-error 'tex t)
+          (whizzy-set-time t)
+          )))
+   ((string-match "^<Continuing>" s)
+    (whizzy-check-errors)
+    (and (whizzy-set-active-buffer)
+         (whizzy-auto-show 1))
+    )
+   ((string-match "^<Reformatting failed>" s)
+    (whizzy-error 'fmt)
+    (whizzy-auto-show 1))
+   ((string-match "^<Reformatting succeeded>" s)
+    (whizzy-error 'fmt t)
+    )
+   ((string-match "^<Whole document recompilation failed>" s)
+    (whizzy-error 'whole)
+    )
+   ((string-match "^<Whole document updated>" s)
+    (whizzy-error 'whole t)
+    )
+   ((string-match "^<Pages and sections updated>" s)
+    (whizzy-read-sections t))
+   ((string-match "^<Recompiling>" s)
+    (whizzy-set whizzy-slice-fed nil)
+    (whizzy-set-time nil)
+    )
+   ((string-match "^<Recompilation failed>" s)
+    (whizzy-error 'tex)
+    (whizzy-set-time t)
+    )
+   ((string-match "^<Error in Line \\([^\n]*\\) *>" s)
+    (beginning-of-line)
+    (goto-char (point-max))
+    (previous-line 1)
+    (if (whizzy-set-active-buffer)
+        (progn
+          (whizzy-show-wdiff (match-string 1 s))
+          (whizzy-auto-show 1)))
+    )
+   ((string-match "\#line \\([0-9][0-9]*\\)" s)
+    (whizzy-goto-line s)
+    )
+   ((string-match "<Fatal error>" s)
+    (if (whizzy-set-active-buffer)
+        (progn
+          (whizzy-mode-off)
+          (whizzy-show-interaction t)))
+    (message "External Fatal error. WhizzyTeX Mode switched off. ")
+    )
+   ((string-match "<Quitting>" s)
+    (if (whizzy-set-active-buffer) (whizzy-mode-off))
+    (message "Mode switched off externally")
+    )
+   ))
+
+(make-face 'whizzy-slice-face)
+(set-face-background 'whizzy-slice-face "LightGray")
+(set-face-foreground 'whizzy-slice-face "dim gray")
+
+(defvar whizzy-slice-overlay nil)
+(make-variable-buffer-local 'whizzy-slice-overlay)
+
+(defun whizzy-create-slice-overlays ()
+  (if (and whizzy-overlays (not whizzy-slice-overlay))
+      (let ((beg (make-overlay 1 1)) (end (make-overlay 1 1)))
+        (overlay-put beg 'face 'whizzy-slice-face)
+        (overlay-put end 'face 'whizzy-slice-face)
+        (setq whizzy-slice-overlay (cons beg end)))))
+
+(defun whizzy-move-slice-overlays (&optional beg end)
+  (if (and whizzy-overlays whizzy-slice-overlay)
+      (progn
+        (move-overlay (car whizzy-slice-overlay)
+                      (point-min) (or beg whizzy-last-slice-begin))
+        (move-overlay (cdr whizzy-slice-overlay)
+                      (or end whizzy-last-slice-end) (point-max)))))
+
+(defun whizzy-delete-slice-overlays ()
+  (if (and whizzy-overlays whizzy-slice-overlay)
+      (progn
+        (delete-overlay (car whizzy-slice-overlay))
+        (delete-overlay (cdr whizzy-slice-overlay)))))
+
+;; to move according to the mode
+
+(defun whizzy-next-slice (n)
+  "Move forward N slices (or backward if N is negative)."
+  (interactive "p")
+  (if whizzy-begin
+      (let ((begin (concat "\\(^\\\\begin{document}\\|" whizzy-begin "\\)"))
+            (end (concat "\\(^\\\\end *{document}\\|" whizzy-begin "\\)")))
+        (cond
+         ((> n 0)
+          (re-search-forward begin (point-max) t n))
+         ((< n 0)
+          (if (re-search-backward begin (point-min) t (- 1 n))
+              (goto-char (match-end 0)))
+          t)
+         )
+        (recenter 2)
+        (let* ((here (point))
+               (beg (min (match-beginning 0) here))
+              )
+          (if (re-search-forward end (point-max) t)
+              (whizzy-move-slice-overlays beg (match-beginning 0)))
+          (goto-char here))
+    )))
+
+(defun whizzy-previous-slice (n)
+  "Move bacward N slices (or forward if N is negative)."
+  (interactive "p")
+  (whizzy-next-slice (- 0 n))
+  )
+
+
+;;; moving pages in the previewer from the emacs buffer
+;; asumes you have a command sendkey (see the efuns ocaml xlib)
+
+(defvar whizzy-sendkey-command "sendKey"
+  "The name of the command to send keys to windows.
+It should accept the following arguments
+
+   -name <WINDOW-NAME>
+   -key  <KEY-NAME>
+   <CHARACTERS-STRING>"
+)
+
+(defun whizzy-toggle-point ()
+  "Toggle whizzy-point-visible variable."
+  (interactive)
+  (setq whizzy-point-visible (not whizzy-point-visible))
+  (setq whizzy-last-tick 0)
+  (setq whizzy-last-point 0)
+  )
+(defun whizzy-toggle-line ()
+  "Toggle whizzy-line variable."
+  (interactive)
+  (setq whizzy-line (not whizzy-line))
+  (setq whizzy-last-tick 0)
+  )
+
+(defun whizzy-toggle-auto-show ()
+  "Toggle whizzy-show-output variable."
+  (interactive)
+  (setq whizzy-auto-show-output (not whizzy-auto-show-output))
+  )
+  
+
+;;;; menus and bindings
+
+(defun whizzy-help ()
+  (interactive)
+  (if (and whizzy-xemacsp (functionp 'hyper-describe-function))
+      (apply 'hyper-describe-function '(whizzytex-mode))
+    (describe-function 'whizzytex-mode)
+    ))
+
+(defun whizzy-help-view-slice ()
+  (interactive)
+  (view-file (whizzy-get whizzy-slicename)))
+
+(defun whizzy-view-log ()
+  (interactive)
+  (view-file
+   (read-file-name "Log: " (whizzy-get whizzy-output-dir) "slice" t)))
+
+(defun whizzy-slicing-paragraph () (interactive)
+  (whizzy-change-mode 'paragraph)
+  (setq whizzy-begin whizzy-paragraph-regexp)
+  )
+
+(defun whizzy-slicing-wide-paragraph () (interactive)
+  (whizzy-change-mode 'paragraph)
+  (setq whizzy-begin  "\n *\n *\n *\n")
+  )
+
+(defun whizzy-set-paragraph-regexp  () (interactive)
+  (setq whizzy-paragraph-regexp
+        (read-string "Paragraph regexp: "
+                     (cons whizzy-paragraph-regexp 0) nil))
+  (whizzy-slicing-paragraph)
+  )
+
+(defun whizzy-unmaster () (interactive)
+  (whizzy-mode-off) (setq whizzy-slave nil))
+
+(defun whizzy-show-point-never () (interactive)
+  (setq whizzy-point-visible nil))
+(defun whizzy-show-point-pessimistic () (interactive)
+  (setq whizzy-point-visible 'whizzy-show-point-safer))
+(defun whizzy-show-point-optimistic () (interactive)
+  (setq whizzy-point-visible t))
+
+(defun whizzy-slicing-mode-p (mode)
+  (equal (whizzy-get whizzy-slicing-mode) mode))
+
+(defvar whizzy-menu-map
+  (if whizzy-xemacsp nil
+    (let ((menu-map (make-sparse-keymap "Whizzy")))
+      (define-key menu-map [whizzy-help]
+        '("Help" . whizzy-help))
+      (define-key menu-map [sep3] '("--"))
+      (define-key menu-map [whizzy-view-log]
+        '("View log..." . whizzy-view-log))
+      (put 'whizzy-view-log 'menu-enable 'whizzytex-mode)
+      (define-key menu-map [whizzy-show-interaction]
+        '("Show interaction" . whizzy-show-interaction))
+      (define-key menu-map [sep2] '("--"))
+      (define-key menu-map [whizzy-toggle-auto-show]
+        '(menu-item "Auto interaction"  whizzy-toggle-auto-show
+                    :button (:toggle and whizzy-auto-show-output)))
+      (define-key menu-map [whizzy-toggle-line]
+        '(menu-item "Page to point"  whizzy-toggle-line
+                    :button (:toggle and whizzy-line)))
+      (let ((map (make-sparse-keymap "Show point")))
+        (define-key map [never]
+          '(menu-item "Never"  whizzy-show-point-never
+                      :button (:radio equal whizzy-point-visible nil)))
+        (define-key map [pssimistic]
+          '(menu-item "Be pessimistic" whizzy-show-point-pessimistic
+                      :button (:radio equal whizzy-point-visible
+                                      'whizzy-show-point-safer)))
+        (define-key map [optimistic]
+          '(menu-item "Be optimistic"  whizzy-show-point-optimistic
+                      :button (:radio equal whizzy-point-visible t)))
+        (define-key menu-map [show-point]
+          (cons "Show point" map)))
+      (define-key menu-map [whizzy-load-factor]
+        '("Load factor" . whizzy-load-factor ))
+      (define-key menu-map [sep1] '("--"))
+      (define-key menu-map [whizzy-write-configuration]
+        '("Write config" . whizzy-write-configuration))
+      (put 'whizzy-write-configuration 'menu-enable 'whizzy-status)
+      (define-key menu-map [whizzy-unmaster]
+        '("Unmaster file" . whizzy-unmaster))
+      (put 'whizzy-unmaster 'menu-enable 'whizzy-slave)
+      (define-key menu-map [whizzy-duplex]
+        '("Duplex" . whizzy-duplex))
+      (put 'whizzy-duplex 'menu-enable 'whizzytex-mode)
+      (define-key menu-map [whizzy-suspend]
+        '(menu-item "Suspend/Resume" whizzy-suspend ([ whizzy-suspend ])
+                    :button (:toggle and (equal whizzytex-mode 'suspended))))
+      (put 'whizzy-suspend 'menu-enable 'whizzytex-mode)
+      (define-key menu-map [whizzy-previous-slice]
+        '("Previous slice" . whizzy-previous-slice))
+      (define-key menu-map [whizzy-next-slice]
+        '("Next slice" . whizzy-next-slice))
+      (let ((map (make-sparse-keymap "Slicing"))
+            (modes whizzy-mode-regexp-alist) (mode))
+        (define-key map [other]
+          '("other" . whizzy-change-mode))
+        (define-key map [paragraph-regexp]
+          '("paragraph regexp" . whizzy-set-paragraph-regexp))
+        (define-key map [sep1] '("--"))
+        (while (and (consp modes) (consp (car modes)))
+          (setq mode (caar modes))
+          (if (equal mode 'none)
+              (define-key map [sep2] '("--")))
+          (define-key map (vector mode)
+            (list 'menu-item
+                  (symbol-name mode)
+                  (list 'lambda nil '(interactive)
+                        (list 'whizzy-change-mode  (list 'quote mode)))
+                  ':button
+                  (list ':radio 'whizzy-slicing-mode-p
+                        (list 'quote mode))
+                  ))
+          ;; (put mode 'menu-enable (equal whizzytex-mode mode))
+          (setq modes (cdr modes))
+          (define-key menu-map [slicing]
+            (cons "Slicing"  map))
+          (put 'map 'menu-enable 'whizzytex-mode)
+          ))
+      (define-key menu-map [whizzytex-mode]
+        '(menu-item "WhizzyTeX"  whizzytex-mode
+                    :button (:toggle and whizzytex-mode)))
+      menu-map)))
+
+(defvar whizzy-xemacsp-menu
+  (if whizzy-xemacsp
+      '("Whizzy"
+        [ "WhizzyTeX" whizzytex-mode
+          :style toggle :selected whizzytex-mode ]
+        ("Slicing"
+         [ "none" (whizzy-change-mode 'none)
+           :style radio :selected (whizzy-slicing-mode-p 'none) ]
+         "---"
+         [ "document" (whizzy-change-mode 'document)
+           :style radio
+           :selected (whizzy-slicing-mode-p 'document) ]
+         [ "section" (whizzy-change-mode 'section)
+           :style radio :selected (whizzy-slicing-mode-p 'section) ]
+         [ "subsection" (whizzy-change-mode 'subsection)
+           :style radio :selected (whizzy-slicing-mode-p 'subsection) ]
+         [ "subsubsection" (whizzy-change-mode 'subsubsection)
+           :style radio :selected (whizzy-slicing-mode-p 'subsubsection) ]
+         [ "letter" (whizzy-change-mode 'letter)
+           :style radio :selected (whizzy-slicing-mode-p 'letter) ]
+         [ "slide" (whizzy-change-mode 'slide)
+           :style radio :selected (whizzy-slicing-mode-p 'slide) ]
+         "---"
+         [ "other" whizzy-change-mode t ]
+         )
+        [ "Suspend/Resume" whizzy-suspend :active whizzytex-mode
+          :style toggle :selected (equal whizzytex-mode 'suspended) ]
+        [ "Duplex" whizzy-duplex :active whizzytex-mode ]
+        [ "Next slice"  whizzy-next-slice ]
+        [ "Previous slice"  whizzy-previous-slice ]
+        [ "Unmaster" whizzy-unmaster :active whizzy-slave ]
+        [ "Write config" whizzy-write-configuration
+          :active whizzy-status ]
+        "---"
+        [ "Load factor" whizzy-load-factor ]
+        [ "Page to point" whizzy-toggle-line
+          :style toggle :selected whizzy-line ]
+        ( "Show point" 
+          [ "Optimistic" whizzy-show-point-optimistic
+            :style radio :selected (equal whizzy-point-visible t) ]
+          [ "Pessimistic" whizzy-show-point-pessimistic
+            :style radio :selected (equal whizzy-point-visible
+                                          'whizzy-show-point-safer) ]
+          [ "Never" whizzy-show-point-never
+            :style radio :selected (equal whizzy-point-visible nil) ]
+          )
+        [ "Auto interaction" whizzy-toggle-auto-show
+          :style toggle :selected whizzy-auto-show-output ]
+        "---"
+        [ "Show interaction" whizzy-show-interaction ]
+        [ "View log..."  whizzy-view-log :active whizzytex-mode ]
+        "---"
+        [ "Help" whizzy-help t ]
+        ))
+  "Menu to add to the menubar when running Xemacs.")
+
+;; keymap
+; (defvar whizzytex-mode-keymap
+;   (let ((map (make-sparse-keymap)))
+;     (define-key map [?\C-c ?\C-w] 'whizzytex-mode)
+;     (define-key map [?\C-c ?\C-s] 'whizzy-change-mode)
+;     (define-key map [?\C-c ?\C-z] 'whizzy-suspend)
+;     ;; xemacs style bindings are apparently also accepted by emacs
+;     (if whizzy-xemacsp nil
+;       (define-key map [menu-bar whizzy] (cons "Whizzy" (whizzy-menu-map))))
+;     (define-key map [(control next)] 'whizzy-next-slice)
+;     (define-key map [(control prior)] 'whizzy-previous-slice)
+;     (define-key map [(control return)] 'whizzy-show-interaction)
+;     ;; emacs style bindings
+;     ;;  (define-key map [C-next] 'whizzy-next-slice)
+;     ;;  (define-key map [C-prior] 'whizzy-previous-slice)
+;     ;;  (define-key map [C-return] 'whizzy-show-interaction)
+;     map)
+;    "Keymap for WhizzyTeX minor mode."
+; )
+
+; (or (not (boundp 'minor-mode-map-alist))
+;     (let ((mode (assq 'whizzytex-mode minor-mode-map-alist)))
+;       (if mode (setcdr mode whizzytex-mode-keymap)
+;         (setq  minor-mode-map-alist
+;           (cons (cons 'whizzytex-mode whizzytex-mode-keymap)
+;                 minor-mode-map-alist)))))
+
+;; two useful hooks
+(defvar whizzy-common-bindings
+  '(( [(control next)] . whizzy-next-slice)
+    ( [(control prior)] . whizzy-previous-slice)
+    ( [(control return)] . whizzy-show-interaction))
+  "Common default bindings")
+
+(defvar whizzy-short-bindings
+  `(( [?\C-c ?\C-w] . whizzytex-mode)
+    ( [?\C-c ?\C-s] . whizzy-change-mode)
+    ( [?\C-c ?\C-z] . whizzy-suspend)
+    ( [?\C-c ?\C-d] . whizzy-duplex)
+    . ,whizzy-common-bindings)
+  "Short bindings for WhizzyTeX"
+  )
+
+(defvar whizzy-auctex-bindings
+  `(( [?\C-c ?w] . whizzytex-mode)
+    ( [?\C-c ?s] . whizzy-change-mode)
+    ( [?\C-c ?z] . whizzy-suspend)
+    ( [?\C-c ?d] . whizzy-duplex)
+    . ,whizzy-common-bindings)
+  "Bindings for running WhizzyTeX with AuxTeX"
+  )
+
+(defvar whizzy-key-bindings 'whizzy-auctex-bindings
+  "*Alist of pairs key bindings installed by `whizzy-default-bindings'
+This may also be a symbol whose value is an alist. 
+
+Either `whizzy-auctex-bindings' or `whizzy-short-bindings'
+could be used as default-value, both of which define bindings for
+the following functions:
+
+  Toggle WhizzyTeX mode         \\[whizzytex-mode]
+  Move one slice forward        \\[whizzy-next-slice]
+  Move one slice backward       \\[whizzy-previous-slice]
+  Change slicing mode           \\[whizzy-change-mode]
+  Show interaction              \\[whizzy-show-interaction]
+  Suspend/Resume                \\[whizzy-suspend]
+
+For instance, you may include the following line in your ~/.emacs:
+
+  (set-default 'whizzy-key-bindings 'whizzy-auctex-bindings)
+")
+
+(defun whizzy-default-bindings ()
+  "*Suggested hook for whizzytex.
+
+Install bindings defined in the variable `whizzy-key-bindings'
+as well as a tool bar menu `whizzytex-mode-map'."
+  (let ((map (current-local-map)))
+    (mapcar '(lambda (b) (if b (define-key map (car b) (cdr b))))
+            (eval whizzy-key-bindings))
+    (if whizzy-xemacsp
+        (progn
+          (eval '(if (and (featurep 'menubar) current-menubar)
+                     (progn
+                       (set-buffer-menubar current-menubar)
+                       (add-submenu nil whizzy-xemacsp-menu))))
+          )
+      ;; (define-key map [menu-bar] (make-sparse-keymap))
+      (define-key map [menu-bar whizzy] (cons "Whizzy" whizzy-menu-map))
+      )
+    )
+  )
+
+(defun whizzy-unset-options ()
+  "*Hook to unset some default options (WhizzyTeX may then run safer)."
+  (setq whizzy-auto-show-output nil)
+  (setq whizzy-point-visible nil)
+  (setq whizzy-line nil)
+)
+  
+(provide 'whizzytex)
+
+;;; whizzytex.el ends here

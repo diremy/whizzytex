@@ -6,11 +6,6 @@
 
 \documentclass[12pt]{article}
 
-\topmargin 0em
-\headsep 0in
-\headheight 0in
-\evensidemargin 0em
-\oddsidemargin 0em
 \usepackage {fullpage}
 
 \usepackage {color}
@@ -18,6 +13,7 @@
 \input {version}
 
 \let \lst \verb
+%HEVEA \def \space { }\let \hfil \relax \let \hfill\relax
 
 \def \whizzy {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
 \def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
@@ -31,7 +27,6 @@
 
 \begin{document}
 \pagestyle {empty}
-
 \author {Didier R{\'e}my}
 \date {Version {\version}, \today}
 \title {
@@ -86,35 +81,102 @@ Then, the installation can be automatic (default or customized), or manual.
 
 \subsection {Automatic installation}
 
+\label {install/automatic}
+
 By default, all files will be installed in the directory
 \lst"/usr/local/lib/whizzytex/" and Emacs-lisp code will not be 
 byte-compiled. Then, just type: 
 \begin{quote}
-\begin{verbatim}
+\begin{tt}
 make all
-\end{verbatim}
+\end{tt}
 \end{quote}
-This will create a \lst"Makefile.config" file (only if nonexistent)
-and then process configured version of the files. 
+This will create a \lst"Makefile.config" file (only if nonexistent) by
+taking a copy of the template \lst"Makefile.config.in". This will also check
+that the \lst"Makefile.config" (whether it is the default or a modified
+version) makes sense. If you wish to change the default configuration, or if
+your configuration is rejected, see ``{\bf Customizing the installation}''
+below. This will also prepared configured versions of the
+files for installation.
 
-To customize the installation, you  either edit and modify 
-\lst"Makefile.config", manually; you can also run 
+Finally, to install files to their final destination, type:
 \begin{quote}
-\begin{verbatim}
-make config
-\end{verbatim}
-\end{quote}
-which will prompt for choices and override the default
-\lst"Makefile.config" (which you can again edit to adjust choices). 
-Check the output \lst"Makefile.config" and edit manually if necessary. 
-At the end of customization, run \lst"make all" again. 
-
-Finally, to install files to their destination, type:
-\begin{quote}
-\begin{verbatim}
+\begin{tt}
 make install
-\end{verbatim}
+\end{tt}
 \end{quote}
+See {\bf Using {\whizzy}} (Section \ref {using}) to test your installation.
+
+\subsection {Customizing the installation}
+
+To customize the installation, you can edit 
+\lst"Makefile.config", manually.
+You may also use the command
+\begin{quote}
+\begin{tt}
+make config
+\end{tt}
+\end{quote}
+for semi-automatic editions. This will test your system configuration and 
+choose default values accordingly and prompt for confirmation or when
+a decision need to be taken. Of course, you can combine both, doing manual
+corrections at the end.
+
+The automatic configuration only check for the existence of commands, but
+will not test their interface. Moreover, manual configuration allows to
+choose commands that may not even exists.
+
+\paragraph {Checking {\tt Makefile.config}}
+
+A misconfiguration of your installation, or ---much more subttle--- a
+misconfiguration of other commands (many installation wrap scripts around
+standard commands that are sometimes incorrect and break their interface),
+may lead to systematic errors when launching {\whizzy}. To prevent delaying
+such obvious errors, some sanity checks are done on the file
+\lst"Makefile.config" before building other files.
+This includes checking for mandatory bindings and for the conformance of
+latex and viewers commands to their expected interface.
+The later is done by simulating the core of a small {\whizzy} session:
+a small file is created, a specialed version of latex format is build for 
+that file, and used to run {\LaTeX} on on the file; finally, all 
+declared viewers are tested on the DVI output, which open
+windows, temporarily. 
+
+If the sanity check fails, at least part of your configuration is 
+suspicious. If some windows remain opened, your confirguration is likely to
+be erronesous (and so, even if not detected by the script).  
+
+However, if you really know what you are doing, you may bypass the check by
+typing \lst"make config.force", which will stamp your \lst"Makefile.config"
+as correct without checking it.
+
+At the end of customization, proceed as described in ``{\bf Automatic
+installation}'' (Section \ref {install/automatic})
+
+\paragraph {Customization guide}
+
+By default, {\whizzy} assumes the standard convention that 
+\lst"latex" is the command name used to call {\LaTeX}, 
+\lst"initex", the command name used to build a new format, and that the latex 
+predefined format is \lst"latex".
+
+These values may be changed if you have another implementation of {\LaTeX}
+uses other names. Then, just redefine the variables \lst"INITEX",
+\lst"LATEX", and \lst"LATEXFMT" accordingly in the file
+\lst"Makefile.config".
+%
+For instance, \lst"platex" could be use the default configuration
+\begin{quote}
+\begin{tt}
+INITEX = iniptex\\
+LATEX = platex\\
+LATEXFMT = platex
+\end{tt}
+\end{quote}
+If you wish to run {\whizzy} with several configuration, you must choose a
+default configuration, but you will be able to call {\whizzy} with another
+configuration from emacs (see Section \ref{configuration} below). 
+
 
 \subsection {Manual installation}
 
@@ -154,6 +216,7 @@ Default value is \lst"/usr/local/lib/whizzytex/latex/whizzytex.sty"
 
 \end {itemize}
 
+
 \subsection {Automatic upgrading}
 
 For convenience, the distribution also offers a facility to download
@@ -172,10 +235,10 @@ ln -s whizzytex-\version\space whizzytex
 Alternatively, you can  use {\tt whizzytex-\version} in place of {\tt
 whizzytex} below. The main commands are:
 \begin{quote}
-\begin{verbatim}
-make -f whizzytex/Manager upgrade 
+\begin{tt}
+make -f whizzytex/Manager upgrade \\
 make -f whizzytex/Manager install
-\end{verbatim}
+\end{tt}
 \end{quote}
 The command \lst"upgrade" will successively download the newest version,
 unpack it, copy the configuration of the current version to the newest
@@ -184,55 +247,68 @@ will install files of the newest version.
 
 The following command will (re-)install and old version:
 \begin{quote}
-\begin{verbatim}
+\begin{tt}
 make VERSION=<version> download downgrade install
-\end{verbatim}
+\end{tt}
 \end{quote}
 
 \section {Using {\whizzy}} 
+
+\label{using}
 
 \subsection {Loading {\tt whizzytex.el}}
 
 Maybe, {\tt whizzytex} is already installed on your (X)Emacs system, by trying
 \begin{quote}
-\begin{verbatim}
-ESC x whizzytex-mode
-\end{verbatim}
+\begin{tt}
+ESC x whizzytex-mode RET
+\end{tt}
 \end{quote}
-(all emacs-commands of the manual should followed by the {\sc Return} key).
 If this works, skip this section.
 Otherwise, you should first load the library \lst"whizzytex.el" or, better,
 declare it autoload. To do this permanently, include the following
 declaration in your Emacs startup file (probably is \lst"~/.emacs").
 \begin{quote}\small
-\begin{verbatim}
-(autoload 'whizzytex-mode
-    "/usr/local/bin/whizzytex/lisp/whizzytex.el" 
+\begin{tt}
+(autoload 'whizzytex-mode \\ \indent\obeyspaces
+    "/usr/local/lib/whizzytex/lisp/whizzytex.el" \\ \indent\obeyspaces
     "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
-\end{verbatim}
+\end{tt}
 \end{quote}
 (where  \lst"/usr/local/bin/whizzytex/lisp/whizzytex.el" is the 
 exact location of \lst"whizzytex.el", which depends on your installation.)
 If  \lst"whizzytex.el" in your (X)Emacs {\tt load-path}, or if you have 
 adjusted this variable appropriately, you can simply write:
 \begin{quote}\small
-\begin{verbatim}
-(autoload 'whizzytex-mode "whizzytex" 
+\begin{tt}
+(autoload 'whizzytex-mode "whizzytex" \\ \indent \obeyspaces
     "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
-\end{verbatim}
+\end{tt}
 \end{quote}
 
 \subsection {Quick start} 
 
-{\whizzy} runs as a minor mode of Emacs to be launched on a {\LaTeX}
-Emacs buffer. To start it, type:
+{\whizzy} runs as a minor mode of Emacs to be launched on 
+an {\LaTeX} Emacs buffer. The extension of the buffer should be \lst".tex".
+{\whizzy} also understands \lst".ltx" extensions, but gives priority to the
+former when it has to guess the extension. Other extensions are not possible.
+\begin{quote}\em
+The file attached to the buffer must exists and either be a well-formed
+{\LaTeX} source file, or be {\em mastered}, {\em i.e.} loaded by another
+{\LaTeX} source file. Thus, when the buffer is does not look well-formed (it
+does not contain a \lst"\begin{document}" command), {\whizzy} will search
+for its master file, asking the user if need be, so as to first launch
+itself on a buffer visiting the master file. In particular, an empty buffer
+will be considered as beeing mastered, which may not be what you intend. 
+\end{quote}
+To start {\whizzy} on either kind of buffer, type:
 \begin{quote}
-\begin{verbatim}
-Esc x whizzytex-mode RET
-\end{verbatim}
+\begin{tt}
+ESC x whizzytex-mode RET
+\end{tt}
 \end{quote}
 By default, this should add new bindings so that you can later turn mode
-on and off with key strokes {\tt C-c C-w}. This will also add a new menu
+on and off with key strokes {\tt C-c w}. This will also add a new menu
 {\tt Whizzy} in the menu bar call ``the'' menu below.
 
 When {\tt whizzytex-mode} is started for the first time on a new buffer, it
@@ -245,7 +321,7 @@ the manual below.
 
 You may also change the settings interactively using the menu, or tell
 whizzytex-mode to prompt the user for local customization by passing prefix
-argument 4 (using, for instance, key sequence \lst"C-u C-c C-w"). 
+argument 4 (using, for instance, key sequence \lst"C-u C-c w"). 
 
 
 \subsection {Editing}
@@ -308,7 +384,7 @@ Normally, Emacs should report error messages. See the documentation for
 explanations. 
 
 In case, of uncaught fatal errors, you may
-\verb"Esc X toggle-debug-on-error" to get help from Emacs, and try to fix
+\verb"ESC X toggle-debug-on-error" to get help from Emacs, and try to fix
 the problem. 
 
 \paragraph {Emacs cannot find whizzytex}
@@ -427,6 +503,33 @@ your macros and {\whizzy} package. Try to turn options
 This will make {\whizzy} more robust (but also less powerful and more
 boring). 
 
+\subsection {Debugging}
+
+If you are completely lost, and none of the above helped, you may need some
+debugging.  If this is your first attempt at {\whizzy}, you should suspect your
+configuration. You should them try with the examples of the distribution. 
+Otherwise, you may rollback to a file and configuration that used to work, 
+and make incremantal changes.
+
+You can turn emacs debug mode on and off with
+\begin{quote}
+\begin{verbatim}
+ESC x toggle-debug-on-error RET
+\end{verbatim}
+\end{quote}
+You can also turn whizzytex debug mode on and off by typing either line
+in the interaction window:
+\begin{quote}
+\begin{verbatim}
+debug on
+debug off
+\end{verbatim}
+\end{quote}
+
+
+
+
+
 
 \section {\label{manual}Manual} 
 
@@ -439,13 +542,13 @@ to a minimal, so as to avoid redundancy.
 Alternatively, you can type
 \begin{quote}
 \begin{verbatim}
-ESC x describe-function RET whizzytex-mode
+ESC x describe-function RET whizzytex-mode RET
 \end{verbatim}
 \end{quote}
 (In XEmacs, you may need to use
 \begin{quote}
 \begin{verbatim}
-ESC x hyper-describe-function RET whizzytex-mode
+ESC x hyper-describe-function RET whizzytex-mode RET
 \end{verbatim}
 \end{quote}
 instead of \lst"describe-function" to see hyper-links.)
@@ -464,9 +567,9 @@ Section \ref{configuration}, \ref{modes} and
 See Emacs help for \lst"whizzy-default-bindings" and
 \lst"whizzytex-mode-hook" for list of bindings.
 
-See help for \lst"whizzytex-mode" a  list of user-configurable variables, 
-to which you may give default values in your Emacs startup file that will be
-used instead of {\whizzy} own default values. 
+The Emacs on-line help for \lst"whizzytex-mode" lists all user-configurable
+variables,  which  may be given default values in your Emacs startup file
+to be used instead of {\whizzy} own default values. 
 
 \subsubsection {File-based configuration}
 
@@ -491,7 +594,12 @@ stripped off, so that \lst$"foo.tex"$ and \lst"foo.tex" are equivalent.
 \item[whizzy] 
 \opt{\arg{slicing}} 
 \opt{\arg{viewer} \opt{\arg{command}}}
-\opt{\texttt{-pre} \arg{make}}
+\opt{\texttt{-pre} \arg{make}} 
+\opt{\texttt{-tex} \arg{suffix}} 
+\hfil \\ \hbox{}\hfill
+\opt{\texttt{-initex} \arg{initex}}
+\opt{\texttt{-latex} \arg{latex}}
+\opt{\texttt{-fmt} \arg{format}}
 \opt{\texttt{-duplex}}
 \\[1em]
 All arguments are optional, but if present they must appear in order:
@@ -512,7 +620,10 @@ is optional and is the command used to call the viewer
 tells {\whizzy} to use the command \arg{make} to preprocess
 the slice. 
 The command \arg{make} will receive one argument
-\texttt{basename.new} and should produce \texttt{basename.tex}. 
+\texttt{\_whizzy\_basename.new} and should produce 
+\texttt{\_whizzy\_basename.tex}
+(or \texttt{\_whizzy\_basename.ltx} if the extension of the master file is 
+\texttt{.ltx}).
 By default, \lst"mv" is simply used.
 
 The Unix \lst"make"  can itself be used as a preprocessor (with an
@@ -520,15 +631,27 @@ appropriate \lst"Makefile").  However, one may have to work around
 \lst"make"'s notion of time (using FORCE), which is usually too rough. 
 This is safe, since {\whizzy} tests itself for needed recompilations.
 
-\item[{\bf {\tt -fmt FORMAT}}]\indent
+\item[{\bf {\tt -initex \arg{initex}}}]\indent
 
-By default {\whizzy} build a specialized format of the \lst"latex" document
-format by loading macros of your document.  The above option will use
-\lst"FORMAT" instead of \lst"latex" as the initial format. For instance,
+uses \arg{initex} for the initex command instead of the value 
+assign to INITEX in \lst"Makefile.config" (or \lst"whizzytex")
+
+\item[{\bf {\tt -latex \arg{latex}}}]\indent
+
+uses \arg{latex} for the latex command instead of the value 
+assign to LATEX in \lst"Makefile.config" (or \lst"whizzytex")
+
+\item[{\bf {\tt -fmt \arg{format}}}]\indent
+
+uses \arg{format} for the latex format instead
+of the value set to LATEXFMT in \lst"Makefile.config" (or \lst"whizzytex"). 
+This can either be used in combination with \lst"-latex" and \lst"-initex",
+or alone. For instance,
 \lst"hugelatex" could be used (depending on your {\LaTeX} configuration) to
 build a larger format to process huge files.
 
 \item[\texttt{-duplex}]\indent\\
+
 tells {\whizzy} to launch another window with the whole document (which is
 recompiled every time the source buffer is saved).
 
@@ -538,23 +661,24 @@ used to navigate through source buffers and positions.
 
 For instance, a typical configuration line will be:
 \begin{verbatim}
-   %; whizzy -dvi xdvi
+   %; whizzy subsection -dvi "xdvi -s 3"
 \end{verbatim}
-tells whizzytex not to take the whole document as a slice
-use a \lst"dvi" 
-previewer called with the command \lst"xdvi"
-
-More evolved configuration lines are:
+It tells whizzytex to run in subsection slicing mode and use a \lst"dvi"
+style viewer called with the command
+\lst"xdvi -s 3". This is also equivalent to
 \begin{verbatim}
-   %; whizzy section -advi dview -whizzy -pre make -duplex
-   %; whizzy section -advi "dview -whizzy" -pre make -duplex
+   %; whizzy subsection -dvi xdvi -s 3
 \end{verbatim}
-These two lines are equivalent, since Emacs will remove outer quotes in
-option arguments. They both tell whizzytex to be be launch in \lst"section"
-mode and use a \lst"dvi" previewer called with the command 
-\lst"dview -whizzy" 
-(a shell-script to be defined), use \lst"make" to preprocess files
-and provide \lst"duplex" views.
+since Emacs removes outer double-quotes in option arguments. 
+
+A more evolved configuration line is:
+\begin{verbatim}
+   %; whizzy -pre make -initex iniptex -latex platex -fmt platex
+\end{verbatim}
+It tells {\whizzy} to use \lst"iniptex" and \lst"platex" comands instead
+of \lst"initex" and \lst"latex" and to use the format file \lst"platex.fmt" 
+instead of \lst"latex.fmt". Moreover, it should use \lst"make" to preprocess
+files.
 
 \item[whizzy-paragraph] \texttt{regexp}\\
 This sets the Emacs variable \lst"whizzy-paragraph" to \texttt{regexp}.
@@ -665,16 +789,12 @@ clashes: if you drop a file in the pool, it will automatically be move to
 the working directory with the same name, overriding any file of the same
 name sitting there. 
 
-By default, {\whizzy} send itself a \lst"kill -STOP" signal when it finds
-nothing in the pool (this allows you to let {\whizzy} inactive for hours
-without consuming any CPU. Correspondingly, when Emacs drops a new file in
-the pool, it sends a \lst"kill -CONT" signal. If you want to watch other
-files and not have to deal with waking up {\whizzy} you can pass the extra
-option \lst"-nonstop" to the \lst"whizzytex" command-line; then it will sleep
-instead of stopping itself, and will periodically watch for news files 
-in the pool without you need to signal it to continue. 
-In case you want to keep with the stop-mode and wake it up explicitly, the
-process number is stored in the file \lst"._whizzy_$BASICNAME.tex". %$
+However, activity is entirely controlled by Emacs, since after every
+iteration {\whizzy} waits for Emacs to send a new command (usually the empty
+command that means iterate again). Hence, other files will only be taken
+into account at the next iteration. If you really wish these files
+to be watched you need to instrument emacs to send and empty line input to
+the interaction buffer regularly, even when idle. 
 
 \subsection {Frequency of recompilation} 
 
@@ -739,15 +859,6 @@ numbers) using \lst"\special" that most DVI previewers do not recognize
 and may complain about.
 
 \end {itemize}
-For instance, your could then set
-Hence, my Emacs setup executes
-\begin{quote}
-\begin{verbatim}
-(set-default 'whizzy-viewers
-  (("-advi" "advi -html Start-Document") 
-   ("-dvi" "xdvi") ("-ps" "gv")))))
-\end{verbatim}
-\end{quote}
 
 \subsection{Defining your own previewer}
 
@@ -895,7 +1006,7 @@ Active-DVI.
 - Say that cursor does not always appear.
 % LocalWords:  whizzy advi html whizzytex HeVeA BGCOLOR Didier INRIA ee ou ing
 % LocalWords:  ghostview xdvi DVI XEmacs Redhat tgz untar gunzip xf usr config
-% LocalWords:  Esc tex minibuffer FMT online dvi dview args autoload ps pre mv
+% LocalWords:  tex minibuffer FMT online dvi dview args autoload ps pre mv
 % LocalWords:  BASENAME hyperref gv HUP pid dvips xvf cd wget WhizzyTeX WYSIWIG
 % LocalWords:  RET preprocess basename fmt hugelatex BASICFILENAME SIGHUP recog
 % LocalWords:  SIGUSR nizes acroread localmacros ghostscript

@@ -1,17 +1,11 @@
-NOT COMMITTED YET:
-===================
+NOT COMMITTED YET (OR EXPERIMENTAL):
+====================================
 
 Emacs-mode:
 
 Shell-script: 
 
- * renamed filename.wiz into filename.waux (not deleted on exit).
- * rename .dview extension into .wdvi and filename.wdvi is deleted on exit.
- * renamed auxiliary filename.fmt into _whizzy_filename.fmt (deleted on exit).
-
 LaTeX macros:
-
- * renamed filename.wiz into filename.waux
 
 Installation/Documentation:
 
@@ -20,11 +14,35 @@ SINCE LAST RELEASE:
 
 Emacs-mode:
 
+ * added a pessimistic version of whizzy-show-point and menu entries
+ * made it work with all file extensions but those internally used
+ * added slower slice saving option for x-symbol compatibility.
+ * fixed whizzy-suppend
+ * added whole (document error) in line-mode string.
+ * complete rewrite of whizzy-show-position 
+ * fixed write-file-config.
+ * added -initex and -latex to set INITEX and LATEX
+ * fixed overlays of errors.
+ * temptative fix of whizzy-write-slice to work with X-symbols mode.
+ * added whizzy-key-bindings with two default values for latex or auctex
+
 Shell-script: 
 
+ * made it work with all file extensions but those internally used
+ * refresh the duplex window if any when full document has been recompiled
+ * added checkconfig script
+ * added BASH configuration 
+ * added INITEX, LATEX, and LATEXFMT variables to enable platex
+ * renamed filename.wiz into filename.waux (not deleted on exit).
+ * rename .dview extension into .wdvi and filename.wdvi is deleted on exit.
+ * renamed auxiliary filename.fmt into _whizzy_filename.fmt (deleted on exit).
  * Fix a typo in read of commands (duplex reformat were not understood)
 
 LaTeX macros:
+
+ * made it work with all file extensions but those internally used
+ * fixed a bug in use of \everydisplay
+ * renamed filename.wiz into filename.waux
 
 Installation/Documentation:
 
@@ -80,4 +98,5 @@ Installation/Documentation:
  * Makefile for version 1.00-alpha
 
 Last-modified: <2002-03-09 12:07:21 remy>
+
 

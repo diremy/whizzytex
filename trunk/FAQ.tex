@@ -12,6 +12,7 @@
 
 \maketitle
 \let \lst \verb
+\input {version}
 
 \tableofcontents
 
@@ -23,25 +24,48 @@ URL is
 
 Last major release is 1.00
 
-Last stable version is 1.00i
+Last stable version is {\version}
 
 
 \section {Known problems}
 
 Fixed refers to last stable version.
-\def \FIXED {\textit{Fixed in version~1.00i}}
+\def \FIXED {\textit{Fixed in version > 1.00}}
 
 \begin {enumerate}
 
 \item
-Problems have been reported with XEmacs package \lst"X-symbol".
+The \lst"x-symbol" package does not respect emacs
+\lst"write-region-annotate-functions" protocol.
+
+With (X)Emacs version 21 and above, you may set
+\lst"whizzy-write-annotate" to nil to tell WhizzyTeX not to use
+the this feature. The slice will be write slower, but in a way
+so that the \lst"x-symbol" package will be compatible with WhizzyTeX.
+
+You may also wish to set \lst"'x-symbol-auto-conversion-method" to
+\lst"'fast".
 
 \item
 Interactive commands \texttt{duplex} and \texttt{reformat} may not work in 
 version~1.00. \FIXED.
 
-
 \end {enumerate}
 
+
+\section {Using WhizzyTeX with platex}
+
+WhizzyTeX has been designed to work with standard LaTeX.
+However, it should also work  with other implementations of LaTeX, as long
+as they allow the creation of new formats. 
+
+As an example, to make it work with \lst"platex" you can edit 
+the script \lst"whizzytex" and change some findings as follows
+(in the experimental version): 
+\begin{verbatim}
+INITEX=iniptex
+LATEX=platex
+LATEXFMT=platex
+\end{verbatim}
 
 \end{document}

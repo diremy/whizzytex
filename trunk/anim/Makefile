@@ -1,3 +1,5 @@
+LINKS= animation.hva emacs.tex activedvi.tex
+
 all: activedvi.gif emacs.gif
 
 animation.hva: 
@@ -10,13 +12,13 @@ activedvi.tex:
 	ln -s animation.tex $@
 
 
-activedvi.gif: animation.tex animation.sty Makefile
+activedvi.gif: animation.tex animation.sty animation.hva activedvi.tex Makefile
 	rm -f $*00*.gif
 	hevea $*.tex
 	imagen $*
 	convert -loop 0 -delay 15 $*00*.gif $*.gif
 
-emacs.gif: animation.tex animation.sty Makefile
+emacs.gif: animation.tex animation.sty animation.hva emacs.tex Makefile
 	rm -f $*00*.gif
 	hevea  $*.tex
 	imagen $*

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 PS3="Your choice ==> "
 
 yorn () {
@@ -14,22 +13,66 @@ nory () {
   if test "$ANSWER" = 'n'; then false; else true; fi
 }
 
+message () { echo; echo '#' "$1"; }
+info () { echo "$1"; }
+warning () { echo '*** Warning:'; echo "$1"; }
+ERRORS=false
+error () { ERRORS=true; echo '*** Error:'; echo "$1"; }
+
 test -f Makefile.config && \
   ! yorn "--- Override existing Makefile.config?" \
   && exit 1
 
-if test -n "$LIBDIR" 
+findcommand () {
+  VAR=$1
+  VAL=$2
+  COM=$3
+  ASK=$4
+  if [ -z "$VAR" -o -z "$COM" ]; then exit 1; fi
+  unset VAL
+  for i in $VAL $(which $COM $VAL) \
+           /bin/$NAME /usr/bin/$NAME /usr/local/bin/$NAME
+  do
+    if [ -x "$i" ]; then VAL="$i"; break; fi; 
+  done
+  while [ "$ASK" != maybe -a ! -x "$VAL" ]
+  do
+    echo "--- Cannot determine $COM full name" 1>&2
+    echo -n "$VAR"= 1>&2
+    read $VAL
+  done
+  echo "$VAL"
+  info "Using $VAR=$VAL" 1>&2
+}
+
+## Bash configuration
+
+message 'Bash configuration'
+BASH=$(findcommand BASH "$BASH" bash)
+
+if [ -x /bin/usleep ]; then SLEEP="/bin/usleep 10"
+elif [ -x /bin/sleep ]; then SLEEP="/bin/sleep 1"
+else echo 'Command /bin/sleep does not exist'; exit 2; 
+fi
+info "Using SLEEP="'"'"$SLEEP"'"'
+
+
+## INSTALL DIR
+
+if [ -n "$LIBDIR" ]
 then 
-  if test -d $LIBDIR; then :
+  if [ -d "$LIBDIR" ]; then :
   else echo "nonexistent LIBDIR=$LIBDIR"; fi
-elif test -d /usr/local/lib
-then LIBDIR=/usr/local/lib/whizzytex
-elif test -d /usr/local/lib
-then LIBDIR=/usr/lib/whizzytex
+elif [ -d /usr/local/lib ]; then LIBDIR=/usr/local/lib/whizzytex
+elif [ -d /usr/lib ]; then LIBDIR=/usr/lib/whizzytex
 else
-  echo '*** Cannot determine library directory'
+  echo '*** Cannot determine reasonable library directory'
   echo '    Give LIBDIR=path explicitly to ./configure'
 fi
+
+## Emacs, XEmacs 
+
+message "Emacs or XEmacs configuration"
 
 if test -z "$EMACS"; then EMACS=emacs; else BOTH=true; fi
 if test -z "$XEMACS"; then XEMACS=xemacs; else BOTH=true; fi
@@ -38,11 +81,11 @@ XEmacs=$XEMACS
 
 
 unset EDITORS
-if $EMACS -batch 2>/dev/null
+if $EMACS -batch 2>/dev/null 1>/dev/null
   then EDITORS="$EDITORS $EMACS"
   else unset EMACS
 fi
-if $XEMACS -batch 2>/dev/null
+if $XEMACS -batch 2>/dev/null 1>/dev/null
   then EDITORS="$EDITORS $XEMACS"
   else unset XEMACS
 fi
@@ -55,7 +98,7 @@ MANY=false
 BYTECOMP=false
 case $# in
   0)
-    echo '*** Warning: 
+    warning '
   Neither Emacs [defaulting to $Emacs] nor XEmacs [defaulting to $XEmacs] 
   seem to be installed. 
 
@@ -75,7 +118,7 @@ esac
 if test -n "$USER"; then INIT="-u $USER"; fi
 for EXEC in $EDITORS
 do 
-  case `$EXEC -batch -eval "(princ emacs-version)" 2>/dev/null` in
+  case $($EXEC -batch -eval "(princ emacs-version)" 2>/dev/null) in
    *XEmacs*) X=X; DIR=$XEMACSDIR;;
    *) X=''; DIR=$EMACSDIR;;
   esac
@@ -85,7 +128,7 @@ do
   fi
   if test -z "$DIR"
   then
-    echo "Found $EXEC installed."
+    info "Found $EXEC installed."
     set xxx \
       `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" \
         2>/dev/null` \
@@ -122,6 +165,8 @@ do
     esac
   fi
   declare ${X}EMACSDIR=$DIR
+  info "Using ${X}EMACSDIR=$DIR"
+  echo
 done
 
 if test "/$EMACS/$XEMACS/$EMACSDIR/$XEMACSDIR/" = "/////"
@@ -134,8 +179,7 @@ if test -n "$EMACS" -a -n "$XEMACS"
 then
   if test "$EMACSDIR" = "$XEMACSDIR"
   then
-    echo "*** Warning:
-
+    warning "
   Will not byte-compile lisp for $EMACS and $XEMACS because both
   EMACSDIR and XEMACSDIR  are identical and equal to
 
@@ -154,53 +198,43 @@ continuing...
   fi
 fi
 
+# Other directories
+message "Configuring other directories"
 
 if test -z "$BINDIR"; then BINDIR='$(LIBDIR)/bin'; fi
 if test -z "$LATEXDIR"; then LATEXDIR='$(LIBDIR)/latex'; fi
 if test -z "$DOCDIR"; then DOCDIR='$(LIBDIR)/doc'; fi
 
-# Checking for advi, xdvi, dvips, gv
-if test -z "$ADVI"; then ADVI=advi; fi
-if test -z "$XDVI"; then XDVI=xdvi; fi
-if test -z "$GV"; then GV=gv; fi
-if test -z "$DVIPS"; then DVIPS=dvips; fi
+# initex
+message "Checking initex and latex"
 
-if type $ADVI; then advi=true; else advi=false; unset ADVI; fi
-if type $XDVI; then xdvi=true; else xdvi=false; unset XDVI; fi
-if type $GV; then gv=true; else gv=false; unset GV; fi
-if type $DVIPS; then dvips=true; else dvips=false; fi
+INITEX=$(findcommand INITEX "$INITEX" initex)
+LATEX=$(findcommand LATEX "$LATEX" latex)
+LATEXFMT=$(basename $LATEX)
 
-if $advi || $xdvi || $gv
-then
-  echo "Viewers found: $ADVI $XDVI $GV"
-  if ! $advi
-  then echo "*** Warning: 
-
-  $ADVI does not seem to be installed. (You may wish to install it.)
-"
+if ! kpsewhich latex.fmt > /dev/null; then
+  echo "--- Cannot find default format $LATEXFMT for $LATEX." 
+  echo -n $LATEXFMT=
+  read $LATEXFMT
+  if [ -z "$LATEXFMT" ]; then 
+     LATEXFMT=$LATEX
+     info "Using default value LATEXFMT=$LATEXFMT"
   fi
-else
-  echo "*** Warning:
-
-  Could not find any viewer.
-  (None of $ADVI $XDVI $GV seem to be installed).
-"
-  if ! yorn "Do you wish to continue?"; then exit 1; fi
 fi
 
-if ! $dvips
-then 
-  echo "*** Warning: 
 
-  DVI-Postscript converter (defaulting to '$DVIPS')  does not seem to be
-  installed.  Will assume that it is dvips.
-"
-  DVIPS=dvips
-fi
-  
+# viewers
+message "Configuring viewers"
 
+ADVI=$(findcommand ADVI "$ADVI" advi maybe)
+XDVI=$(findcommand XDVI "XDVI" xdvi maybe)
+GV=$(findcommand GV "$GV" gv maybe)
+DVIPS=$(findcommand DVIPS "DVIPS" dvips maybe)
+
+message "Building Makefile.config"
 
 sed \
+ -e "s%^\(BASH *=\).*%\1 $BASH%" \
  -e "s%^\(LIBDIR *=\).*%\1 $LIBDIR%" \
  -e "s%^\(EMACS *=\).*%\1 $EMACS%" \
  -e "s%^\(XEMACS *=\).*%\1 $XEMACS%" \
@@ -213,24 +247,44 @@ sed \
  -e "s%^\(XDVI *=\).*%\1 $XDVI%" \
  -e "s%^\(GV *=\).*%\1 $GV%" \
  -e "s%^\(DVIPS *=\).*%\1 $DVIPS%" \
+ -e "s%^\(INITEX *=\).*%\1 $INITEX%" \
+ -e "s%^\(LATEX *=\).*%\1 $LATEX%" \
+ -e "s%^\(LATEXFMT *=\).*%\1 $LATEXFMT%" \
   < Makefile.config.in > Makefile.config
 
-echo
-echo Summary:
-echo 
-echo " LIBDIR = $LIBDIR "
-echo " EMACS = $EMACS "
-echo " EMACSDIR = $EMACSDIR "
-echo " XEMACS = $XEMACS "
-echo " XEMACSDIR = $XEMACSDIR "
-echo " BINDIR = $BINDIR "
-echo " LATEXDIR = $LATEXDIR "
-echo " DOCDIR = $DOCDIR "
-echo
-echo " ADVI = $ADVI "
-echo " XDVI = $XDVI "
-echo " GV = $GV "
-echo " DVIPS = $DVIPS "
-echo
-echo 'See Makefile.config for details'
-echo
+message Summary:
+echo "
+ BASH = $BASH
+
+ LIBDIR = $LIBDIR
+ EMACS = $EMACS
+ EMACSDIR = $EMACSDIR
+ XEMACS = $XEMACS
+ XEMACSDIR = $XEMACSDIR
+ BINDIR = $BINDIR
+ LATEXDIR = $LATEXDIR
+ DOCDIR = $DOCDIR
+ 
+ ADVI = $ADVI
+ XDVI = $XDVI
+ GV = $GV
+ DVIPS = $DVIPS
+ 
+ INITEX = $INITEX
+ LATEX = $LATEX
+ LATEXFMT = $LATEXFMT
+"
+if $ERRORS
+then echo "
+   ************ They were serious Errors ************
+
+   Makefile.config was still build but is probably incorrect.
+   You should check you configuration and restart config.
+   You may also edit Makefile.config if you know what you are doing.
+
+"
+else echo "
+Configuration suceeded
+See Makefile.config for details
+"
+fi
