@@ -1,6 +1,11 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
 %  Copyright (C) 2001, 2002 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.1
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
 % 
 %  WhizzyTeX is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -206,7 +211,7 @@ to slice!
   \endgroup
 }
 
-\edef \whizzy@local {\jobname}
+\edef \whizzy@local {\jobname \WhizzyExt}
 \def \WhizzySlice #1.#2.#3.#4.{%
    \ifcase #4\or\appendix\fi
    \setcounter{page}{#1}%
@@ -515,7 +520,7 @@ to slice!
 \def \whizzy@@display 
  {\whizzy@lineno@display \let \halign \whizzy@halign \whizzy@check@line@}
 
-\def \WhizzyLine #1{%
+\def \WhizzyLine #1{% 
   \def \whizzy@line{#1}%
   \bgroup \count0 #1\advance\count0 by -20
   \global \edef \whizzy@linelimit {\the \count0}\egroup%

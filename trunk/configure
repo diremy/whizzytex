@@ -1,5 +1,158 @@
 #!/bin/bash
 
+configure_options="$*"
+prefix=/usr/local
+bindir=''
+libdir=''
+datadir=''
+docdir=''
+
+elc=false
+latexdir=''
+emacsdir=''
+xemacsdir=''
+
+bash=bash
+latex=latex
+initex=initex
+format=''
+fmt=''
+
+emacs=emacs
+xemacs=xemacs
+
+advi=advi
+xdvi=xdvi
+gv=gv
+dvips=dvips
+
+# Parse command-line arguments
+is_absolute () {
+  case "$prefix" in
+    /*) ;;
+     *) echo "The -prefix directory must be absolute." 1>&2; exit 2;;
+  esac
+}
+absolute_or_prefix () {
+  case "$1" in
+    "") echo;;
+    /*|'$(PREFIX)'*|'$(LIBDIR)'*|'$(DATADIR)'*) echo $1;;
+    *) echo '$(PREFIX)'/$1;;
+  esac
+}
+
+while : ; do
+ case "$1" in
+  "") break;;
+#begin help
+##Usage:
+##
+##      configure <option list>
+## 
+##where options are either <key> or pairs <key> <arg> as listed below;
+##default value for <arg> is given after #; <path> when relative is taken
+##from the default prefi,   <command> is taken as such, whether relative 
+##(to PATH) or absolute (PATH  starting with '$(DATADIR)', '$(LIBDIR)',
+##or '/' are treated as absolute). 
+## 
+  -helpme) ##                       
+        ## proposes choices to the user when meaningful
+        ## actually equivalent to -emacsdir ? -xemacsdir ?
+        emacsdir=?; xemacsdir=?;;
+## 
+  -prefix|--prefix) ## <absolute path>          # /usr/local
+        ## set the default prefix PREFIX of all directories
+        is_absolute $2; prefix="$2"; shift;;
+##
+  -bindir|--bindir) ## <path>                   # bin
+        ## Set the directory for the excutable BINDIR
+        bindir=$(absolute_or_prefix $2); shift;;
+##
+  -libdir|--libdir) ## <path>                   # lib/whizzytex
+        ## set the directory for architecture dependent libraries LIBDIR
+        libdir=$(absolute_or_prefix $2); shift;;
+##
+  -datadir|--datadir) ## <path>                 # share/whizzytex
+        ## set the directory for architecture-independent files DATADIR
+        datadir=$(absolute_or_prefix $2); shift;;
+##
+  -latexdir) ## <path>                          # $(DATADIR)/latex
+        ## set the directory where to install source lisp code 
+        latexdir=$(absolute_or_prefix $2); shift;;
+##
+  -emacsdir) ## .|?|<path>                      # $(LIBDIR)/emacs
+        ## set the directory for emacs lisp code
+        ## ! find for the most obvious choice in emacs system load-path
+        ## ? list all choices in emacs and users load-path and ask the user
+        emacsdir=$2; shift;;
+##
+  -xemacsdir) ## .|?|<path>                     # search for
+        ## set the directory for xemacs byte-compiled lisp code
+        xemacsdir=$2; shift;;
+##
+  -elc) ## 
+        ## also compiles lisp code
+        elc=true;;
+  -emacs) ## <command>                          # emacs
+        ## use <command> instead of emacs
+        emacs="$2"; shift;;
+##
+  -xemacs) ## <command>                         # xemacs
+        ## use <command> instead of xemacs
+        xemacs="$2"; shift;;
+##
+  -bash) ## <absolute path>                     # /bin/bash
+        ## Set the bash interpreter command to BASH
+        is_absolute $2; bash=$2; shift;;
+##
+  -initex) ## <command>                         # initex
+        ## Set the latex command to INITEX
+        initex=$2; shift;;
+##
+  -latex) ## <command>                          # latex
+        ## Set the latex command to LATEX
+        latex=$2; shift;;
+##
+  -format) ## <name>                            # latex
+        ## Set the name of the format (.fmt suffix removed) 
+        format=$2; shift;;
+##
+  -fmt) ## <name>                               # fmt
+        ## Set the name of the format extension
+        fmt=$2; shift;;
+##
+  -advi) ## false|<command>                     # advi
+        ## Set the Advi-like previewer command name; false means do not use 
+        ## advi-like previewer at all (default if  the command is not found)
+        advi=$2; shift;;
+##
+  -xdvi) ## false|<command>                     # xdvi
+        ## Idem but for xdvi-like previewer command name 
+        advi=$2; shift;;
+##
+  -gv) ## false|<command>                       # gv
+        ## Idem but for gv-like previewer command name set to to GV
+        gv=$2; shift;;
+##
+  -dvips) ## <command>                          # dvips
+        ## Set the DVI-to-Postcript-converter command name
+        dvips=$2; shift;;
+##
+  -help|--help) ##
+##
+#end help
+        sed -n -e '/^#begin help/,/^#end help/p' -e '/#end help/q' configure \
+        | sed -n -e '/^ *-.*)/s/)//' -e 's/##//p'
+        exit 0;;
+  *) 
+        echo "*** Unknown option $1"
+        configure --help; exit 1;;
+ esac
+shift
+done
+
+# Interaction with the user
+
 PS3="Your choice ==> "
 
 yorn () {
@@ -16,274 +169,309 @@ nory () {
 message () { echo; echo '#' "$1"; }
 info () { echo "$1"; }
 warning () { echo '*** Warning:'; echo "$1"; }
-ERRORS=false
-error () { ERRORS=true; echo '*** Error:'; echo "$1"; }
+rm -f config.errors
+error () { touch config.errors; echo '*** Error:'; echo "$1"; }
+fatal () {
+  error "$1"
+  rm config.errors
+  echo "
+     ************ They were serious Errors ************
 
-test -f Makefile.config && \
-  ! yorn "--- Override existing Makefile.config?" \
-  && exit 1
+     Makefile.config was still build but is probably incorrect.
+     You should check your configuration and rerun ./configure.
+     You may also edit Makefile.config if you know what you are doing.
 
-findcommand () {
-  VAR=$1
-  VAL=$2
-  COM=$3
-  ASK=$4
-  if [ -z "$VAR" -o -z "$COM" ]; then exit 1; fi
-  unset VAL
-  for i in $VAL $(which $COM $VAL) \
-           /bin/$NAME /usr/bin/$NAME /usr/local/bin/$NAME
-  do
-    if [ -x "$i" ]; then VAL="$i"; break; fi; 
-  done
-  while [ "$ASK" != maybe -a ! -x "$VAL" ]
-  do
-    echo "--- Cannot determine $COM full name" 1>&2
-    echo -n "$VAR"= 1>&2
-    read $VAL
-  done
-  echo "$VAL"
-  info "Using $VAR=$VAL" 1>&2
+  "
+  exit 1
 }
 
-## Bash configuration
+rm -f config.sed
+touch config.sed
+output () {
+  echo "s%^\($1 *=\).*%\1 $2%" >> config.sed
+  info "$1"' is `'"$2'"
+}
 
-message 'Bash configuration'
-BASH=$(findcommand BASH "$BASH" bash)
+# Prefix
 
-if [ -x /bin/usleep ]; then SLEEP="/bin/usleep 10"
-elif [ -x /bin/sleep ]; then SLEEP="/bin/sleep 1"
-else echo 'Command /bin/sleep does not exist'; exit 2; 
-fi
-info "Using SLEEP="'"'"$SLEEP"'"'
+message "Setting directories"
 
+output PREFIX "$prefix"
 
-## INSTALL DIR
+if test -z "$datadir"; then datadir='$(PREFIX)'/share/whizzytex; fi
+output DATADIR "$datadir"
 
-if [ -n "$LIBDIR" ]
-then 
-  if [ -d "$LIBDIR" ]; then :
-  else echo "nonexistent LIBDIR=$LIBDIR"; fi
-elif [ -d /usr/local/lib ]; then LIBDIR=/usr/local/lib/whizzytex
-elif [ -d /usr/lib ]; then LIBDIR=/usr/lib/whizzytex
+if test -z "$libdir"; then libdir='$(PREFIX)'/lib/whizzytex; fi
+output LIBDIR "$libdir"
+
+if test -z "$docdir"; then docdir='$(PREFIX)'/doc/whizzytex; fi
+output DOCDIR "$docdir"
+
+if test -z "$bindir"; then bindir='$(PREFIX)'/bin; fi
+output BINDIR "$bindir"
+
+if test -z "$latexdir"; then latexdir='$(DATADIR)'/latex; fi
+output LATEXDIR "$latexdir"
+
+# Find commands
+
+findcommand () {
+  com=$1 
+  option=$2
+  found=''
+  case "$com" in
+   "") ;;
+   /*) 
+     test -x $com && found=$com;;
+   *)
+     for i in /bin/$com /usr/bin/$com /usr/local/bin/$com $(which $com)
+     do if test -x $i; then found=$i; break; fi;  done
+     ;;
+  esac
+  if test -n "$found"
+  then echo $found
+  else 
+    if $2; then error "command $com not found"; fi
+    exit 1
+  fi
+}
+
+message "Checking bash command"
+
+if test -n "bash" 
+then
+  bash=$(findcommand "$bash" true)
+  if test -z "$bash"; then error "bash not found"; fi
 else
-  echo '*** Cannot determine reasonable library directory'
-  echo '    Give LIBDIR=path explicitly to ./configure'
+  bash=bash; 
+  findcommand "$bash" true
 fi
+output  BASH "$bash"
 
-## Emacs, XEmacs 
+message "Checking Emacs configuration"
 
-message "Emacs or XEmacs configuration"
+emacsnotfound () {
+  if $elc
+  then error "$1 not found"
+  else warning "$1 not found"
+  fi
+}
 
-if test -z "$EMACS"; then EMACS=emacs; else BOTH=true; fi
-if test -z "$XEMACS"; then XEMACS=xemacs; else BOTH=true; fi
-Emacs=$EMACS
-XEmacs=$XEMACS
-
-
-unset EDITORS
-if $EMACS -batch 2>/dev/null 1>/dev/null
-  then EDITORS="$EDITORS $EMACS"
-  else unset EMACS
-fi
-if $XEMACS -batch 2>/dev/null 1>/dev/null
-  then EDITORS="$EDITORS $XEMACS"
-  else unset XEMACS
-fi
-
-set xxx $EDITORS
-shift
-
-
-MANY=false
-BYTECOMP=false
-case $# in
-  0)
-    warning '
-  Neither Emacs [defaulting to $Emacs] nor XEmacs [defaulting to $XEmacs] 
-  seem to be installed. 
-
-  If you wish to byte-compile emacs-lisp code, please use
-
-    EMACS=<Emacs name> ./configure 
-    XEMACS=<XEmacs name> ./configure 
-    EMACS=<Emacs name> XEMACS=<XEmacs name> ./configure 
-
-continuing...
-'
-  ;;
-  1);;
-  *) MANY=true;;
+if test -n $USER; then user="-u $USER"; else user=''; fi
+case "$emacsdir" in
+ "") emacsdir='$(DATADIR)'/emacs;;
+ "!") 
+   if findcommand "$emacs" false 1>/dev/null \
+      && $emacs -batch -q 1>/dev/null 2>/dev/null
+   then 
+     emacsdir=$($emacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p | head -1)
+   else 
+     emacsnotfound $emacs
+     emacs=''
+   fi
+   ;;
+ "?") 
+   if findcommand "$emacs" false 1>/dev/null \
+      && $emacs -batch -q 1>/dev/null 2>/dev/null
+   then
+     set $($emacs -batch -q $user -l $(pwd)/configure.el \
+                 -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p) exit
+     echo "--- Please, select one value for $emacs byte-compiled lisp"
+     select tmp in "$@"
+     do 
+       echo "You selectd $tmp"
+       case "$tmp" in
+         "") ;;
+         "exit") exit 1;;
+         *) emacsdir="$tmp"; break 2 ;;
+       esac
+     done
+   else
+      emacsnotfound $emacs
+      emacs=''
+   fi
+   ;;
+  *) emacsdir=$(absolute_or_prefix $emacsdir)
+   ;;
 esac
 
-if test -n "$USER"; then INIT="-u $USER"; fi
-for EXEC in $EDITORS
-do 
-  case $($EXEC -batch -eval "(princ emacs-version)" 2>/dev/null) in
-   *XEmacs*) X=X; DIR=$XEMACSDIR;;
-   *) X=''; DIR=$EMACSDIR;;
-  esac
-  if $MANY
-  then ELSEDIR="$LIBDIR/lisp $LIBDIR/$EXEC-lisp"
-  else ELSEDIR=$LIBDIR/lisp
-  fi
-  if test -z "$DIR"
-  then
-    info "Found $EXEC installed."
-    set xxx \
-      `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" \
-        2>/dev/null` \
-       $ELSEDIR "none"
-    shift
-    case $# in
-     0) 
-        echo "Cannot determine ${X}EMACSDIR ---site-lisp directory for $EXEC "
-        echo "Please enter full path name"
-        echo -n "${X}EMACSDIR ==> "
-        read DIR
-        ;;
-     1)
-        DIR=$1
-        ;;
-     *)
-        echo "--- Please, select one value for ${X}EMACSDIR (for $EXEC)
+message "Checking XEmacs configuration"
 
-    none means do not install files for $EXEC"
-        if $MANY; then echo "
-    If you wish to install byte-compile code for both Emacs and XEmacs
-    choose different locations for EMACSDIR and XEMACSDIR. 
-    Otherwise, your may choose the same location."; echo; fi
-        select DIR in "$@"
-        do
-          echo "You selected $DIR" 
-          case /$DIR/ in
-           //) ;;
-           /none/) declare ${X}EMACS=''; unset DIR; break;;
-           *) break ;;
-          esac
-        done
-        ;;
-    esac
-  fi
-  declare ${X}EMACSDIR=$DIR
-  info "Using ${X}EMACSDIR=$DIR"
-  echo
-done
+case "$xemacsdir" in
+ "") xemacsdir='$(DATADIR)'/xemacs;;
+ "!") 
+   if findcommand "$xemacs" false 1>/dev/null \
+      && $xemacs -batch -q 1>/dev/null 2>/dev/null
+   then 
+     xemacsdir=$($xemacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p | head -1)
+   else 
+     emacsnotfound $xemacs
+     xemacs=''
+   fi
+   ;;
+ "?") 
+   if findcommand "$xemacs" false 1>/dev/null \
+      && $xemacs -batch -q 1>/dev/null 2>/dev/null
+   then
+     set $($xemacs -batch -q  $user -l $(pwd)/configure.el \
+                 -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p) exit
+     echo "--- Please, select one value for $xemacs byte-compiled lisp"
+     select tmp in "$@"
+     do 
+       echo "You selectd $tmp"
+       case "$tmp" in
+         "") ;;
+         "exit") exit 1;;
+         *) xemacsdir="$tmp"; break 2 ;;
+       esac
+     done
+   else
+      emacsnotfound $xemacs
+      xemacs=''
+   fi
+   ;;
+  *) xemacsdir=$(absolute_or_prefix $xemacsdir)
+   ;;
+esac
 
-if test "/$EMACS/$XEMACS/$EMACSDIR/$XEMACSDIR/" = "/////"
-then 
-  echo "Using default library $LIBDIR/lisp for emacs-lisp"
-  EMACSDIR='$(LIBDIR)/lisp'
-fi
-
-if test -n "$EMACS" -a -n "$XEMACS" 
+if $elc 
 then
-  if test "$EMACSDIR" = "$XEMACSDIR"
+  if test -n "$emacs" && test -n "$xemacs" && test "$emacsdir" = "$xemacsdir"
   then
-    warning "
-  Will not byte-compile lisp for $EMACS and $XEMACS because both
-  EMACSDIR and XEMACSDIR  are identical and equal to
-
-    $EMACSDIR  
-
-  Will only install source lisp code. 
-  This is not a problem if this is what you meant.
-  Otherwise, start again and choose different directories.
-
-continuing...
-"
-    unset EMACS XEMACS XEMACSDIR
-  else 
-    if ! nory '--- Do you wish to byte-compile lisp code?'
-    then unset EMACS; unset XEMACS; fi
+     warning "
+     $emacs and $xemacs byte-code directorys $emacs are equal 
+     Undoing Emacs and XEmacs configuration
+   "
+     emacs=''
+     xemacs=''
   fi
+else
+  emacs=''
+  xemacs=''
 fi
+output EMACS $emacs
+output EMACSDIR $emacsdir
+output XEMACS $xemacs
+output XEMACSDIR $xemacsdir
 
-# Other directories
-message "Configuring other directories"
-
-if test -z "$BINDIR"; then BINDIR='$(LIBDIR)/bin'; fi
-if test -z "$LATEXDIR"; then LATEXDIR='$(LIBDIR)/latex'; fi
-if test -z "$DOCDIR"; then DOCDIR='$(LIBDIR)/doc'; fi
 
 # initex
-message "Checking initex and latex"
+message "Checking initex, latex and format"
 
-INITEX=$(findcommand INITEX "$INITEX" initex)
-LATEX=$(findcommand LATEX "$LATEX" latex)
-LATEXFMT=$(basename $LATEX)
+findcommand "$latex" true 1>/dev/null
+findcommand "$initex" true 1>/dev/null
+output LATEX "$latex"
+output INITEX "$initex"
 
-if ! kpsewhich latex.fmt > /dev/null; then
-  echo "--- Cannot find default format $LATEXFMT for $LATEX." 
-  echo -n $LATEXFMT=
-  read $LATEXFMT
-  if [ -z "$LATEXFMT" ]; then 
-     LATEXFMT=$LATEX
-     info "Using default value LATEXFMT=$LATEXFMT"
+cat <<EOF > dummy.tex
+\documentclass{article}
+\def \dummy {Testing you installation}
+\def \documentclass #1\dump {\relax}
+\let \dump \relax
+\dump
+\begin{document}
+\huge {\bf \dummy}\par Don't worry, feel lucky!
+\end{document}
+EOF
+
+if test -z "$format"
+then formats="$(basename $latex) latex"
+else formats="$format"
+fi
+
+format=''
+for f in $formats
+do
+  if $initex '&'$f '\input{dummy}' > initex.log
+  then format=$f; break
+  fi
+done
+if test -z "$format"
+then error "Cannot run $initex with any of the formats: $formats"
+fi
+if test -z "$fmt"
+then fmt=$(initex '&stroumf' 2>&1 \
+       | sed -n -e 's%^.*the format `stroumf.\([a-z][a-z]*\)'"'.*"'%\1%p')
+fi
+if test -z "$fmt"; then fmt=fmt; fi
+
+echo -n "Running LATEX=$latex... "
+if [ -n "$latex" ]; then
+  if $latex '&dummy' dummy.tex > latex.log && test -f dummy.dvi
+  then echo ok
+  else
+    error "
+    Command failed:
+
+      $latex '&$format' dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
+
+    $latex installation seem to have problems. 
+    See dummy.tex and latex.log
+  "
   fi
 fi
 
+output FORMAT $format
+output FMT $fmt
 
-# viewers
-message "Configuring viewers"
+# Previewers
 
-ADVI=$(findcommand ADVI "$ADVI" advi maybe)
-XDVI=$(findcommand XDVI "XDVI" xdvi maybe)
-GV=$(findcommand GV "$GV" gv maybe)
-DVIPS=$(findcommand DVIPS "DVIPS" dvips maybe)
+findcommand "$advi" false >/dev/null || advi=''
+findcommand "$xdvi" false >/dev/null || xdvi=''
+if findcommand "$gv" false >/dev/null 
+ then
+   if findcommand "$dvips" >/dev/null 
+   then
+     echo -n "Running DVIPS=$dvips... "
+     if $dvips -o dummy.ps dummy.dvi 2>/dev/null 1>/dev/null
+     then echo ok
+     else error "
+    Command failed:
+
+      $dvips -o dummy.ps dummy.dvi 2>/dev/null 1>/dev/null
+
+    $dvips seems to have problems
+"
+     fi
+   else gv=''; dvips=''
+   fi
+ else
+   gv=''; dvips=''
+fi
+output ADVI "$advi"
+output XDVI "$xdvi"
+output GV "$gv"
+output DVIPS "$dvips"
+
+if test -z "$advi$xdvi$gv"
+then error "At least one previewer amoing advi, xdvi, gv should be defined"
+fi
+
+
+message "Other parameters"
+
+grep -B 2 GREPB configure 1>/dev/null 2>/dev/null
+case $? in
+  0) grepb=true;;
+  *) grepb=false;;
+esac
+output GREPB $grepb
 
 message "Building Makefile.config"
 
-sed \
- -e "s%^\(BASH *=\).*%\1 $BASH%" \
- -e "s%^\(LIBDIR *=\).*%\1 $LIBDIR%" \
- -e "s%^\(EMACS *=\).*%\1 $EMACS%" \
- -e "s%^\(XEMACS *=\).*%\1 $XEMACS%" \
- -e "s%^\(EMACSDIR *=\).*%\1 $EMACSDIR%" \
- -e "s%^\(XEMACSDIR *=\).*%\1 $XEMACSDIR%" \
- -e "s%^\(BINDIR *=\).*%\1 $BINDIR%" \
- -e "s%^\(LATEXDIR *=\).*%\1 $LATEXDIR%" \
- -e "s%^\(DOCDIR *=\).*%\1 $DOCDIR%" \
- -e "s%^\(ADVI *=\).*%\1 $ADVI%" \
- -e "s%^\(XDVI *=\).*%\1 $XDVI%" \
- -e "s%^\(GV *=\).*%\1 $GV%" \
- -e "s%^\(DVIPS *=\).*%\1 $DVIPS%" \
- -e "s%^\(INITEX *=\).*%\1 $INITEX%" \
- -e "s%^\(LATEX *=\).*%\1 $LATEX%" \
- -e "s%^\(LATEXFMT *=\).*%\1 $LATEXFMT%" \
-  < Makefile.config.in > Makefile.config
+for file in Makefile.config
+do
+   sed -f config.sed < $file.in > $file
+done
+rm config.sed
 
-message Summary:
+if test -f config.errors; then fatal; else
+rm -f dummy.{tex,fmt,dvi,aux,ps,log}
 echo "
- BASH = $BASH
-
- LIBDIR = $LIBDIR
- EMACS = $EMACS
- EMACSDIR = $EMACSDIR
- XEMACS = $XEMACS
- XEMACSDIR = $XEMACSDIR
- BINDIR = $BINDIR
- LATEXDIR = $LATEXDIR
- DOCDIR = $DOCDIR
- 
- ADVI = $ADVI
- XDVI = $XDVI
- GV = $GV
- DVIPS = $DVIPS
- 
- INITEX = $INITEX
- LATEX = $LATEX
- LATEXFMT = $LATEXFMT
-"
-if $ERRORS
-then echo "
-   ************ They were serious Errors ************
-
-   Makefile.config was still build but is probably incorrect.
-   You should check you configuration and restart config.
-   You may also edit Makefile.config if you know what you are doing.
-
-"
-else echo "
 Configuration suceeded
 See Makefile.config for details
 "

@@ -1,4 +1,4 @@
-ORIGIN=1.00iii
+ORIGIN=1.00iv
 VERSION=$(ORIGIN)
 
 # Url of sources
@@ -47,25 +47,23 @@ $(VFILE):
 
 $(VTAR): 
 	$(WGET) $(URL)/$(VTAR)
-
 $(VTAG): $(VTAR) 
 	cd whizzytex; make clean
 	gunzip -c $(VTAR) | tar -xvf -
 	touch -r $(VTAR) $(VTAG)
-	@if ! test -f $(VDIR)/Makefile.config; then \
-	if test "`head -1 $(VDIR)/Makefile.config.in`" \
-	      = "`head -1 $(WHIZZY)/Makefile.config.in`"; \
-	then cp $(WHIZZY)/Makefile.config $(VDIR); \
-	else \
-	  echo '*Configuration has changed.'; \
-	  if diff $(VDIR)/Makefile.config $(WHIZZY)/Makefile.config.in; \
-	  then echo 'Using new default configuration.'; \
-	  else \
-	    cp $(WHIZZY)/Makefile.config $(VDIR)/Makefile.config; \
-	    echo 'Copied old configuration to Makefile.config;'; \
+	if test ! -f $(VDIR)/Makefile.config \
+	        -o $(WHIZZY)/Makefile -ef $(VDIR)/Makefile && \
+	   test "`head -1 $(WHIZZY)/Makefile.config`" \
+	     != "`head -1 $(VDIR)/Makefile.config.in`"; \
+	then \
+	  echo 'WARNING: Configuration has changed. Running ./configure...'; \
+	  cd $(VDIR); ./configure; \
+	elif test ! $(WHIZZY)/Makefile.config -ef $(VDIR)/Makefile.config; \
+	then \
+	    echo 'Copying old configuration to Makefile.config;'; \
 	    echo 'You need to check Makefile.config or reconfigure;'; \
-	  fi; \
-	fi; fi 
+	    cp $(WHIZZY)/Makefile.config $(VDIR)/Makefile.config; \
+	fi
 	rm -f $(WHIZZY)
 	ln -s $(VDIR) $(WHIZZY)
 

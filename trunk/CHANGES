@@ -14,6 +14,10 @@ SINCE LAST RELEASE:
 
 Emacs-mode:
 
+ * added detexification so that whizzy-goto-line works in latin mode. 
+ * whizzy-goto-line takes surounded words into accoun for better precision
+ * renamed -fmt into -format and added -fmt for format extension
+ * changed whizzy-setup-manager to give priority to buffer information
  * added a pessimistic version of whizzy-show-point and menu entries
  * made it work with all file extensions but those internally used
  * added slower slice saving option for x-symbol compatibility.
@@ -28,6 +32,9 @@ Emacs-mode:
 
 Shell-script: 
 
+ * renamed FMT into FORMAT and added FMT for format extension.
+ * change newslice detection (does not watch other file but the slice)
+ * alternative when grep does not recognize -B
  * made it work with all file extensions but those internally used
  * refresh the duplex window if any when full document has been recompiled
  * added checkconfig script
@@ -46,6 +53,8 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ * Change of Manager makefile to call ./configure when changed
+ * Rewrote ./configure to work in batch and take command line arguments
  * Reorganized Web page, added FAQ.html
 
 

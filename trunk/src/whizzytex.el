@@ -3,9 +3,9 @@
 ;; Copyright (C) 2001, 2002 INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.0a
+;; Version        : 1.1
 ;; Bug Reports    : whizzytex-bugs@pauillac.inria.fr
-;; Web Site       : http://cristal/inria.fr/~remy
+;; Web Site       : http://pauillac.inria.fr/whizzytex
 ;; 
 ;; WhizzyTeX is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -243,10 +243,10 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
 )
 
 (defvar whizzy-auto-show-output t
-  "*Control autimatic display of the process buffer.
+  "*Control the display of the process buffer.
 
-When true process buffer will be shown when an latex error is persistent,
-and hidden when the error disapears.")
+When true, the process buffer will be displayed when a latex error is
+persistent, and hidden when the error disapears.")
 
 ;;; End of user variables
 
@@ -396,16 +396,6 @@ and hidden when the error disapears.")
       )
     ))
  
-(defun whizzy-clean-shell ()
-  (save-excursion
-    (if (whizzy-get whizzy-process-buffer)
-        (progn
-          (set-buffer (whizzy-get whizzy-process-buffer))
-          (goto-char (point-max))
-          (if (or (> (buffer-size) 10000))
-               (re-search-backward "Output written on" (point-min) t)
-              (erase-buffer))))))
-
 
 (make-variable-buffer-local 'write-region-annotate-functions)
 (defvar whizzy-write-at-begin-document nil)
@@ -1389,7 +1379,8 @@ Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
              (setq start (match-end 0)))
          (setq view (cons nil view)))
        (let ((options
-              '(("-pre" . t) ("-initex" . t) ("-latex" . t) ("-fmt" . t)
+              '(("-pre" . t) ("-makeindex" . t)
+                ("-initex" . t) ("-latex" . t) ("-format" . t) ("-fmt" . t)
                 ("-duplex")))
              (option) (argp))
          (while (consp options)
@@ -1427,7 +1418,6 @@ Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
            (and
             (re-search-forward
              "^[^%\n]*\\(\\\\begin\\(  *\\){document}\\)" (point-max) t)
-            (message "Delete white space from %s" (match-string 1))
             (delete-region (match-beginning 2) (match-end 2))))))
     (whizzy-setup-master query))
    (t
@@ -1439,37 +1429,40 @@ Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
 (defun whizzy-setup-master (&optional query)
   (if whizzy-slave (setq whizzy-slave nil))
   (let ((slicing (whizzy-get whizzy-slicing-mode))
-        (view (whizzy-get whizzy-view-mode))
+        (view-mode (whizzy-get whizzy-view-mode))
+        (view-read (whizzy-read-view-from-file))
         (view-type) (view-command) (view-options)
+        (view)
         (tmp))
     ;; Setting view mode
-    (or
-     ;; do not reset if query and already locally bound
-     (and query view)
-     ;; attempt to reset otherwise
-     (setq view (or (whizzy-read-view-from-file) view))
-     ;; no local binding: do not query if already bound
-     ;; view
-     ;; shoud not set view-mode, who cases.
-     ;; (setq query t)
-    )
-    (setq view-type (car view))
-    (setq view-command (and view-type (cadr view)))
-   (setq view-options (cddr view))
-    (or view-type (setq view-type (caar whizzy-viewers)))
-    (if query
-        (progn
-          (setq view-type
-                (completing-read "Viewer type: "
-                                 whizzy-viewers nil t view-type))
-          (if (equal view-type "")
-              (error "You must specify a viewer type"))
-          ))
+    (setq view-type (car view-read))
+    (setq view-command (cadr view-read))
+    (setq view-options (cddr view-read))
+    (if view-type nil
+      (if view-mode
+          (progn            
+             (setq view-type (car view-mode))
+             (setq view-command (cadr view-mode))
+             (setq view-options (cddr view-mode)))
+        (setq view-type (caar whizzy-viewers))
+        (if (or query (null view-type))
+            (progn
+              (setq view-type
+                    (completing-read "Viewer type: "
+                                     whizzy-viewers nil t view-type))
+              (if (equal view-type "")
+                  (error "You must specify a viewer type"))
+              ))))
     (setq tmp (cadr (assoc view-type whizzy-viewers)))
     (or tmp
         (error (concat "viewer type " (car view) " should be one of "
                        (mapconcat 'car whizzy-viewers ", "))))
-    (or view-command (equal view-command "") (setq view-command tmp))
+    (or view-command (equal view-command "")
+        (progn
+          (setq view-command tmp)
+          (setq view-options
+                (append (cddr (assoc view-type whizzy-viewers))
+                        view-options))))
     (if query
         (progn
           (setq view-command (read-string "Viewer command: " view-command))
@@ -1623,7 +1616,7 @@ the interpretation of the rest of the line:
   <name>
      is the relative or fullname of the master file
 
-%; whizzy [ <slicing> ] [ <viewer> [ <command> ] ] [ -pre <make> ] [ -fmt <format> ] [ -duplex ]
+%; whizzy [ <slicing> ] [ <viewer> [ <command> ] ] [ -pre <make> ] ... [ -duplex ]
 
   All arguments are optional, but if present they must be passed in order:
 
@@ -1660,6 +1653,12 @@ the interpretation of the rest of the line:
 
      When ommitted, the slice BASENAME.new is simply renamed into BASENAME.tex
 
+  -makeindex <makeindex>
+
+     This defines a command to be used in place of the default makeindex 
+     command. Value false for makeindex mean do not recompile indexes.
+
+
   -initex <command>
 
      This tells whizzytex to use <command> to create the initial format
@@ -1670,11 +1669,17 @@ the interpretation of the rest of the line:
      This tells whizzytex to use <command> to compile a slice instead of
      the default (usually latex)
 
-  -fmt <format>
+  -format <format>
 
      This tells whizzytex to use the initial format <format> instead
-     of the default, usually latex (the suffix .fmt is added).
-     For instance, hugelatex may be needed for processing large files.
+     of the default, usually latex (the format extension ---see below--- is
+     always added). For instance, hugelatex may be needed for processing
+     large files.
+
+  -fmt <extension>
+
+     This tells whizzytex to use the extension <extension> for format files
+     instead  of fmt. 
 
   -duplex
 
@@ -1768,7 +1773,8 @@ is displayed on line LINE of the window, or centered if LINE is nil."
   (let ((source-buffer (whizzy-get whizzy-active-buffer))
         (shell-buffer (whizzy-get whizzy-process-buffer))
         (point-min
-         (or (and (window-live-p (whizzy-get whizzy-process-window)) (mark))
+         (or (and (window-live-p (whizzy-get whizzy-process-window))
+                  (mark t))
              (point-min)))
         (error-begin) (error-end) (line-string) (shell-moveto)
         )
@@ -1940,18 +1946,52 @@ Toggle if ARG is ommitted."
            )
       (whizzy-show-interaction arg)))
 
+(defun iso-translate-string (string trans-tab)
+  "Use the translation table TRANS-TAB to translate STRING."
+  (let ((work-tab trans-tab)
+        (buffer-read-only nil)
+        (case-fold-search nil)
+        (argument string))
+    (while work-tab
+      (let ((trans-this (car work-tab))
+            (string argument) (result "") (start 0) beg end)
+        (while (string-match (car trans-this) string start)
+          (setq beg (match-beginning 0)
+                end (match-end 0)
+                result (concat result (substring string start beg)
+                               (car (cdr trans-this)))
+                start end))
+        (setq argument (concat result (substring string start)))
+        (setq work-tab (cdr work-tab))))
+    argument))
+
+
+;; detex-ification
+;; maybe, it should be done 
+
+(defun whizzy-tex2iso-string (string)
+  "Replace tex accents to iso in STRING."
+  (if (and (boundp 'iso-tex2iso-trans-tab)
+           (string-match "latin\\|8859"
+                          (symbol-name buffer-file-coding-system))
+           (string-match "\\\\['`^\"c]\\|[!?]`" string))
+    (iso-translate-string string iso-tex2iso-trans-tab)
+    string))
+
 (defun whizzy-goto-line (s)
   (if (string-match
-"\#line \\([0-9]*\\), \\([0-9]+\\) <<\\(.*\\)>><<\\(.*\\)>> \\([^ \t\n]*\\)"
+"\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)"
        s)
       (let ((dest-buffer (whizzy-get whizzy-active-buffer))
             (status whizzy-status)
             (line (string-to-int (match-string 1 s)))
             (last (string-to-int (match-string 2 s)))
-            (before (match-string 3 s))
-            (after (match-string 4 s))
-            (file (match-string 5 s))
-            (word) (bound))
+            (left (match-string 4 s))
+            (before (match-string 5 s))
+            (after (match-string 6 s))
+            (right (match-string 8 s))
+            (file (match-string 9 s))
+            (bound))
         (if (buffer-live-p dest-buffer)
             (set-buffer dest-buffer)
           (setq dest-buffer nil))
@@ -1959,9 +1999,8 @@ Toggle if ARG is ommitted."
          file (not (equal  file ""))
          (let* ((longname (concat (whizzy-get whizzy-dir) file))
                 (fullname longname))
-           (or (file-readable-p  longname)
-               (file-readable-p
-                (setq fullname (concat longname ".tex")))
+           (or (file-readable-p longname)
+               (file-readable-p (setq fullname (concat longname ".tex")))
                (setq fullname longname))           
            (or (setq dest-buffer (find-buffer-visiting fullname))
                (and (or (and (equal whizzy-auto-visit 'ask)
@@ -1995,23 +2034,39 @@ Toggle if ARG is ommitted."
                  ))))
            ))
         (unless (or (not dest-buffer) (and (> line last) (/= last 0)))
-          (setq word
-                (concat "[^A-Za-z0-9]\\(" (regexp-quote before)
-                        "\\)\\(" (regexp-quote after)
-                        "\\)[^A-Za-z0-9]"))
-          (let ((here (point)))
+          (setq before (regexp-quote (whizzy-tex2iso-string before)))
+          (setq after (regexp-quote (whizzy-tex2iso-string after)))
+          (if left (setq left (regexp-quote (whizzy-tex2iso-string left))))
+          (if right (setq right (regexp-quote (whizzy-tex2iso-string right))))
+          (message "%s << %s || %s >> %s" left before after right)
+          (let*
+              ((here (point))
+               (space "[\t ]*\n?[\t ]*")
+               (word (concat "[^A-Za-z0-9]\\("
+                             before "\\)\\(" after
+                             "\\)[^A-Za-z0-9]"))
+               (context (concat "\\("
+                                left space before "\\)\\(" after space right
+                                "\\)"))
+               )
             (cond
              ((> last 0)
               (goto-line line) (beginning-of-line) (setq bound (point))
               (goto-line last) (end-of-line)
-              (if (re-search-backward word bound t)
+              (if (re-search-backward context bound t)
                   (goto-char (match-end 1))
-                (if (re-search-backward
-                     (concat "\\(" word "\\|" "\n\n\\)")
-                     (max 0 (- bound 1000)) t)
-                    (goto-char
-                     (if (looking-at word)  (match-end 1) here))
-                  (goto-char here))))
+                (if (re-search-backward word bound t)
+                    (goto-char (match-end 1))
+                  (if (re-search-backward
+                       (concat "\\(" word "\\|" "\n\n\\)")
+                       (max 0 (- bound 1000)) t)
+                      (goto-char
+                       (if (looking-at word)  (match-end 1) here))
+                    (if (progn
+                          (goto-char (point-max))
+                          (re-search-backward context (point-min) t))
+                        (goto-char (match-end 1))
+                    (goto-char here))))))
              ((> line 0)
               (if (= last 0) (setq bound (point-max))
                 (goto-line last) (end-of-line) (setq bound (point)))
@@ -2060,7 +2115,7 @@ Toggle if ARG is ommitted."
     (goto-char (point-max))
     (let ((point-min
            (or (and (window-live-p (whizzy-get whizzy-process-window))
-                    (mark))
+                    (mark t))
                (point-min))))
       (re-search-backward "<Recompilation failed>" point-min 'move)
       (delete-region point-min (max point-min (- (point-max) 35))))

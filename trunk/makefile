@@ -1,7 +1,7 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.00
-VERSION=1.00iii
+VERSION=1.00iv
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -108,18 +108,15 @@ $(PACKDIR)/.exists:
 	mkdir -p $(PACKDIR)
 	touch $@
 
-$(PACKDIR)/whizzytex.el: src/whizzytex.el $(PACKDIR)
+$(PACKDIR)/whizzytex.el: src/whizzytex.el $(PACKDIR) 
 	cp $< $@
 
-$(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el 
-	cd $(PACKDIR); emacs --batch -q -l ../byte-compile.el 2> log && \
-	cat log && \
-	if grep -e '\*\*' log; then rm -f $@; cat log; false; \
-	fi
-	cd $(PACKDIR); xemacs -batch -q -l ../byte-compile.el 2>log && \
-	cat log && \
-	if grep -e '\*\*' log; then rm -f $@; false; \
-	fi
+$(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
+	cd $(PACKDIR); \
+	emacs --batch -q -l ../byte-compile.el 2>log && cat log  && \
+	if grep -e '\*\*' log; then rm -f ../$@; false; fi && \
+	xemacs -batch -q -l ../byte-compile.el 2>log && cat log && \
+	if grep -e '\*\*' log; then rm -f ../$@; false; fi 
 
 Export: $(EXPORTS) xxxport
 	rcp $(EXPORTS) $(PAUILLAC)
@@ -130,7 +127,7 @@ Release: Export
 	cp Announce archive/Announce-$(RELEASE)
 	rcp Announce $(PAUILLAC)
 
-xxxport: $(EXPORTS) 
+xxxport: $(EXPORTS) pack
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	rcp $(XXXPORTS) whizzytex-xxx.tgz $(PAUILLAC)
 
@@ -155,3 +152,5 @@ superclean:: clean
 
 
 include Makefile
+
+

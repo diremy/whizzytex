@@ -111,36 +111,34 @@ See {\bf Using {\whizzy}} (Section \ref {using}) to test your installation.
 
 To customize the installation, you can edit 
 \lst"Makefile.config", manually.
-You may also use the command
+You may also use either the command
 \begin{quote}
 \begin{tt}
-make config
+./configure
 \end{tt}
 \end{quote}
-for semi-automatic editions. This will test your system configuration and 
-choose default values accordingly and prompt for confirmation or when
-a decision need to be taken. Of course, you can combine both, doing manual
-corrections at the end.
+This command may be passed arguments to customize your installation.
+Call it with the option \lst"-help" to see a list of all options.
 
-The automatic configuration only check for the existence of commands, but
-will not test their interface. Moreover, manual configuration allows to
-choose commands that may not even exists.
+By default, the configuration is non interactive.  However, you may call it
+with option \lst"-helpme" to have the script do more guessing for your and
+prompt for choices if needed.
 
 \paragraph {Checking {\tt Makefile.config}}
 
 A misconfiguration of your installation, or ---much more subttle--- a
-misconfiguration of other commands (many installation wrap scripts around
-standard commands that are sometimes incorrect and break their interface),
-may lead to systematic errors when launching {\whizzy}. To prevent delaying
-such obvious errors, some sanity checks are done on the file
-\lst"Makefile.config" before building other files.
-This includes checking for mandatory bindings and for the conformance of
-latex and viewers commands to their expected interface.
-The later is done by simulating the core of a small {\whizzy} session:
-a small file is created, a specialed version of latex format is build for 
-that file, and used to run {\LaTeX} on on the file; finally, all 
-declared viewers are tested on the DVI output, which open
-windows, temporarily. 
+misconfiguration of other commands (it appears that many installations wrap
+scripts around standard commands that are often sometimes incorrect and
+break their normal interface), may lead to systematic errors when launching
+{\whizzy}. To prevent delaying such obvious errors, some sanity checks are
+done on the file \lst"Makefile.config" before building other files.
+These include checking for mandatory bindings and for the conformance of
+initex, latex, and viewers commands to their expected interface.
+
+Checking viewers interface implies simulating a small {\whizzy} session: a
+small test file is created, a specialed version of latex format is built for
+that file, and used to run {\LaTeX} on on the file; finally, all declared
+viewers are tested on the DVI output, which open windows, temporarily.
 
 If the sanity check fails, at least part of your configuration is 
 suspicious. If some windows remain opened, your confirguration is likely to
@@ -148,20 +146,21 @@ be erronesous (and so, even if not detected by the script).
 
 However, if you really know what you are doing, you may bypass the check by
 typing \lst"make config.force", which will stamp your \lst"Makefile.config"
-as correct without checking it.
+as correct without checking it. Checking compliance to viewers interface
+is also bypassed if you you do not have a connection to X. 
 
 At the end of customization, proceed as described in ``{\bf Automatic
 installation}'' (Section \ref {install/automatic})
 
-\paragraph {Customization guide}
+\paragraph {Customization notes}
 
 By default, {\whizzy} assumes the standard convention that 
 \lst"latex" is the command name used to call {\LaTeX}, 
 \lst"initex", the command name used to build a new format, and that the latex 
 predefined format is \lst"latex".
 
-These values may be changed if you have another implementation of {\LaTeX}
-uses other names. Then, just redefine the variables \lst"INITEX",
+If your implementation of {\LaTeX}
+uses other names, you may redefine the variables \lst"INITEX",
 \lst"LATEX", and \lst"LATEXFMT" accordingly in the file
 \lst"Makefile.config".
 %
@@ -173,10 +172,20 @@ LATEX = platex\\
 LATEXFMT = platex
 \end{tt}
 \end{quote}
-If you wish to run {\whizzy} with several configuration, you must choose a
-default configuration, but you will be able to call {\whizzy} with another
-configuration from emacs (see Section \ref{configuration} below). 
+This would be produced directly with the configuration line:
+\begin{quote}
+\begin{tt}
+./configure -initex iniptex -latex platex -latexfmt latex
+\end{tt}
+\end{quote}
+If you wish to run {\whizzy} with several configurations, you must still
+choose a default configuration, but you will be able to call {\whizzy} with
+another configuration from emacs (see Section \ref{configuration} below).
 
+Similarly, you must at least chose one default previewer, and at most one 
+one default previewer for each previewer type \lst"advi", \lst"xdvi", and
+\lst"ps". However, you will be able to call {\whizzy} with 
+other previewers but explicitly from emacs.
 
 \subsection {Manual installation}
 
@@ -574,6 +583,7 @@ to be used instead of {\whizzy} own default values.
 \subsubsection {File-based configuration}
 
 \label {File-configuration}
+
 
 A configuration line is one that starts with regexp prefix ``\lst"^%; +"''
 followed by a configuration keyword.  If two configuration lines have the same

@@ -3,14 +3,14 @@ include Makefile.config
 # REMOTE INSTALLATION
 # The prefix to add in front of all files during installation. 
 
-PREFIX=
+INSTALLPREFIX=
 
 
 SRC=src
 TMP=tmp
 
 what:
-	@echo 'make what? [ config all install clean superclean ]'
+	@echo 'make what? [ config all install clean distclean uninstall ]'
 
 Makefile.config: 
 	@echo '--- Creating default configuration Makefile.config'
@@ -27,8 +27,7 @@ config:
 	bash ./configure
 
 config.ok: Makefile.config 
-	bash ./checkconfig 
-	touch $@
+	bash ./checkconfig
 
 config.force: 
 	touch config.ok
@@ -70,10 +69,12 @@ endif
 $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
 	sed -e '1s|^#!/bin/bash *$$|#!$(BASH)|' \
 	    -e 's|^PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
+	    -e 's|^GREPB=.*|GREPB=$(GREPB)|' \
 	    -e 's|^DVIPS=.*|DVIPS=$(DVIPS)|' \
 	    -e 's|^INITEX=.*|INITEX=$(INITEX)|' \
 	    -e 's|^LATEX=.*|LATEX=$(LATEX)|' \
-	    -e 's|^LATEXFMT=.*|LATEXFMT=$(LATEXFMT)|' \
+	    -e 's|^FORMAT=.*|FORMAT=$(FORMAT)|' \
+	    -e 's|^FMT=.*|FMT=$(FMT)|' \
 	 <  $< > $@
 	chmod +x $@
 
@@ -90,57 +91,49 @@ endif
 .PHONY: install
 install: all
 ifdef EMACSDIR
-	install -d $(PREFIX)$(EMACSDIR)
-	install $(TMP)/whizzytex.el $(PREFIX)$(EMACSDIR)
-endif
-ifneq ($(EMACSDIR),$(XEMACSDIR))
-ifdef XEMACSDIR
-	install -d $(PREFIX)$(XEMACSDIR)
-	install $(TMP)/whizzytex.el $(PREFIX)$(XEMACSDIR)
-endif
+	mkdir -p $(EMACSDIR)
+	cp $(TMP)/whizzytex.el $(EMACSDIR)
 ifdef EMACS
-	install $(TMP)/$(EMACS)/whizzytex.elc $(PREFIX)$(EMACSDIR)
+	cp $(TMP)/$(EMACS)/whizzytex.elc $(EMACSDIR)
 endif
+endif
+ifdef XEMACSDIR
+	mkdir -p $(XEMACSDIR)
+	cp $(TMP)/whizzytex.el $(XEMACSDIR)
 ifdef XEMACS
-	install $(TMP)/$(XEMACS)/whizzytex.elc $(PREFIX)$(XEMACSDIR)
+	cp $(TMP)/$(XEMACS)/whizzytex.elc $(XEMACSDIR)
 endif
 endif
-	install -d $(PREFIX)$(BINDIR)
-	install $(TMP)/whizzytex $(PREFIX)$(BINDIR)
-	install -d $(PREFIX)$(LATEXDIR) && \
-	install $(SRC)/whizzytex.sty $(PREFIX)$(LATEXDIR)
-ifdef DOCDIR
-	install -d $(PREFIX)$(DOCDIR) && \
-	install doc/manual.html COPYING GPL INSTALL $(PREFIX)$(DOCDIR)
-endif
+	mkdir -p $(BINDIR)
+	cp $(TMP)/whizzytex $(BINDIR)
+	mkdir -p $(LATEXDIR) && \
+	cp $(SRC)/whizzytex.sty $(LATEXDIR)
+	mkdir -p $(DOCDIR) && \
+	cp doc/manual.html COPYING GPL INSTALL $(DOCDIR)
 
 .PHONY: uninstall
 uninstall: 
 ifdef EMACSDIR
-	rm -f $(PREFIX)$(EMACSDIR)/whizzytex.{el,elc}
-	rmdir $(PREFIX)$(EMACSDIR) 2>/dev/null || true
+	rm -f  $(EMACSDIR)/whizzytex.{el,elc}
+	rmdir $(EMACSDIR) 2>/dev/null || true
 endif
-ifneq ($(EMACSDIR),$(XEMACSDIR))
 ifdef XEMACSDIR
-	rm -f $(PREFIX)$(EMACSDIR)/whizzytex.{el,elc}
-	rmdir $(PREFIX)$(EMACSDIR) 2>/dev/null || true
+	rm -f $(XEMACSDIR)/whizzytex.{el,elc}
+	rmdir $(XEMACSDIR) 2>/dev/null || true
 endif
-endif
-	rm -f $(PREFIX)$(BINDIR)/whizzytex
-	rmdir $(PREFIX)$(BINDIR) 2>/dev/null || true
-	rm -f $(PREFIX)$(LATEXDIR)/whizzytex.sty 
-	rmdir $(PREFIX)$(LATEXDIR) 2>/dev/null || true
-ifdef DOCDIR
-	rm -f $(PREFIX)$(DOCDIR)/{doc/manual.html,COPYING,GPL,INSTALL}
-	rmdir $(PREFIX)$(DOCDIR) 2>/dev/null || true
-endif
+	rm -f $(BINDIR)/whizzytex
+	rmdir $(BINDIR) 2>/dev/null || true
+	rm -f $(LATEXDIR)/whizzytex.sty 
+	rmdir $(LATEXDIR) 2>/dev/null || true
+	rm -f $(DOCDIR)/{manual.html,COPYING,GPL,INSTALL}
+	rmdir $(DOCDIR) 2>/dev/null || true
 
 clean::
 	rm -rf $(TMP)
 	rm -f latex.fmt initex.log latex.log dvips.log
-	rm -f dummy.{tex,log,aux,dvi,ps}
-	rm -f config.ok
+	rm -f dummy.{tex,fmt,log,aux,dvi,ps}
+	rm -f config.error config.sed
 	cd examples; make clean
 
-superclean::
-	rm -f Makefile.config 
+distclean:: clean
+	rm -f Makefile.config config.ok 

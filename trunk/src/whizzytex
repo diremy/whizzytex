@@ -2,6 +2,11 @@
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002 Didier Rémy
+#
+#  Author         : Didier Remy <Didier.Remy@inria.fr>
+#  Version        : 1.1
+#  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+#  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
 #  WhizzyTeX is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -47,10 +52,12 @@ DVIPS=dvips
 # Default LaTeX implementation
 INITEX=initex
 LATEX=latex
-LATEXFMT=latex
+FORMAT=latex
+FMT=fmt
 
 ### End of manual configuration
 
+GREPB=true
 DEBUG=false
 
 case $# in
@@ -63,32 +70,41 @@ MAKE=defaultmake
 
 DO=normal
 DOMARKS=false
+MAKEINDEX=makeindex
+DOINDEX=true
 VIEW=wdvi
 VIEWCOMMAND=advi
-WATCHFILES=
+NEWFILES=newfile
 DUPLEX=false
 ADVI=0
 while true
 do
   case $1 in
-   -kill) DO=kill; shift;;
-   -wakeup) DO=wakeup; shift;;
-   -format) DO=format; shift;;
-   -pre) MAKE="$2"; shift 2;;
-   -duplex) DUPLEX="true"; shift;;
-   -marks) DOMARKS=true; shift;;
-   -initex) INITEX="$2"; shift 2;;
-   -latex) LATEX="$2"; shift 2;;
-   -fmt) LATEXFMT="$2"; shift 2;;
-   -marksonly) DO=marks; shift;;
-   -watch) WATCHFILES="$*"; shift $#;;
+   -kill) DO=kill;;
+   -wakeup) DO=wakeup;;
+   -reformat) DO=format;;
+   -pre) MAKE="$2"; shift;;
+   -duplex) DUPLEX=true;;
+   -marks) DOMARKS=true;;
+   -makeindex) 
+      case "$2" in
+        false) DOINDEX=false;;
+        *) MAKEINDEX="$2";;
+      esac 
+      shift;;
+   -initex) INITEX="$2"; shift;;
+   -latex) LATEX="$2"; shift;;
+   -format) FORMAT="$2"; shift;;
+   -fmt) FMT="$2"; shift;;
+   -marksonly) DO=marks;;
+   -watch) NEWFILES=newfiles;;
    -dvi)
        VIEW=wdvi;
        case $2 in
        .) VIEWCOMMAND=xdvi;;
        *) VIEWCOMMAND=$2;;
        esac
-       shift 2;;
+       shift;;
    -advi)
        ADVI=1
        VIEW=wdvi;
@@ -96,14 +112,14 @@ do
        .) VIEWCOMMAND=advi;;
        *) VIEWCOMMAND=$2;;
        esac
-       shift 2;;
+       shift;;
    -ps)
        VIEW=ps
        case $2 in
        .) VIEWCOMMAND=gv;;
        *) VIEWCOMMAND=$2;;
        esac
-       shift 2;;
+       shift;;
    -*)
        echo 'Unrecognized argument '"$1"'
 
@@ -114,26 +130,32 @@ Usage whizzytex:
 where <option> is 
 
     -kill 
-    -format 
+    -reformat
+    -duplex
+    -makeindex <makeindex command>
+    -initex <initex command>
+    -latex <latex command>
+    -format <latex format file name>
+    -fmt <format extension>
     -marks 
     -pre <preproces-command>
-    -dvi <view-command> 
-    -ps <view-command> 
-
+    -advi <advi-like previewer command> 
+    -dvi <dvi-like previewer command> 
+    -ps <Postscript previewer command> 
   ' 1>&2
        exit 1;;
    *) break;;
   esac
+  shift
 done
 
 HERE=$(/bin/pwd)
-
 BASENAME=$(basename $1)
 EXT=$(expr "$BASENAME" : '.*\(\.[^.]*\)')
 NAME=$(basename "$BASENAME" "$EXT")
 WHIZZY=_whizzy_$NAME
 WHIZZYDIR=${WHIZZY}_d
-FORMAT=\&$WHIZZY
+WFORMAT=\&$WHIZZY
 LOCK=.$WHIZZY$EXT
 SLICE=$WHIZZY.new
 INPUT=$HERE/$WHIZZYDIR/input
@@ -160,10 +182,15 @@ quit () {
   cleanquit
 }
 
+
+
 log () { 
   if [ -f $OUTPUT/$1 ] 
   then
-    grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES;
+    if $GREPB; then
+    grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES
+    else sed -n '/^!/,$p' | head -$TEXTERRORAROUND $OUTPUT/$1
+    fi
   fi
   false; 
 }
@@ -179,7 +206,7 @@ fi
 
 clean () {
    [ -f $TMP/pids ] && kill -QUIT $(cat  $TMP/pids) 2>/dev/null
-   rm -f $WHIZZY.* $NAME.fmt $NAME.$VIEW
+   rm -f $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW
    rm -rf $WHIZZYDIR
    rm -f $LOCK
    [ -f $WHIZZY ] && "Cleaning up..."
@@ -209,7 +236,7 @@ runlatex    () { ( ulimit -t $LIMIT; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$LATEXFMT" '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 ############################################################################
@@ -252,14 +279,14 @@ postmark () {
 }
 marks () {
     premark
-    runlatex $FORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
+    runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
     postmark
     cat $SECTIONS
 }
 
 batchmarks () {
     premark
-    if runlatex $FORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/whole
+    if runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/whole
     then
       cp $NAME.dvi $NAME.$VIEW
       if $1
@@ -269,8 +296,14 @@ batchmarks () {
       [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
       if grep 'LaTeX Warning: Citation' $NAME.log
       then
-         bibtex $NAME; 
+         bibtex $NAME 1>$OUTPUT/bibtex
          [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+         true
+      fi
+      if $DOINDEX && grep 'Writing index file' $NAME.log
+      then
+         $MAKEINDEX $NAME.idx 1>$OUTPUT/makeindex 
+         [ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
          true
       fi
     else 
@@ -353,8 +386,9 @@ esac
 # We go for good
 
 mkdir $WHIZZYDIR $INPUT $OUTPUT $TMP 2>/dev/null
+echo $COMMAND > $OUTPUT/command
 
-if [ -f $NAME.fmt -a $NAME$EXT -ot $NAME.fmt ]
+if [ -f $NAME.$FMT ] && [ $NAME$EXT -ot $NAME.$FMT ]
 then 
   :
 else
@@ -364,12 +398,12 @@ else
          echo Removing $NAME.aux; 
          echo '<Retrying '; 
          rm -f $NAME.aux && format >$OUTPUT/format 2>$ERR; }; } \
-     && [ -f $NAME.fmt ] 
+     && [ -f $NAME.$FMT ] 
   then
-     mv $NAME.fmt $WHIZZY.fmt
+     mv $NAME.$FMT $WHIZZY.$FMT
      echo 'succeeded>'
   else
-     rm -f $NAME.fmt
+     rm -f $NAME.$FMT
      echo 'failed>'
      log format
      fatal 'could not build initial format'
@@ -403,6 +437,9 @@ esac
 newfiles () {
   mv $(find $INPUT -type f -print || suicide) $HERE/  2>/dev/null
 }
+newfile () {
+  mv $INPUT/$SLICE $HERE/  2>/dev/null
+}
 
 defaultmake () { mv $SLICE $WHIZZY$EXT 2>/dev/null; }
 
@@ -423,7 +460,7 @@ process () {
   PROCESS=false
   rm -f $WHIZZY.aux
   echo '<Recompiling>'
-  if { runlatex $FORMAT $WHIZZY$EXT && preview; } 1>$OUTPUT/slice
+  if { runlatex $WFORMAT $WHIZZY$EXT && preview; } 1>$OUTPUT/slice
   then
      echo "<Compilation succeeded>"
      ln -f $WHIZZY$EXT $WHIZZY.last
@@ -445,7 +482,7 @@ process () {
 # Initial run
 
 # We ensure that the dvi file exists 
-if runlatex $FORMAT ${WHIZZY}_nil$EXT > $OUTPUT/nil
+if runlatex $WFORMAT ${WHIZZY}_nil$EXT > $OUTPUT/nil
 then
   mv ${WHIZZY}_nil.dvi $WHIZZY.dvi
   preview || fatal 'Cannot preview initial page'
@@ -457,11 +494,12 @@ fi
 # To give it a chance to see citations and other global information.
 
 [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+[ -f $NAME.ind ] && cp $NAME.bbl $WHIZZY.ind
 [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
 
 # process $WHIZZY$EXT is present. Will override $WHIZZY.dvi if it succeeds
 
-if newfiles; then preprocess && process; fi
+if $NEWFILES; then preprocess && process; fi
 
 # lauch the previewer(s) in background, storing its pid in $ID
 # and putting a handler on its termination. 
@@ -499,10 +537,10 @@ whole $DOMARKS
 
 reformat () {
   echo '<Reformating>'
-  touch -r $NAME$EXT $WHIZZY.fmt
+  touch -r $NAME$EXT $WHIZZY.$FMT
   if format 1>$OUTPUT/format 2>$ERR
   then
-      mv -f $NAME.fmt $WHIZZY.fmt
+      mv -f $NAME.$FMT $WHIZZY.$FMT
       echo '<Reformatting succeeded>'
       PROCESS=true
       whole $DOMARKS
@@ -539,9 +577,9 @@ while true
 do
   if [ ! -d $WHIZZYDIR ]
   then fatal 'No more _whizzy_ directory'
-  elif [ $WHIZZY.fmt -ot $NAME$EXT ]
+  elif [ $WHIZZY.$FMT -ot $NAME$EXT ]
   then reformat
-  elif newfiles && preprocess || $PROCESS
+  elif $NEWFILES && preprocess || $PROCESS
   then process && checkviewer
   else
      echo '<Waiting>'
