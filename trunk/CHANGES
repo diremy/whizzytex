@@ -3,6 +3,7 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * fixed ^ in middle of whizzy-mode-regexp-alist
  * test for the file associated to the buffer already exists.
  * small slices can be automatically enlarged to fit some number of pages
  * does not shrink log during initialization and save it at the end

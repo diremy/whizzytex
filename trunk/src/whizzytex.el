@@ -257,18 +257,18 @@ not according to the value of this variable."
    (mapcar
     '(lambda (a) (cons (car a) (concat whizzy-mode-regexp-prefix (cdr a))))
    '(
-     (letter .  "^\\\\begin{letter}")
-     (slide . "^\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
+     (letter .  "\\\\begin{letter}")
+     (slide . "\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
      (subsubsection
-      .  "^\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+      .  "\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (subsection
-      .  "^\\\\\\(\\(s\\(ubs\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+      .  "\\\\\\(\\(s\\(ubs\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (section
-      .  "^\\\\\\(section\\|chapter\\|part\\)\\b[^{]*{")
+      .  "\\\\\\(section\\|chapter\\|part\\)\\b[^{]*{")
      (chapter
-      .  "^\\\\\\(chapter\\|part\\)\\b[^{]*{")
+      .  "\\\\\\(chapter\\|part\\)\\b[^{]*{")
      (document
-      . "^\\\\begin{document}\\(.*\n\\)+")
+      . "\\\\begin{document}\\(.*\n\\)+")
      (none . nil)
      )
    ))

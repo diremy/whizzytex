@@ -1,3 +1,53 @@
+
+\usepackage {hevea}
+\usepackage {fullpage}
+\usepackage {color}
+\usepackage {graphicx}
+\usepackage {pst-node}
+\ifimagen
+\PassOptionsToPackage{ignore}{advi}
+\fi
+\usepackage {advi-annot}
+\usepackage {hyperref}
+
+\let \lst \verb
+\ifhevea
+  \def \space { }\let \hfil \relax \let \hfill\relax
+  \let \hbox \mbox
+  \def \ActiveDVI{ActiveDVI}
+\else
+  \def \TeX{T\kern -.4ex\lower .5ex\hbox {E}\kern -.3emX}
+\fi
+\def \whizzy {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\TeX}}}
+\def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
+\def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
+\def \WhizzyEdit {Whizzy{\sc 
+\raise 0.2ex \hbox{E}\kern -0.2ex%
+\lower 0.0ex \hbox{d}\kern -0.2ex%
+\lower 0.2ex \hbox{i}\kern -0.5ex%
+\raise 0.2ex \hbox{T}}}%
+
+\def \docdef #1{{\tt \string #1}}
+\def \docid #1{$\langle \hbox {\rm\em #1}\rangle$}
+\def \doctt #1{{\tt #1}}
+\def \docarg #1{{\tt \{\docid {#1}\}}}
+\def \docopt #1{{\tt [\docid {#1}]}}
+\def \docpar #1{{\tt (\docid {#1})}}
+\def \doc@empty {}
+\newcommand \dockey[3][]{{\tt #2\def \@test {#3}\ifx \@test \doc@empty \else
+  =\docid{#3}\fi} \def \@test {#1}\ifx \@test \doc@empty \else
+  \quad (default value is {\tt #1})\fi}
+
+%% The following lines are to help HeVeA make  the HTML version of the manual
+
+\ifhevea
+ \def \instruction #1{}
+ \def \whizzy{{Whizzy{\TeX}}}
+ \def \WhizzyEdit {{WhizzyEdit}}
+ \def \tocname {\hyperlink{htoc}{Table of Contents}\hypertarget{htoc}{}}
+\fi
+%\renewcommand{\@bodyargs}{TEXT=black BGCOLOR=white}
+
 \usepackage {color}
 \definecolor{pale}{rgb}{0.95,0.95,0.95}
 
@@ -54,7 +104,7 @@
 \vfil
 }}}
 
-%BEGIN LATEX
+\ifhevea \else
 \message {jobname=\jobname}
 
 \expandafter \def \csname activedvi.image\endcsname 
@@ -64,5 +114,14 @@
 {\message {output=emacs} \let \page \emacs}
 
 \csname \jobname\endcsname
+\fi
 
-%END LATEX
+% %BEGIN LATEX
+% \newenvironment{rawhtml}{\setbox0=\vbox \bgroup \catcode `\#=11}{\egroup}
+% %END LATEX
+
+\def \arg#1{$\langle\texttt {#1}\rangle$}
+\def \opt#1{[ #1 ]}
+
+\@mparswitchfalse  \@reversemargintrue
+\def \NEW#1{\def \@test{#1}\ifx \@test \version\marginpar{\textbf{New!}}\fi}
