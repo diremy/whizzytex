@@ -453,6 +453,8 @@ to slice!\par \bigskip}}%
       \wd1 \wd0 \dp1 0em \ht1 0em \box1
     \egroup} 
 
+\newskip \whizzy@tmpskip
+
 \def \whizzy@markbegin
   {\whizzy@start@here
    %% Added 
@@ -460,10 +462,13 @@ to slice!\par \bigskip}}%
    \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
       \ifvmode
         \nobreak
-        \vskip -\baselineskip \nobreak
-        \hbox {\vbox to 0em{\vskip 1em
-%% Was:        \setbox0 \hbox {\strut\space}\box1\whizzy@markend \vss}}%
-               \setbox0 \hbox {\strut\space}\whizzy@markend \vss}}%
+        \begingroup
+        \whizzy@tmpskip \prevdepth 
+        \nointerlineskip
+        \hbox {\setbox0 \vbox {\setbox0 \hbox {\strut\space}\whizzy@markend}%
+               \dp0=0pt\ht0=0pt \vbox{\box0}}%
+        \prevdepth \whizzy@tmpskip 
+        \endgroup
         \nobreak
       \fi
    \fi \fi

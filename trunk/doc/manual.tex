@@ -686,14 +686,12 @@ the distribution.  Otherwise, you may rollback to a file and configuration
 that used to work (e.g. one of the distribution), and make incremental or
 logarithmic changes until you hit the problem. 
 
+%HEVEA\hypertarget{help}{}
+\section{On line help}
 
-%HEVEA\hypertarget{manual}{}
-\section{Manual} 
-\label{manual}
-
-This section describes how to use and parameterize {\whizzy}.  So as to
-avoid redundancy, {\bf most of the documentation is only available online in
-Emacs, from the \lst"Help" entry of the menu by following hyperlinks.}
+The Emacs source is fully documented and most of the documentation is
+available  as on-line Emacs help, through the \lst"Help" entry of the
+\lst"Whizzy" menu and following hyperlinks.
 %
 Alternatively, you can type
 \begin{quote}
@@ -709,8 +707,18 @@ ESC x hyper-describe-function RET whizzytex-mode RET
 \end{quote}
 instead of \lst"describe-function" to see hyper-links.)
 
+To avoid redundancy, on-line help is not reproduced here, configuration
+described in the next section.
+
+
+%HEVEA\hypertarget{manual}{}
+\section{Configuration} 
+\label{manual}
+
+This section describes how to use and parameterize {\whizzy}.  
 Section \ref{configuration}, \ref{modes} and
 \ref{types} are also available as online help. 
+
 
 \subsection {Emacs global configuration}
 
@@ -1555,7 +1563,7 @@ $$
 \end{figure}
 
 %HEVEA\hypertarget{impl}{}
-\section{An overview of the implementation}
+\section{A quick overview of the implementation}
 
 In short, {\sc \whizzy} is selecting a small slice of the document that 
 you are editing around the cursor (according to the selected mode) 

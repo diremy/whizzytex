@@ -512,7 +512,7 @@ message "Other parameters"
 if $multiple && [ -n "$advi" ]
 then
   tmp=advi.version$$
-  if $advi --version 2>&1 > $tmp
+  if $advi --version 1>$tmp 2>&1
   then
     if
        ( echo 1.50.2 ; \

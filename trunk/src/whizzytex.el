@@ -61,13 +61,22 @@
 (require 'timer)
 
 (defconst whizzytex-version "1.1.3"
-   "This tells the version of WhizzyTeX emacs-mode.
+   "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
-unix PATH and \"whizzytex.sty\" visible from the TEXINPUTS path.
+unix PATH and \"whizzytex.sty\" visible from the TEXINPUTS path (this later
+one is displayed on the welcoming page when launching whizzytex)
 
 It should also be compatible with the version of Active-DVI, especially 
 if your using advi gadgets---see the manual for details.")
+
+;;;
+(defgroup whizzytex nil
+  "Incremental previewing of latex documents."
+  :tag "WhizzyTeX"
+  :prefix "whizzy"
+  :group 'emacs
+)
 
 ;;; Bindings
 (defvar whizzytex-mode-hook 'whizzy-default-bindings
@@ -241,22 +250,25 @@ not according to the value of this variable."
 
 (defvar whizzy-mode-regexp-alist
   (append
-   (list (cons 'paragraph whizzy-paragraph-regexp))
+   (list
+    (cons 'paragraph whizzy-paragraph-regexp)
+    (cons 'ocaml "^([*]")
+    )
    (mapcar
     '(lambda (a) (cons (car a) (concat whizzy-mode-regexp-prefix (cdr a))))
    '(
-     (letter .  "\\\\begin{letter}")
-     (slide . "\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
+     (letter .  "^\\\\begin{letter}")
+     (slide . "^\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
      (subsubsection
-      .  "\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+      .  "^\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (subsection
-      .  "\\\\\\(\\(s\\(ubs\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+      .  "^\\\\\\(\\(s\\(ubs\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (section
-      .  "\\\\\\(section\\|chapter\\|part\\)\\b[^{]*{")
+      .  "^\\\\\\(section\\|chapter\\|part\\)\\b[^{]*{")
      (chapter
-      .  "\\\\\\(chapter\\|part\\)\\b[^{]*{")
+      .  "^\\\\\\(chapter\\|part\\)\\b[^{]*{")
      (document
-      . "\\\\begin{document}\\(.*\n\\)+")
+      . "^\\\\begin{document}\\(.*\n\\)+")
      (none . nil)
      )
    ))
@@ -1032,7 +1044,7 @@ match those of the file")
                    (if whizzy-sync-lines (make-string empty-lines 10)
                      (concat "\\Addtolineno " (number-to-string empty-lines)))
                    (whizzy-get whizzy-custom)
-                   "\\WhizzyStart{}" line)))
+                   "\\WhizzyStart{}" line "\\relax ")))
            (cond ((and (numberp word) (< word end)) (list (cons word "")))
                  ((consp word) word)) 
            (list (cons end "\n\\end{document}\n")))
@@ -1630,8 +1642,8 @@ you may loose some features by removing certain options.
 (defvar whizzy-hook-alist nil
   "*A-list of file dependent hooks. 
 
-Elements are paris ( REGEXP . HOOK ) meaning that the function HOOK
-should be run when whizzytex-mode is turn on on a file whose fullname
+Elements are pairs ( REGEXP . HOOK ) meaning that the function HOOK
+should be run when whizzytex-mode is turned on on a file whose fullname
 matches REGEXP. The hook is run before parameter settings.
 
 These can be defined with `whizzy-add-configuration'. 
@@ -1718,6 +1730,8 @@ These can be defined with `whizzy-add-configuration'.
                            (s (and p (process-status p))))
                       (or (equal s 'run) (equal s 'stop)))
                     (whizzy-kill t))
+                (or (file-readable-p filename)
+                  (error "File %s not readable" filename))
                 ;; file-accessible-directory-p ?
                 (or (file-exists-p subdir) (make-directory subdir))
                 (or (file-exists-p output) (make-directory output))
@@ -1749,7 +1763,9 @@ These can be defined with `whizzy-add-configuration'.
                       (end-of-line)
                       (re-search-backward "^[ \t]*\\\\begin{document}"
                                           (point-min) t)))
-              (re-search-forward "^[ \t]*\\\\begin{document}[ \n\t]*"))
+              (re-search-forward "^[ \t]*\\\\begin{document}[ \n\t]*"
+                                 (point-max) 'move
+                                 ))
             ;; whizzy-reformat need mode on
             (if (not (consp whizzy-slave))
                 ;; This is regular tex file
@@ -2032,16 +2048,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
   (whizzy-load-configuration)
   (whizzy-run-file-hooks)
   (cond
-   ((or whizzy-slave
-        (let ((master
-               (whizzy-read-file-config "whizzy *-ma\\(ster\\|cros\\)")))
-          (and master
-               (not (string-equal
-                     (expand-file-name master)
-                     buffer-file-name))))
-        ;; (and (boundp 'TeX-master) (stringp TeX-master))
-        )
-    (whizzy-setup-slave))
+   ;; XXX two first condition have been inverted 23/08/04
    ((or
      (equal (current-buffer) (whizzy-get whizzy-master-buffer))
      (save-excursion
@@ -2052,7 +2059,18 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
             (re-search-forward
              "^[ \t]*\\(\\\\begin\\(  *\\){document}\\)" (point-max) t)
             (delete-region (match-beginning 2) (match-end 2))))))
-    (whizzy-setup-master query))
+    (whizzy-setup-master query)
+    )
+   ((or whizzy-slave
+        (let ((master
+               (whizzy-read-file-config "whizzy *-ma\\(ster\\|cros\\)")))
+          (and master
+               (not (string-equal
+                     (expand-file-name master)
+                     buffer-file-name))))
+        ;; (and (boundp 'TeX-master) (stringp TeX-master))
+        )
+    (whizzy-setup-slave))
    (t
     (whizzy-setup-slave)
     )
@@ -2748,11 +2766,23 @@ Otherwise, output is kept as long as the window is visible
 )
 
 (defvar whizzy-error-face 'whizzy-error-face
-  "*Face for error overlays
-This is a variable whose value should be a face.")
+  "*Face for error overlays.
+
+This is a variable whose value should be a face.
+
+Its default value is the face 'whizzy-error-face', which can be configured
+with \\[customize-face]. You can also set this variable to another existing
+face \(type \\[list-faces-display] for a list of existing faces).")
+
 (unless (facep whizzy-error-face)
-  (make-face 'whizzy-error-face)
-  (set-face-background 'whizzy-error-face "Khaki"))
+  (defface whizzy-error-face
+    '((((class color)) (:background "Khaki")))
+    "Face used for marking erros in in WhizzyTeX."
+    :group 'whizzytex))
+
+; (unless (facep whizzy-error-face)
+;   (make-face 'whizzy-error-face)
+;   (set-face-background 'whizzy-error-face "Khaki"))
 
 (defun whizzy-overlay-region (beg end)
   (if (and whizzy-overlays (< beg end) (< end (point-max)))
@@ -3307,13 +3337,19 @@ Log file name is obtain from suffix by removing leading character."
         )
       )))
 
+
 (defvar whizzy-slice-face 'whizzy-slice-face
   "*Face for mark out-of-slice part of the buffer.
 This is a variable whose value should be a face.")
+
 (unless (facep whizzy-slice-face)
-  (make-face 'whizzy-slice-face)
-  (set-face-background 'whizzy-slice-face "LightGray")
-  (set-face-foreground 'whizzy-slice-face "dim gray"))
+  (defface whizzy-slice-face
+    '((((class color))
+       (:background "LightGray")
+       (:foreground "dim gray")
+       ))
+    "Face used for marking text out of the current slice in WhizzyTeX."
+    :group 'whizzytex))
 
 (defvar whizzy-slice-overlay nil)
 (make-variable-buffer-local 'whizzy-slice-overlay)
@@ -3348,7 +3384,8 @@ This is a variable whose value should be a face.")
   (if whizzy-begin
       (let* ((begin-document "^[ \t]*\\\\begin{document}[ \t\n]*")
              (begin-regexp
-              (concat "\\(" begin-document "\\(\\)\\|\\(\\)"
+              (concat "\\(" begin-document 
+                      "\\|" ;; "\\(\\)\\|\\(\\)"
                       whizzy-begin "\\)"))
              (end-regexp
               (concat "\\(^[ \t]*\\\\end *{document}\\|^\\\\endinput\\|"

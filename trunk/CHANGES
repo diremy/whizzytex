@@ -3,6 +3,7 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * test for the file associated to the buffer already exists.
  * small slices can be automatically enlarged to fit some number of pages
  * does not shrink log during initialization and save it at the end
  * changed names of configuration files whizzy.el 
@@ -11,6 +12,8 @@ Emacs-mode:
 
 Shell-script: 
 
+ * diplay VERSION number with option -version and command info.
+ * allow spaces in directory names (not in the filename itself).
  * changed names of configuration files whizzy.sh 
  * added a flag during initialization, so as to keep debugging information
  * added AUTOCOMPILE and AUTORECOMPILE variables.
@@ -18,6 +21,7 @@ Shell-script:
 
 LaTeX macros:
 
+ * fixed display of cursor in vmode.
  * small slice can be automatically enlarged to fit some number of pages.
  * changed names of configuration files whizzy.sty
 
