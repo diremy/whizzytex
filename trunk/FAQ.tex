@@ -8,47 +8,73 @@
 \author {Didier R{\'{e}}my}
 \date {Last Modified: \today}
 
+\let \lst \verb
+
+\input {version}
+
 \begin{document}
 
 \maketitle
-\let \lst \verb
-\input {version}
 
 \tableofcontents
 
 \section {Where to find it}
 
-URL is 
-\href
-{http://pauillac.inria.fr/whizzytex}{http://pauillac.inria.fr/whizzytex}
+The URL is \url{http://pauillac.inria.fr/whizzytex}
 
-Last major release is 1.00
-
-Last stable version is {\version}
+The last major release is 1
+and the stable version is {\version}
 
 
 \section {Known problems}
 
 Fixed refers to last stable version.
-\def \FIXED {\textit{Fixed in version > 1.00}}
+\def \FIXED {\textit{Fixed in version > 1.1}}
 
 \begin {enumerate}
 
 \item
-The \lst"x-symbol" package does not fully respect emacs
-\lst"write-region-annotate-functions" protocol, but this is under fix.
+Its has been reported with versions of \textsf{XEmacs 21.4.*}
+that sometimes the cursor move to the end of the buffer while typing.
 
-With (X)Emacs version 21 and above, you may set
+So fars, this happens at unpredictable times and leaves the mark a few
+characters before the point was when the cursor moved. 
+
+I have seen this on someone else screen, but I have not yet been able to
+reproduce it on my own machine. Any help to better identify this phenomenom
+is welcome. 
+
+
+\item Its does not work with the  \lst"x-symbol" package.
+
+The  \lst"x-symbol" package should now work together with WhizzyTeX, 
+provided you have a version of {\tt x-symbol} greater than v4.3.3. 
+
+Alternatively, with (X)Emacs version 21 and above, you may set
 \lst"whizzy-write-annotate" to nil to tell WhizzyTeX not to use
-the this feature. The slice will be write slower, but in a way
-so that the \lst"x-symbol" package will be compatible with WhizzyTeX.
+\lst"write-region-annotation-functions". The slice will be write slower, but
+in a way so that the \lst"x-symbol" package should always be compatible with 
+WhizzyTeX. 
 
 You may also wish to set \lst"'x-symbol-auto-conversion-method" to
 \lst"'fast".
 
-\item
-Interactive commands \texttt{duplex} and \texttt{reformat} may not work in 
-version~1.00. \FIXED.
+\item How can a click in the \lst"advi" window reposition the point
+in the emacs window?
+
+First, you should be using the \lst"advi" previewer.  Then, check the
+documentation of \lst"advi", since bindings may depend on versions. This is
+likely to be \lst"shift-left-mouse" or \lst"left-mouse".
+
+There might also be a short-cut that temporarily rebinds
+\lst"shift-xxx-mouse" to \lst"xxx-mouse". This can be toggled by typing
+\lst"e"   in the \lst"advi" or by calling \lst"advi" with the option
+\lst"-edit". 
+%
+Note that \lst"shift-midddle-click" and \lst"shift-right-click" (or their
+shortcut versions) are used for \lst"move" and \lst"resize" commands when
+WhizzyEditting.
+
 
 \end {enumerate}
 

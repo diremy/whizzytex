@@ -1,4 +1,4 @@
-ORIGIN=1.00v
+ORIGIN=1.1
 VERSION=$(ORIGIN)
 
 # Url of sources
@@ -24,10 +24,17 @@ REMAKE=$(MAKE) -f $(MANAGER)
 
 
 help: link
-	@echo 'Usage: '
-	@echo '  $(REMAKE) upgrade install clean'
-	@echo '  $(REMAKE) VERSION=<version> download ' 
-	@echo '  $(REMAKE) VERSION=<version> dowgrade ' 
+	@echo 'Usage: '; echo
+	@echo '  $(REMAKE) upgrade    # to build the most recent version'
+	@echo '  $(REMAKE) xxx        # to build the experimental version'
+	@echo '  $(REMAKE) download   # to retreive version <version>'
+	@echo '  $(REMAKE) downgrade  # to rebuild  version <version>'
+	@echo; echo 'Then, most likely as superuser: '; echo
+	@echo '  umask 022  '          
+	@echo '  $(REMAKE) uninstall  # if a previously version was installed'
+	@echo '  $(REMAKE) install '
+	@echo; echo 'Finally: '; echo
+	@echo '  $(REMAKE) clean'
 
 .PHONY: link
 link:
@@ -86,8 +93,14 @@ build:
 install:
 	cd whizzytex; make install
 
+uninstall:
+	cd whizzytex; make uninstall
+
 clean:
 	cd whizzytex; make clean
+
+xxx:
+	$(REMAKE) VERSION=xxx download downgrade
 
 .PHONY: help whizzytex-version show-versions
 .PHONY: upgrade download update download unpack version repack 

@@ -69,7 +69,7 @@
 \def \whizzy@fulldocumenthook {}
 \def \whizzy@resume
   {\endgroup 
-   \message {[WisyTeX is resuming in LaTeX mode]}%
+   \message {[WhizzyTeX is resuming in LaTeX mode]}%
    \whizzy@fulldocumenthook
    \whizzy@auxfalse \relax
    \let \documentclass \latex@documentclass
@@ -172,14 +172,28 @@ to slice!
 %% Macros to dump section numbers
 
 %% The difference between real and virtual line numbers
-\def \whizzy@diffline {0}
-\newcount \whizzy@lineno
-\def \whizzy@thelineno 
-   {\whizzy@lineno \inputlineno 
-    \advance \whizzy@lineno by \whizzy@diffline}
-\def \whizzy@setline #1{\xdef \whizzy@diffline {#1}}
-\def \AddtoInputlineno #1{%
-   \whizzy@setline{#1}\whizzy@writelineno}
+% global variable
+\global \def \whizzy@linediff {0}
+% tempcount
+\newcount \whizzy@count
+% compute source lineno into whizzy@count
+\def \whizzy@makelineno 
+   {\whizzy@count \inputlineno 
+    \advance \whizzy@count by \whizzy@linediff\relax}
+\def \whizzy@setlinediff #1{\global \xdef \whizzy@linediff {#1}}
+\def \whizzy@addtolineno 
+   {\advance \whizzy@count by \whizzy@linediff
+    \whizzy@setlinediff {\the \whizzy@count}}
+\def \whizzy@setlineno
+   {\advance \whizzy@count by -\inputlineno
+    \whizzy@setlinediff {\the \whizzy@count}}
+% Export tex versions
+\def \Addtolineno {\afterassignment \whizzy@addtolineno \whizzy@count}
+\def \Setlineno  {\afterassignment \whizzy@setlineno \whizzy@count}
+% Export latex versions
+\def \AddtoLineno #1{\Addtolineno #1\relax}
+\def \SetLineno #1{\Setlineno #1\relax}
+\def \whizzy@thelineno {\whizzy@makelineno \the \whizzy@count}
 
 %% The current file (see below)
 \edef \whizzy@curfile {\jobname \WhizzyExt}
@@ -213,21 +227,39 @@ to slice!
    \filename@parse {\whizzy@curfile}%
    \xdef \whizzy@Curfile 
      {\whizzy@curfile \@ifundefined {filename@ext}{.tex}{}}%
-   \whizzy@thelineno
+   \whizzy@makelineno
    \immediate \write \whizzy@pag
-   {\whizzy@Curfile:\the\whizzy@lineno:#1@\thepage.%
+   {\whizzy@Curfile:\the\whizzy@count:#1@\thepage.%
     \@ifundefined{c@chapter}{}{\the\c@chapter.}%
     \the\c@section.\the\c@subsection.%
     \ifwhizzy@appendix 1\else 0\fi.}%
   \endgroup
 }
 
+\def \whizzy@navigate@banner #1{%
+   \par
+    \vbox {\Large \bf \par
+    \whizzy@outputline {0}{\whizzy@local}%
+    \ifx #1A\setbox 0\centerline {\lower 1em\hbox {\small Move-to}}%
+    \ht0 0em \dp0 0em \box0\par
+    \whizzy@outputline {0}{\whizzy@local}\fi
+    \ifx #1B\vskip 0.2em \hrule height 0.1em \vskip 0.2em\fi
+    \noindent {Previous-Slice}\hfill {Next-Slice}%
+    \ifx #1A\vskip 0.2em \hrule height 0.1em \vskip 0.2em\fi
+    \whizzy@outputline {0}{\whizzy@local}%
+    \par
+   }}
+%\AtBeginDocument {\whizzy@navigate@banner A}
+%\AtEndDocument {\whizzy@navigate@banner B}
+
 \edef \whizzy@local {\jobname \WhizzyExt}
 \def \WhizzySlice #1.#2.#3.#4.{%
+   %\whizzy@navigate@banner A\relax
    \ifcase #4\or\appendix\fi
    \setcounter{page}{#1}%
    \setcounter{section}{#2}\setcounter{subsection}{#3}}
 \def \Whizzy@chapter #1.#2.#3.#4.#5.{%
+   %\whizzy@navigate@banner A\relax
    \ifcase #5\or \appendix\fi
    \setcounter{page}{#1}\setcounter{chapter}{#2}%
    \setcounter{section}{#3}\setcounter{subsection}{#4}}
@@ -275,12 +307,12 @@ to slice!
 
 %% Two commands must be redefined, so we share there code
 \def \whizzy@reposition #1#2{%
-   \whizzy@setfile{#1}\whizzy@setline{#2}\whizzy@writelineno}
+   \whizzy@setfile{#1}\whizzy@setlinediff{#2}\whizzy@writelineno}
 \def \whizzy@iinput 
-   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@diffline}}%
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@linediff}}%
     \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@iinput}}
 \def \whizzy@input@
-   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@diffline}}%
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@linediff}}%
     \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@input@}}
 
 %% Note the use of a function to work with recursive inputs: we cannot 
@@ -306,27 +338,28 @@ to slice!
 %% Print a header when the slice is mastered 
 %% (we put a \whizzy@writelineno  hook for advi. 
 
-\edef \whizzy@master {\jobname \WhizzyExt}
+\@ifundefined {whizzy@master}
+  {\edef \whizzy@master {\jobname \WhizzyExt}}{}
 
 \def \whizzy@fill 
   {\leavevmode \leaders \hrule height 0.15em \hfill \kern \z@}
-\def \whizzy@master@banner
-  {\whizzy@setfile {\whizzy@master}%
+\def \whizzy@banner #1{%
+  \whizzy@outputline {0}{\whizzy@local}%
+  \whizzy@setfile {\whizzy@master}%
    \vbox
     {\whizzy@outputline {0}{\whizzy@master}%
      \whizzy@outputline {0}{\whizzy@master}%
-     \noindent
-     {\LARGE\bf \whizzy@fill\space
-       Mastered by \whizzy@master\space \whizzy@fill}%
+     #1%
      \whizzy@outputline {0}{\whizzy@master}}%
      \whizzy@setfile {\whizzy@local}\par
+     \whizzy@outputline {0}{\whizzy@local}%
    }
-\def \whizzy@outputmaster {%
-  \whizzy@master@banner
-}
-\def \whizzy@master@end{%
-  \par \bigskip \whizzy@master@banner \par
-}
+\def \whizzy@master@banner {\whizzy@banner {\noindent
+     {\LARGE\bf \whizzy@fill\space
+       Mastered by \whizzy@master\space \whizzy@fill}}}
+\def \whizzy@outputmaster {\whizzy@master@banner}
+\def \whizzy@master@end{\par \bigskip \whizzy@master@banner \par}
+
 
 \def \WhizzyMaster #1{%
   \def \whizzy@local {#1}%
@@ -395,7 +428,8 @@ to slice!
     \egroup} 
 
 \def \whizzy@markbegin
-  {\whizzy@starthere
+  {\whizzy@start@here
+   %% Added 
    \ifmmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
    \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
       \ifvmode
@@ -425,10 +459,11 @@ to slice!
 % Do not remenber why this... \whizzy@active should be better
 %\AtBeginDocument {\catcode `\^^A \active}
 
-\long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup}
+\long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
 \newcommand{\Meaning}
-  {\par  \medskip \hrule \smallskip \vbox \bgroup
-       \texttt \bgroup \hsize 0.7\hsize\makeatletter \@Meaning}
+  {\par  \medskip \hrule \smallskip \begingroup 
+       \hsize 0.75\hsize
+       \vbox \bgroup \texttt \bgroup \makeatletter \@Meaning}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Last section: advi stuff
@@ -445,7 +480,8 @@ to slice!
 \let \WhizzySkip \relax
 \let \WhizzyStart \relax
 \let \WhizzyLine \whizzy@ignore
-\let \whizzy@starthere \whizzy@empty
+\let \WhizzyLinePoint \whizzy@ignore
+\let \whizzy@start@here \whizzy@empty
 \def \whizzy@outputline #1#2{}
 
 
@@ -462,16 +498,16 @@ to slice!
 }
 \def \whizzy@writelineno
    {\ifhmode \unskip \fi
-    \whizzy@thelineno
-    \xdef \whizzy@lastparno {\the\whizzy@lineno}%
-    \whizzy@outputline {\the\whizzy@lineno}{\whizzy@curfile}}
+    \whizzy@makelineno
+    \xdef \whizzy@lastparno {\the\whizzy@count}%
+    \whizzy@outputline {\the\whizzy@count}{\whizzy@curfile}}
 \def \whizzy@pageno {0}
 \def \whizzy@lastpageno {0}
 \def \whizzy@writelastpage
   {\whizzy@outputline {\whizzy@lastpageno}{\whizzy@curfile}%
-   \whizzy@thelineno
+   \whizzy@makelineno
    \xdef \whizzy@lastpageno {\whizzy@pageno}%
-   \xdef \whizzy@pageno {\the\whizzy@lineno}%
+   \xdef \whizzy@pageno {\the\whizzy@count}%
 }
 \g@addto@macro \whizzy@everypagehook {\whizzy@writelastpage}
 
@@ -481,25 +517,26 @@ to slice!
 
 % To insert the mark ``around'' the current line number
 \edef\whizzy@quote{\string"}
-\def \whizzy@starthere
+\def \whizzy@start@here
    {%\ifhmode \unskip \fi
     \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
     \special {html:</A>}%
     %\ifhmode \hskip \lastskip \fi
-    \whizzy@thelineno
-    \message {[Start-Document @ \whizzy@line -> \the\whizzy@lineno\space
+    \whizzy@makelineno
+    \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
                \whizzy@curfile]}%
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
     \global \let \whizzy@check@line \relax
     \global \let \begin \whizzy@begin
-    \global \let \whizzy@starthere \relax
+    \global \let \whizzy@start@here \relax
     }
 \let \latex@@par \@@par
 \let \whizzy@checkline \relax
 \def \whizzy@@par 
   {\whizzy@checkline \whizzy@writelineno \latex@@par}
 \let \whizzy@catcode \relax
+\let \whizzy@starthere \whizzy@start@here
 \def \whizzy@@check@limit 
   {\ifx \whizzy@curfile \whizzy@local
      \ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi
@@ -534,11 +571,16 @@ to slice!
 %%
 \def \whizzy@line{}
 \def \whizzy@nopar {\let \@@par \latex@@par \let \par \@@par}
-\def \WhizzySkip  {\ifwhizzy@tricks \whizzy@nopar \fi}
+\def \WhizzySkip {\ifwhizzy@tricks \whizzy@nopar \fi}
 \def \WhizzyStart {\ifwhizzy@tricks \whizzy@par \whizzy@writelineno \fi}
 
 
-\def \whizzy@par {\let \@@par \whizzy@@par \let \par \@@par}
+\let  \latex@footnotetext \@footnotetext
+\long \def \whizzy@footnotetext #1{\latex@footnotetext
+ {\ifwhizzy@tricks \whizzy@writelineno #1\whizzy@writelineno\else #1\fi}}
+
+\def \whizzy@par {\let \@@par \whizzy@@par \let \par \@@par
+                  \let \@footnotetext \whizzy@footnotetext}
 \def \whizzy@@display 
  {\whizzy@lineno@display \let \halign \whizzy@halign \whizzy@check@line@}
 
@@ -552,6 +594,8 @@ to slice!
   \let \whizzy@display \whizzy@@display
   \let \begin \whizzy@@begin%
 }
+\def \WhizzyLinePoint
+   {\global \let \whizzy@starthere \relax\WhizzyLine}
 
 %%% Hack because \whizzy@lineno@display generates $$\hbox{}\halign
 %%% which is not correct. The \hbox cannot be removed.
@@ -565,6 +609,10 @@ to slice!
   \abovedisplayskip 0em $$\aftergroup  \whizzy@endhalign \fi
   \latex@halign} 
 
+%%% Should I do that -- load advi.sty if not loaded? 
+%%% Provides floating table of contents
+
+\usepackage{advi}
 
 \makeatother
 \endinput

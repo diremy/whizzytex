@@ -1,4 +1,21 @@
-#!/bin/bash
+#!/bin/sh
+
+case "$1" in
+  noloop) shift;;
+  *)
+    case "$BASH" in
+      *bash);;
+      *)
+        if bash -c echo
+        then exec bash $0 noloop "$@"
+        else
+          echo 'This is a bash script, but bash does not seem to be working'
+          echo 'Please, try bash "bash configure"' 
+        fi;;
+    esac;;
+esac
+
+
 
 configure_options="$*"
 prefix=/usr/local
@@ -79,6 +96,10 @@ while : ; do
   -latexdir) ## <path>                          # $(DATADIR)/latex
         ## set the directory where to install source lisp code 
         latexdir=$(absolute_or_prefix $2); shift;;
+##
+  -docdir|--docdir) ## <path>                   # share/doc/whizzytex
+        ## set the directory where to install documentation DATADIR
+        docdir=$(absolute_or_prefix $2); shift;;
 ##
   -emacsdir) ## .|?|<path>                      # $(LIBDIR)/emacs
         ## set the directory for emacs lisp code
@@ -198,17 +219,17 @@ message "Setting directories"
 
 output PREFIX "$prefix"
 
-if test -z "$datadir"; then datadir='$(PREFIX)'/share/whizzytex; fi
-output DATADIR "$datadir"
+if test -z "$bindir"; then bindir='$(PREFIX)'/bin; fi
+output BINDIR "$bindir"
 
 if test -z "$libdir"; then libdir='$(PREFIX)'/lib/whizzytex; fi
 output LIBDIR "$libdir"
 
-if test -z "$docdir"; then docdir='$(PREFIX)'/doc/whizzytex; fi
-output DOCDIR "$docdir"
+if test -z "$datadir"; then datadir='$(PREFIX)'/share/whizzytex; fi
+output DATADIR "$datadir"
 
-if test -z "$bindir"; then bindir='$(PREFIX)'/bin; fi
-output BINDIR "$bindir"
+if test -z "$docdir"; then docdir='$(PREFIX)'/share/doc/whizzytex; fi
+output DOCDIR "$docdir"
 
 if test -z "$latexdir"; then latexdir='$(DATADIR)'/latex; fi
 output LATEXDIR "$latexdir"

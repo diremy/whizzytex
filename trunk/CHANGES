@@ -3,17 +3,40 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * added per-file hooks
+ * fixed/changed parsing of options
+ * added parsing of the option -dvicopy
+ * recognizes advi driven slive moves
+
 Shell-script: 
+
+ * added the option -dvicopy to postprocess the dvi
 
 LaTeX macros:
 
+ * load advi.sty in advi mode
+
 Installation/Documentation:
+
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
 
+ - Version 1.1
+ * \begin{document} and \end{document} should be preceded by space or newline 
+ * WhizzyEdit with multiple files. 
+ * Now loop detection when searching for a master-file...
+ * TeX-master only used when file is a slave (don't trust auctex).
+ * Turn mode off and on around revert-buffer.
+ * Turning mode off in the process buffer now (correctly) acts on the master. 
+ * searches for master file in latex log files in the current directory.
+ * searches for master file in buffers running whizzytex. 
+ * join between section and latex counters done in emacs instead of bash
+ * macro files can be whizzytex (action is to reformat on save-buffer)
+ * now leave write-region-annotate-functions global 
+   (should become compatible with new version of x-symbol package).
  * added whizzy-edit to edit (move and resize) tex objects from advi.
  * added detexification so that whizzy-goto-line works in latin mode. 
  * whizzy-goto-line takes surounded words into accoun for better precision
@@ -33,6 +56,10 @@ Emacs-mode:
 
 Shell-script: 
 
+ - Version 1.1
+ * Replace suicide by cleanquit whenever possible.
+ * removed join between section and latex counters (now done in emacs).
+ * now start with /bin/sh and calls bash (seach in PATH).
  * renamed FMT into FORMAT and added FMT for format extension.
  * change newslice detection (does not watch other file but the slice)
  * alternative when grep does not recognize -B
@@ -48,12 +75,18 @@ Shell-script:
 
 LaTeX macros:
 
+ - Version 1.1
+ * added \SourceFile{<NAME>} macro to be used in processed files.
  * made it work with all file extensions but those internally used
  * fixed a bug in use of \everydisplay
  * renamed filename.wiz into filename.waux
 
 Installation/Documentation:
 
+ - Version 1.1
+ * Clean up the documentation.
+ * Replace -KILL by -TERM in checkconfig.
+ * renamed manual.info in whizzytex.info
  * Added examples/edit/{main.tex,whizzedit.sty}
  * Change of Manager makefile to call ./configure when changed
  * Rewrote ./configure to work in batch and take command line arguments

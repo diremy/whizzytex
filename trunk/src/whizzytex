@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash 
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002 Didier Rémy
@@ -24,11 +24,27 @@
 #  File whizzytex (Bash shell-script)
 #############################################################################
 
-
-### Configuration
+### Configuration (manual or automatic)
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
+
+# Set to false if grep does not accept option -B
+GREPB=true
+
+# Translatin DVI to Postscript
+DVIPS=dvips
+
+# Translatin DVI to DVI, may be set to DVICOPY
+DVICOPY=mv
+
+# Default LaTeX implementation
+INITEX=initex
+LATEX=latex
+FORMAT=latex
+FMT=fmt
+
+### Configuration (manual only)
 
 # limit the length of error messages sent back to stdout.
 TEXERRORMAXLINES=50
@@ -46,27 +62,22 @@ SIGPS=SIGHUP
 # READOPTION=-t 5
 READOPTION=
 
-# Translatin DVI to Postscript
-DVIPS=dvips
+### End of configuration variables
 
-# Default LaTeX implementation
-INITEX=initex
-LATEX=latex
-FORMAT=latex
-FMT=fmt
-
-### End of manual configuration
-
-GREPB=true
-DEBUG=false
+TRACE=false
 
 case $# in
  0) echo 'Usage: whizzytex [ OPTIONS ] FILENAME'; exit 1;;
 esac
 
-COMMAND="$0 $*"
+COMMAND="$0 $@"
 TOUCH=false
-MAKE=defaultmake
+MKSLICE=defaultmkslice
+MKFILE=defaultmkfile
+
+defaultmkslice () { mv $SLICE $WHIZZY$EXT 2>/dev/null; }
+defaultmkfile () { true; }
+
 
 DO=normal
 DOMARKS=false
@@ -83,8 +94,10 @@ do
    -kill) DO=kill;;
    -wakeup) DO=wakeup;;
    -reformat) DO=format;;
-   -pre) MAKE="$2"; shift;;
+   -mkslice) MKSLICE="$2"; shift;;
+   -mkfile) MKFILE="$2"; shift;;
    -duplex) DUPLEX=true;;
+   -trace) TRACE=true;; 
    -marks) DOMARKS=true;;
    -makeindex) 
       case "$2" in
@@ -92,32 +105,33 @@ do
         *) MAKEINDEX="$2";;
       esac 
       shift;;
+   -ext) EXT="$2"; shift;;
    -initex) INITEX="$2"; shift;;
    -latex) LATEX="$2"; shift;;
    -format) FORMAT="$2"; shift;;
    -fmt) FMT="$2"; shift;;
-   -marksonly) DO=marks;;
+   -dvicopy) DVICOPY="$2"; shift;;
    -watch) NEWFILES=newfiles;;
    -dvi)
        VIEW=wdvi;
-       case $2 in
+       case "$2" in
        .) VIEWCOMMAND=xdvi;;
-       *) VIEWCOMMAND=$2;;
+       *) VIEWCOMMAND="$2";;
        esac
        shift;;
    -advi)
        ADVI=1
        VIEW=wdvi;
-       case $2 in
+       case "$2" in
        .) VIEWCOMMAND=advi;;
-       *) VIEWCOMMAND=$2;;
+       *) VIEWCOMMAND="$2";;
        esac
        shift;;
    -ps)
        VIEW=ps
-       case $2 in
+       case "$2" in
        .) VIEWCOMMAND=gv;;
-       *) VIEWCOMMAND=$2;;
+       *) VIEWCOMMAND="$2";;
        esac
        shift;;
    -*)
@@ -133,12 +147,13 @@ where <option> is
     -reformat
     -duplex
     -makeindex <makeindex command>
+    -ext <latex extension>
     -initex <initex command>
     -latex <latex command>
     -format <latex format file name>
     -fmt <format extension>
-    -marks 
-    -pre <preproces-command>
+    -marks
+    -pre <preprocess-command>
     -advi <advi-like previewer command> 
     -dvi <dvi-like previewer command> 
     -ps <Postscript previewer command> 
@@ -149,10 +164,16 @@ where <option> is
   shift
 done
 
+if $TRACE; then set -o xtrace; fi
+
 HERE=$(/bin/pwd)
+FULLNAME=$1
 BASENAME=$(basename $1)
-EXT=$(expr "$BASENAME" : '.*\(\.[^.]*\)')
-NAME=$(basename "$BASENAME" "$EXT")
+FILEEXT=$(expr "$BASENAME" : '.*\(\.[^.]*\)')
+NAME=$(basename "$BASENAME" "$FILEEXT")
+case "$EXT" in
+ "") EXT=$FILEEXT;;
+esac
 WHIZZY=_whizzy_$NAME
 WHIZZYDIR=${WHIZZY}_d
 WFORMAT=\&$WHIZZY
@@ -167,10 +188,9 @@ ERR=$TMP/err
 
 errlog () { echo "$*" 1>&2; }
 fatal () { 
-  errlog '*** Fatal error: ' "$*"
-  [ -f $ERR ] && cat $ERR
-  echo '<Fatal error>'
-  suicide
+    errlog '*** Fatal error: ' "$*"
+    [ -f $ERR ] && cat $ERR
+    cleanquit Fatal
 }
 warning () {
   echo "Warning: " $*
@@ -178,24 +198,29 @@ warning () {
 
 quit () { 
   echo '<Quitting>'
-  errlog 'Warning: ' "$*"
-  cleanquit
+  cleanquit viewer
 }
 
+log () {
+  if [ -f $OUTPUT/$1 ] 
+  then cat $OUTPUT/$1
+  fi
+  false
+}
 
-
-log () { 
+texlog () { 
   if [ -f $OUTPUT/$1 ] 
   then
     if $GREPB; then
     grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES
-    else sed -n '/^!/,$p' | head -$TEXTERRORAROUND $OUTPUT/$1
+    else sed -n '/^!/,$p' $OUTPUT/$1 | head -$TEXERRORAROUND 
     fi
   fi
   false; 
 }
 errlog "$COMMAND"
 
+$MKFILE $FULLNAME
 if [ -f $NAME$EXT ]
 then 
    :
@@ -205,18 +230,24 @@ else
 fi
 
 clean () {
-   [ -f $TMP/pids ] && kill -QUIT $(cat  $TMP/pids) 2>/dev/null
+   [ -f $TMP/pids ] && kill -TERM $(cat  $TMP/pids) 2>/dev/null
    rm -f $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW
    rm -rf $WHIZZYDIR
    rm -f $LOCK
-   [ -f $WHIZZY ] && "Cleaning up..."
 }
 
-cleanquit () { clean; exit 0; }
-trap cleanquit SIGQUIT
-trap cleanquit SIGHUP
+cleanquit () {
+   trap - SIGTERM
+   echo "Quitting ($1)"
+   clean
+   kill -TERM 0
+   exit 0
+}
+trap "cleanquit SIGTERM" SIGTERM
+trap "cleanquit SIGHUP" SIGHUP
+trap "cleanquit SIGQUIT" SIGQUIT
 
-suicide () {
+cleankill () {
    if [ -f $LOCK ] 
    then
       PID=$(cat $LOCK)
@@ -230,75 +261,32 @@ suicide () {
 
 wakeup () { [ -f $LOCK ] && kill -CONT $(cat $LOCK); }
 runinitex () { ( ulimit -t $LIMIT; $INITEX "$@" ); }
-runlatex    () { ( ulimit -t $LIMIT; $LATEX  "$@" ); }
+runlatex  () { ( ulimit -t $LIMIT; $LATEX  "$@" ); }
 
 
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 ############################################################################
 # BEGIN sections
 
-SECTION='\\\(chapter\|section\|subsection\|subsubsection\)'
-intersect () {
-    sort $TMP/sec $WHIZZY.pag > $TMP/spg
-    sort -n -t : +0 +1 -u $WHIZZY.pag $TMP/sec | sort | comm -1 -3 - $TMP/spg > $TMP/sec.1
-    sort -n -t : +0 +1 -u $TMP/sec $WHIZZY.pag | sort | comm -1 -3 - $TMP/spg > $TMP/pag
-}
-
-premark () {
-    if [ -f $WHIZZY.pag ]
-    then 
-       SOURCES=$(sed -n -e 's/^\([^:]*\):\(.*\)$/\1/p' $WHIZZY.pag | sort -u); 
-    else
-       SOURCES=$NAME$EXT
-    fi
-    grep -n -e "^$SECTION" $SOURCES /dev/null | \
-    sed -e 's/^\([^:]*\):\([0-9]*\):'"$SECTION"'/\1:\2:\3@/' -e 's/"/\\"/' \
-      > $TMP/sec
-}
-postmark () {
-    intersect
-    ( join -t @  $TMP/pag $TMP/sec.1 | \
-      sed -e 's/^\([^:]*\):[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/\1:("\\\2\4"."\\WhizzySlice\3")/' -e 's/\\/\\\\/g' ) > $TMP/tmp
-    ( echo "(setq tmp '("; 
-      for file in $SOURCES
-      do
-        if [ -f $file ]
-        then
-          echo '("'$file'".('
-          ( grep -e "$file" $TMP/tmp | sed -e 's/^\([^:]*:\)\(.*\)/\2/' ) 
-          echo '))'
-        fi
-      done
-      echo '))'
-    ) > $SECTIONS
-}
-marks () {
-    premark
-    runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
-    postmark
-    cat $SECTIONS
+makebibtex () {
+  bibtex $NAME 1>$OUTPUT/bibtex
+  [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+  true
 }
 
 batchmarks () {
-    premark
-    if runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/whole
+    if runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/latex
     then
-      cp $NAME.dvi $NAME.$VIEW
-      if $1
-      then
-         postmark
-      fi
+      $DVICOPY $NAME.dvi $NAME.$VIEW
       [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
-      if grep 'LaTeX Warning: Citation' $NAME.log
+      if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAME.log
       then
-         bibtex $NAME 1>$OUTPUT/bibtex
-         [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
-         true
+        makebibtex
       fi
       if $DOINDEX && grep 'Writing index file' $NAME.log
       then
@@ -367,10 +355,9 @@ worddiff () {
 # So what should we do
 
 case $DO in
-  kill) suicide && exit 0 || exit 1;;
+  kill) cleankill && exit 0 || exit 1;;
   wakeup) wakeup && exit 0 || exit 1;;
   format) format && exit 0 || exit 1;;
-  marks) marks && exit 0 || exit 1;;
   normal) 
     # To ensure that only one deamon is running on the spool file.
     if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
@@ -405,7 +392,7 @@ else
   else
      rm -f $NAME.$FMT
      echo 'failed>'
-     log format
+     texlog format
      fatal 'could not build initial format'
   fi
 fi
@@ -418,7 +405,10 @@ echo '\begin{document}\WhizzyEmptyPage\end{document}' > ${WHIZZY}_nil$EXT
 
 echo $VIEWCOMMAND 1>&2
 
+# GV does not refresh if the dates are equal (i.e. up 1 second) even when  
+# signal with $SIGPS
 ANTIDATE=$(date +%m%d%H%M.%S)
+
 case $VIEW in
   ps)
     preview () {
@@ -429,28 +419,26 @@ case $VIEW in
     SIG=$SIGPS
     ;;   
   wdvi)
-    preview () { mv $WHIZZY.dvi $WHIZZY.$VIEW; }
+    preview () { $DVICOPY $WHIZZY.dvi $WHIZZY.$VIEW; }
     SIG=$SIGDVI
     ;;   
 esac
 
 newfiles () {
-  mv $(find $INPUT -type f -print || suicide) $HERE/  2>/dev/null
+  mv $(find $INPUT -type f -print || cleanquit Find) $HERE/  2>/dev/null
 }
 newfile () {
   mv $INPUT/$SLICE $HERE/  2>/dev/null
 }
 
-defaultmake () { mv $SLICE $WHIZZY$EXT 2>/dev/null; }
-
 preprocess () {
-  if $MAKE $WHIZZY$EXT >$OUTPUT/make 2>$ERR && [ -f $WHIZZY$EXT ]
+  if $MKSLICE $WHIZZY$EXT >$OUTPUT/mkslice 2>$ERR && [ -f $WHIZZY$EXT ]
   then 
      true
   else
      echo '<Preprocessing failed>'
      [ -f $ERR ] && cat $ERR
-     log make
+     log mkslice
      false
   fi
 }
@@ -470,7 +458,7 @@ process () {
      then 
        :
      else
-       log slice
+       texlog slice
        [ -f $WHIZZY.last ] && echo 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' '
      fi
      echo '<Continuing>'
@@ -510,9 +498,7 @@ rm -f $TMP/ID
   echo $! >> $TMP/pids
   ID=$!
   echo $ID > $TMP/ID
-  wait $ID \
-      && quit 'Quitting viewer' \
-      || fatal 'Viewing process terminated abnormally'
+  wait $ID && quit || fatal 'Viewing process terminated abnormally'
 } &
 
 checkviewer () {
@@ -546,7 +532,7 @@ reformat () {
       whole $DOMARKS
   else
       echo '<Reformatting failed>'
-      log format
+      texlog format
       echo '<Continuing with the old format>'
   fi
 }
@@ -573,32 +559,84 @@ ID=$(cat $TMP/ID)
 
 ## The loop watching changes
 
+checkMKfile () {
+  case "$1" in
+    "") ;;
+    *) 
+        if  $MKFILE "$1" >$OUTPUT/mkfile 2>$ERR
+        then true
+        else 
+          echo '<Postprocessing mkfile failed>'
+          [ -f $ERR ] && cat $ERR
+          log mkfile
+          false
+        fi;;
+  esac
+}
+
+# to be fixed
+viewps () {
+  slice=$1
+  if $slice; then file=$WHIZZY; else file=$NAME; fi
+  if [ -f $file.wdvi ]
+  then 
+    ( $DVIPS -o $file.ps $1 && gv $TMP/$1.ps ) >$OUTPUT/viewps 2>$ERR &
+  else echo "$file.wdvi not found"
+  fi
+}
+
 while true
 do
   if [ ! -d $WHIZZYDIR ]
   then fatal 'No more _whizzy_ directory'
-  elif [ $WHIZZY.$FMT -ot $NAME$EXT ]
-  then reformat
+################## Reformating now done from Emacs.
+#    elif [ $WHIZZY.$FMT -ot $NAME$EXT ]
+#    then reformat
   elif $NEWFILES && preprocess || $PROCESS
   then process && checkviewer
   else
      echo '<Waiting>'
      read $READOPTION COMMAND REST
-     case /$COMMAND/ in
-       /duplex/) duplex ;;
-       /reformat/) reformat ;;
-       /debug/)
+     case "$COMMAND" in
+       duplex) duplex ;;
+       reformat) checkMKfile $REST; reformat ;;
+       reslice) process && checkviewer ;;
+       whole) checkMKfile $REST; whole $DOMAKS;;
+       bibtex) makebibtex;;
+       viewps-slice) viewps true;;
+       viewps-whole) viewps false;;
+#       bash) bash -c "$REST";;
+       info) 
+        echo "
+        COMMAND=$COMAND
+        EXT=$EXT
+        MKSLICE=$MKSLICE
+        MKFILE=$MKFILE
+        INITEX=$INITEX
+        LATEX=$LATEX
+        FORMAT=$FORMAT
+        DUPLEX=$DUPLEX
+        DOMARKS=$DOMARKS
+        VIEW=$VIEW
+        VIEWCOMMAND=$VIEWCOMMAND
+        ADVI=$ADVI
+
+        BASENAME=$BASENAME
+        EXT=$EXT
+        NAME=$NAME
+";;
+       trace)
           case $REST in
-              on) set -o xtrace; DEBUG=true;; 
-             off) set +o xtrace; DEBUG=false;; 
+              on) set -o xtrace; TRACE=true;; 
+             off) set +o xtrace; TRACE=false;; 
           esac
-          echo "<debug is $DEBUG>"
+          echo "<trace is $TRACE>"
           ;;
-       /exit/) break ;;
+       exit) break ;;
      esac
   fi
 done
 
-cleanquit
+cleanquit Exit
 
 # whizzytex ends here

@@ -5,15 +5,15 @@
    installed, and at least one DVI or Postscript previewer, such as advi,
    xdvi, or dvips combined with gv.
    WhizzyTeX  has  been developed under Linux Redhat 7.2 but has not been
-   extensively  tested  on  other  platforms. While LAT[E]X and Emacs are
-   quite  portable,  you may run into compatibility problem with the bash
-   shell-script.
-   Get   the   source  whizzytex-1.00iii.tgz  from  the  [3]distribution,
-   uncompress and untar it in some working directory, as follows:
+   extensively  tested on other platforms. However, LAT[E]X and Emacs are
+   quite  portable  and  possible  compatibility  problem  with  the bash
+   shell-script should be minor and easily fixable.
+   Get  the source whizzytex-1.1.tgz from the [3]distribution, uncompress
+   and untar it in some working directory, as follows:
 
-        gunzip whizzytex-1.00iii.tgz
-        tar -xvf whizztex-1.00iii.tar
-        cd whizzytex-1.00iii
+        gunzip whizzytex-1.1.tgz
+        tar -xvf whizztex-1.1.tar
+        cd whizzytex-1.1
 
    Then,  the  installation  can be automatic (default or customized), or
    manual.
@@ -21,23 +21,29 @@
   1.1  Automatic installation
   ---------------------------
 
-   By   default,   all   files   will   be  installed  in  the  directory
-   /usr/local/lib/whizzytex/    and   Emacs-lisp   code   will   not   be
-   byte-compiled. Then, just type:
+   By    default,   shell-script   whizzytex   will   be   installed   in
+   /usr/local/bin/  and  all  files  will  be installed a subdirectory of
+   /usr/local/share/whizzytex/  but  the  documentation,  which  will  be
+   installed  in  /usr/local/share/doc/whizzytex/.  Moreover,  Emacs-lisp
+   code will not be byte-compiled.
+   For default installation, just type:
 
         make all
 
    This  will  create  a  Makefile.config  file  (only if nonexistent) by
    taking a copy of the template Makefile.config.in. This will also check
-   that  the  Makefile.config  (whether  it  is the default or a modified
-   version) makes sense. If you wish to change the default configuration,
-   or   if   your   configuration  is  rejected,  see  ``Customizing  the
-   installation''  below.  This will also prepared configured versions of
-   the files for installation.
-   Finally, to install files to their final destination, type:
+   the  Makefile.config (whether it is the default or a modified version)
+   against  the software installed on your machine. If you wish to change
+   the  default  configuration, or if your configuration is rejected, see
+   ``Customizing  the  installation''  below.  This  will  also  prepared
+   configured versions of the files for installation.
+   Finally,  to install files, become superuser (unless you are making an
+   installation for yourself) and do:
 
-        make install
+        umask 022 make install
 
+   The  first  line  ensures that you give read and execute permission to
+   all.
    See Using WhizzyTeX (Section [4]2) to test your installation.
 
   1.2  Customizing the installation
@@ -49,29 +55,29 @@
         ./configure
 
    This  command  may be passed arguments to customize your installation.
-   Call it with the option -help to see a list of all options.
-   By  default,  the  configuration  is non interactive. However, you may
-   call  it  with  option -helpme to have the script do more guessing for
-   your and prompt for choices if needed.
-   Note  that  by  default,  the  emacs-lisp  code  whizzytex.el  is  not
+   Call  it  with  the  option  -help  to  see  a list of all options. By
+   default,  the  configuration is not interactive. However, you may call
+   it with option -helpme to have the script do more guessing for you and
+   prompt for choices if needed.
+   Note  that  by  default,  the  Emacs-lisp  code  whizzytex.el  is  not
    byte-compiled.  You need to pass the option -elc to configure in order
-   to do that.
+   to byte-compiled it.
 
    -- Checking Makefile.config
 
    A  misconfiguration of your installation, or ---much more subttle--- a
-   misconfiguration of other commands (it appears that many installations
-   wrap  scripts  around  standard  commands  that  are  often  sometimes
-   incorrect  and  break  their normal interface), may lead to systematic
-   errors  when  launching  WhizzyTeX.  To  prevent delaying such obvious
-   errors, some sanity checks are done on the file Makefile.config before
-   building  other  files.  These include checking for mandatory bindings
-   and  for  the  conformance  of  initex, latex, and viewers commands to
-   their expected interface.
+   misconfiguration of other commands (it appears that some installations
+   wrap scripts around standard commands that are sometimes incorrect and
+   break their normal advertized interface) may lead to systematic errors
+   when  launching  WhizzyTeX.  To  prevent delaying such obvious errors,
+   some  sanity  checks  are done after Makefile.config has been produced
+   and  before building other files. These include checking for mandatory
+   bindings  (useful for manual configuration) and for the conformance of
+   initex, latex, and viewers commands to their expected interface.
    Checking  viewers  interface  implies  simulating  a  small  WhizzyTeX
-   session:  a  small  test file is created, a specialed version of latex
-   format is built for that file, and used to run LAT[E]X on on the file;
-   finally, all declared viewers are tested on the DVI output, which open
+   session: a small test file is created for which a specializled version
+   of  latex  format  is  built and used to run LAT[E]X on the test file;
+   finally,  required  viewers  are tested on the DVI output, which opens
    windows, temporarily.
    If  the  sanity  check  fails,  at least part of your configuration is
    suspicious.  If  some  windows  remain  opened, your confirguration is
@@ -80,7 +86,8 @@
    check   by   typing   make   config.force,   which   will  stamp  your
    Makefile.config as correct without checking it. Checking compliance to
    viewers interface is also bypassed if you you do not have a connection
-   to X.
+   to   X.   Conversely,  you  may  force  checking  manually  by  typing
+   ./checkconfig.
    At  the  end  of  customization,  proceed  as described in ``Automatic
    installation'' (Section [5]1.1)
 
@@ -103,13 +110,14 @@
         ./configure -initex iniptex -latex platex -latexfmt latex
 
    If  you  wish  to  run WhizzyTeX with several configurations, you must
-   still  choose  a  default  configuration, but you will be able to call
-   WhizzyTeX  with  another  configuration from emacs (see Section [6]3.1
-   below).
-   Similarly,  you must at least chose one default previewer, and at most
-   one  one default previewer for each previewer type advi, xdvi, and ps.
-   However,  you will be able to call WhizzyTeX with other previewers but
-   explicitly from emacs.
+   still  choose  a  default configuration, but you will still be able to
+   call  WhizzyTeX  with  another  configuration  from Emacs (see Section
+   [6]3.1.2 below).
+   Similarly,  you  must at least choose one default previewer type among
+   advi,  xdvi,  and  ps,  and  at  most  one  default previewer for each
+   previewer  type  you  chose.  You will still be able to call WhizzyTeX
+   with other previewers from Emacs, via Emacs configuration (see Section
+   [7]3.1.1).
 
   1.3  Manual installation
   ---------------------------
@@ -132,7 +140,10 @@
        The   variable   whizzytex-command-name  defined  in  whizzytex.el
        contains  its  full  path  (or  just  its name if visible from the
        executable path).
-       Default value is /usr/local/lib/whizzytex/bin/whizzytex
+       Default value is /usr/local/bin/whizzytex
+       You  may need to adjust the path of bash in the very first line of
+       the  script, as well as some variables in the manual configuration
+       section of the script.
 
    whizzytex.sty
  
@@ -141,23 +152,24 @@
        WhizzyTeX.
        Variable  variable  PACKAGE defined in whizzytex the full path (or
        just the name if the path is visible from LAT[E]X.
-       Default value is /usr/local/lib/whizzytex/latex/whizzytex.sty
+       Default value is /usr/local/share/whizzytex/latex/whizzytex.sty
 
   1.4  Automatic upgrading
   ---------------------------
 
    For  convenience,  the distribution also offers a facility to download
-   and  upgrade new versions of WhizzyTeX (this requires wget installed).
-   If automatic upgrading does not work, just do it manually.
+   and  upgrade  new  versions  of  WhizzyTeX  (this  requires wget to be
+   installed). If automatic upgrading does not work, just do it manually.
    All  operations  should  be  performed in the WhizzyTeX top directory,
-   i.e. where you untar whizzytex for the first time. We assume that have
-   created a link:
+   i.e. where you untar whizzytex for the first time, that is right above
+   the directory from were you made the installation. We assume that have
+   created a link to the current version subdirectory:
 
-        ln -s whizzytex-1.00iii whizzytex
+        ln -s whizzytex-1.1 whizzytex
 
-   (which  will  be  maintained  as  a  link  the  current version by the
-   manager).  Alternatively,  you  can  use whizzytex-1.00iii in place of
-   whizzytex below. The main commands are:
+   (the  manager  will  then  update  this  link  when  version changes).
+   Alternatively,  you  can also use the full name whizzytex-1.1 in place
+   of whizzytex below. The main commands are:
 
         make -f whizzytex/Manager upgrade
         make -f whizzytex/Manager install
@@ -166,7 +178,7 @@
    unpack it, copy the configuration of the current version to the newest
    version,  and bring the newest version up-to-date. The command install
    will install files of the newest version.
-   The following command will (re-)install and old version:
+   The following command will (re-)install an old version:
 
         make VERSION=<version> download downgrade install
 
@@ -178,23 +190,24 @@
   2.1  Loading whizzytex.el
   ---------------------------
 
-   Maybe,  whizzytex  is  already  installed  on your (X)Emacs system, by
-   trying
+   Maybe,  whizzytex  is already installed on your (X)Emacs system, which
+   you may check by typing:
 
         ESC x whizzytex-mode RET
 
-   If this works, skip this section. Otherwise, you should first load the
-   library  whizzytex.el  or,  better,  declare  it  autoload. To do this
-   permanently,  include  the following declaration in your Emacs startup
-   file (probably is ~/.emacs).
+   If the command is understood, skip this section. Otherwise, you should
+   first  load  the library whizzytex.el or, better, declare it autoload.
+   To  do  this  permanently,  include  the following declaration in your
+   Emacs startup file (probably is ~/.emacs).
 
         (autoload 'whizzytex-mode
-            "/usr/local/lib/whizzytex/lisp/whizzytex.el"
+            "/usr/local/share/whizzytex/lisp/whizzytex.el"
             "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
 
-   (where   /usr/local/bin/whizzytex/lisp/whizzytex.el   is   the   exact
-   location  of  whizzytex.el,  which  depends  on your installation.) If
-   whizzytex.el  in your (X)Emacs load-path, or if you have adjusted this
+   (where   /usr/local/share/whizzytex/lisp/whizzytex.el   is  the  exact
+   location  of  whizzytex.el,  which  depends on your installation: type
+   make  where  to  see  where Emacs Lisp was installed.) If whizzytex.el
+   happens to be in your (X)Emacs load-path, or if you have adjusted this
    variable appropriately, you can simply write:
 
         (autoload 'whizzytex-mode "whizzytex"
@@ -203,27 +216,30 @@
   2.2  Quick start
   ---------------------------
 
-   WhizzyTeX  runs  as a minor mode of Emacs to be launched on an LAT[E]X
+   WhizzyTeX  runs  as  a minor mode of Emacs to be launched on a LAT[E]X
    Emacs  buffer.  The  extension of the buffer should be .tex. WhizzyTeX
    also  understands  .ltx  extensions,  but gives priority to the former
-   when it has to guess the extension. Other extensions are not possible.
+   when  it has to guess the extension. Other extensions are possible but
+   not recommended.
 
         The  file  attached  to  the  buffer  must  exists  and either be a
         well-formed  LAT[E]X  source  file,  or be mastered, i.e. loaded by
-        another LAT[E]X source file. Thus, when the buffer is does not look
-        well-formed  (it  does  not  contain  a  \begin{document} command),
-        WhizzyTeX  will search for its master file, asking the user if need
-        be,  so  as  to first launch itself on a buffer visiting the master
-        file.  In  particular, an empty buffer will be considered as beeing
-        mastered, which may not be what you intend. 
+        another  LAT[E]X  source  file.  Thus, whenever the buffer does not
+        contain  a \begin{document} command), WhizzyTeX will search for its
+        master  file,  asking  the  user  if need be, so as to first launch
+        itself  on  a  buffer  visiting  the master file. In particular, an
+        empty  buffer  will be considered as beeing mastered, which may not
+        be what you intend. 
 
    To start WhizzyTeX on either kind of buffer, type:
 
         ESC x whizzytex-mode RET
 
    By  default,  this  should add new bindings so that you can later turn
-   mode  on and off with key strokes C-c w. This will also add a new menu
-   Whizzy in the menu bar call ``the'' menu below.
+   mode  on  and  off  with key strokes C-c C-w. This will also add a new
+   menu Whizzy in the menu bar call ``the'' menu below. (If you are using
+   the  auctex,  your  may  use  other configuration key strokes to avoid
+   clashes (see online emacs-help).
    When  whizzytex-mode is started for the first time on a new buffer, it
    attempts   to   configure  buffer  local  variables  automatically  by
    examining  the  content  of  file,  and using default values of global
@@ -232,6 +248,7 @@
    hooks  or locally by inserting appropriate comments in the source file
    ---see the manual below.
    You may also change the settings interactively using the menu, or tell
-   whizzytex-mode  to  prompt the user for local customization by passing
-   prefix argument 4 (using, for instance, key sequence C-u C-c w).
+   whizzytex-mode   to   prompt   the   user  for  confirmation  of  file
+   configuration  by  passing prefix argument 4 (using, for instance, key
+   sequence C-u C-c C-w).
 

@@ -3,6 +3,8 @@
   "Non-nil if we are running in the XEmacs environment.")
 (defvar TeX-master nil)
 (defvar iso-tex2iso-trans-tab nil)
+;; does not exists in xemacs
+(defun iso-tex2iso (x y) nil)
 (if whizzy-xemacsp
     (progn
       (require 'overlay)

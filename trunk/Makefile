@@ -8,6 +8,8 @@ INSTALLPREFIX=
 
 SRC=src
 TMP=tmp
+INSTALLX=install
+INSTALLR=install -m 0644
 
 what:
 	@echo 'make what? [ config all install clean distclean uninstall ]'
@@ -92,43 +94,57 @@ endif
 install: all
 ifdef EMACSDIR
 	mkdir -p $(EMACSDIR)
-	cp $(TMP)/whizzytex.el $(EMACSDIR)
+	$(INSTALLR) $(TMP)/whizzytex.el $(EMACSDIR)
+	echo $(EMACSDIR)/whizzytex.el >> Manager.installed
 	rm -f $(EMACSDIR)/whizzytex.elc
 ifdef EMACS
 	cp $(TMP)/$(EMACS)/whizzytex.elc $(EMACSDIR)
+	echo $(EMACSDIR)/whizzytex.elc >> Manager.installed
 endif
 endif
 ifdef XEMACSDIR
 	mkdir -p $(XEMACSDIR)
-	cp $(TMP)/whizzytex.el $(XEMACSDIR)
+	$(INSTALLR) $(TMP)/whizzytex.el $(XEMACSDIR)
+	echo $(XEMACSDIR)/whizzytex.el >> Manager.installed
 	rm -f $(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
 	cp $(TMP)/$(XEMACS)/whizzytex.elc $(XEMACSDIR)
+	echo $(XEMACSDIR)/whizzytex.elc >> Manager.installed
 endif
 endif
 	mkdir -p $(BINDIR)
-	cp $(TMP)/whizzytex $(BINDIR)
-	mkdir -p $(LATEXDIR) && \
-	cp $(SRC)/whizzytex.sty $(LATEXDIR)
-	mkdir -p $(DOCDIR) && \
-	cp doc/manual.html COPYING GPL INSTALL $(DOCDIR)
+	$(INSTALLX) $(TMP)/whizzytex $(BINDIR)
+	echo $(BINDIR)/whizzytex >> Manager.installed
+	mkdir -p $(LATEXDIR) 
+	$(INSTALLR) $(SRC)/whizzytex.sty $(LATEXDIR)
+	echo $(LATEXDIR)/whizzytex.sty >> Manager.installed
+	mkdir -p $(DOCDIR) 
+	$(INSTALLR) doc/manual.html COPYING GPL INSTALL $(DOCDIR)
+	for i in manual.html COPYING GPL INSTALL; \
+	 do echo $(DOCDIR)/$$i; done >> Manager.installed
 
-.PHONY: uninstall
-uninstall: 
+where:
 ifdef EMACSDIR
-	rm -f  $(EMACSDIR)/whizzytex.{el,elc}
-	rmdir $(EMACSDIR) 2>/dev/null || true
+	@echo 'Emacs Lisp in EMACSDIR=$(EMACSDIR)'
+ifdef EMACS
+	@echo 'Byte-compiled Emacs Lisp in EMACSDIR=$(EMACSDIR)'
+endif
 endif
 ifdef XEMACSDIR
-	rm -f $(XEMACSDIR)/whizzytex.{el,elc}
-	rmdir $(XEMACSDIR) 2>/dev/null || true
+	@echo 'XEmacs Lisp in XEMACSDIR=$(XEMACSDIR)'
+ifdef XEMACS
+	@echo 'Byte-compiled XEmacs Lisp  in XEMACSDIR=$(XEMACSDIR)'
 endif
-	rm -f $(BINDIR)/whizzytex
-	rmdir $(BINDIR) 2>/dev/null || true
-	rm -f $(LATEXDIR)/whizzytex.sty 
-	rmdir $(LATEXDIR) 2>/dev/null || true
-	rm -f $(DOCDIR)/{manual.html,COPYING,GPL,INSTALL}
-	rmdir $(DOCDIR) 2>/dev/null || true
+endif
+	@echo 'Script  in BINDIR=$(BINDIR)'
+	@echo 'Latex macros  in LATEXDIR=$(LATEXDIR)'
+	@echo 'Documentation  in DOCDIR=$(DOCDIR)'
+
+.PHONY: uninstall
+uninstall: Manager.installed
+	rm -f `cat Manager.installed`
+	rm -f Manager.installed
+
 
 clean::
 	rm -rf $(TMP)

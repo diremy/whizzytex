@@ -1,11 +1,12 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
-RELEASE=1.00
-VERSION=1.00v
+RELEASE=1.1
+VERSION=1.1
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
-
+PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
+BASEURL=http://pauillac.inria.fr/whizzytex/
 
 SRCFILES=whizzytex whizzytex.el start.el whizzytex.sty
 
@@ -22,15 +23,14 @@ TARDIRS = doc examples
 TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
 
-XXXPORTS = CHANGES FAQ.html FAQ
+XXXPORTS = CHANGES FAQ.html manual.dvi doc/manual.html FAQ 
 
-EXPORTS = index.html animation.html Announce \
+EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
 	   manual.dvi doc/manual.html \
 	   COPYING GPL INSTALL VERSION \
 	   $(XXXPORTS) $(NAME).tgz  
 
-PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
 
 whatelse: 
 	@echo 'make what ? [pack xxxport Export ]'
@@ -40,21 +40,31 @@ pack: FILES $(EXPORTS) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc
 doc/manual.dvi: doc/manual.tex VERSION 
 	cd doc; make manual.dvi
 
-manual.dvi: doc/manual.tex
+manual.dvi: doc/manual.dvi
 	cp $< $@
 
 FAQ: FAQ.html 
 	lynx -dump $< > $@
 
 FAQ.html: FAQ.tex version.tex
-	hevea -o $@ -fix -exec xxdate.exe $<
+	hevea -o $@ -fix -nosymb -exec xxdate.exe $<
 
 index.html: index.htm makefile
-	sed -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' $< > $@
+	sed \
+	 -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' \
+	 -e 's|href="@|href="|g' \
+	 $< > $@
 
 animation.html: index.html
 	sed -e 's/009.gif/.gif/g' \
 	    -e 's/animation.html/index.html/g' $< > $@
+
+older.html: makefile archive
+	(echo '<html><body><H1>Older versions</H1><ul>'; \
+	 for i in $$(cd archive; ls -t whizzytex*); \
+	 do echo '<li><a href='"$$i"'><tt>'"$$i"'</tt></a>'; done; \
+	 echo '</ul></body></html>') > older.html
+
 
 emacs.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
@@ -64,15 +74,11 @@ activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
 	cp anim/$*{,009}.gif .
 
-
-
-doc/manual.html: doc/manual.tex manual.dvi
-	hevea -fix -o $@ $<
+doc/manual.html: doc/manual.tex
+	cd doc; make 
 
 INSTALL.txt: doc/manual.html
 	lynx -dump $< | sed -f INSTALL.sed > $@
-
-
 
 
 VERSION: makefile
@@ -118,7 +124,8 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 	xemacs -batch -q -l ../byte-compile.el 2>log && cat log && \
 	if grep -e '\*\*' log; then rm -f ../$@; false; fi 
 
-Export: $(EXPORTS) xxxport
+
+Export: $(EXPORTS) xxxport DATE
 	rcp $(EXPORTS) $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
@@ -129,7 +136,8 @@ Release: Export
 
 xxxport: $(EXPORTS) pack
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
-	rcp $(XXXPORTS) whizzytex-xxx.tgz $(PAUILLAC)
+	date > DATE
+	rcp $(XXXPORTS) whizzytex-xxx.tgz DATE $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean

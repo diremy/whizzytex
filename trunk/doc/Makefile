@@ -1,3 +1,6 @@
+all: manual.dvi manual.html whizzytex.info
+
+
 manual.dvi: manual.tex version.tex
 	latex $<
 	if grep 'LaTeX Warning: Label(s)' $*.log; then latex $<; fi
@@ -5,9 +8,14 @@ manual.dvi: manual.tex version.tex
 version.tex: ../VERSION
 	echo '\def\version{'`cat $<`'}' > $@
 
+
+manual.html: manual.tex manual.dvi
+	hevea -fix -nosymb -o $@ $<
+
+whizzytex.info: manual.tex
+	hevea -fix -nosymb -info -o $@ $<
+
 clean:
-	rm -f manual.{aux,log,dvi,dview,wiz,fmt}
-	rm -f manual.{haux,htoc}
-	rm -rf .advi
-	rm -rf .waux
+	rm -f {whizzytex,manual}.{aux,log,dvi,dview,wiz,fmt}
+	rm -f {whizzytex,manual}.{haux,htoc,waux,advi}
 
