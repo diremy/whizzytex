@@ -4,6 +4,9 @@ RECENT CHANGES:
 
 Emacs-mode
 
+ * whizzy-mode-hook is set to whizzy-mode-suggested-hook 
+ * small fixes in xemacs' version
+ * xemacs menus and compatibility 
  * error-report now first attempt to report the diff with the last sucessful
    slice if local (a single block of differences); otherwise it falls back
    to attempt to localize the error from the latex output.

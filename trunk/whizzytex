@@ -5,8 +5,13 @@
 # time in milliseconds to sleep when the pool is empty.
 typeset -i WYSIPAUSE=100
 
+# limit the length of error messages sent back to stdout.
 TEXERRORMAXLINES=50
 TEXERRORAROUND=20
+
+# time limit for running initex in case this could loop, undetectedly!
+LIMIT=20
+
 
 # whether Whysitex should send itself a STOP signal (then it must be waken up)
 # or just sleep for a while when done and no slicing is available
@@ -32,12 +37,15 @@ COMMAND="$0 $*"
 TOUCH=false
 MAKE=defaultmake
 
+FMT='&latex'
 DO=loop
 DOMARKS=false
 VIEW=ps
 VIEWCOMMAND=gv
 WATCHFILES=
+DUPLEX=false
 DEBUG=false
+ADVI=false
 while true
 do
   case $1 in
@@ -45,12 +53,22 @@ do
    -wakeup) DO=wakeup; shift;;
    -format) DO=format; shift;;
    -pre) MAKE="$2"; shift 2;;
+   -duplex) DUPLEX="true"; shift;;
    -marks) DOMARKS=true; shift;;
+   -fmt) FMT='&'"$2"; shift 2;;
    -nostop) STOP=false; shift;;
    -marksonly) DO=marks; shift;;
    -watch) WATCHFILES="$*"; shift $#;;
    -debug) DEBUG=true; shift;;
-   -dvi)
+  -dvi)
+       VIEW=dvi;
+       case $2 in
+       .) VIEWCOMMAND=dview;;
+       *) VIEWCOMMAND=$2;;
+       esac
+       shift 2;;
+   -advi)
+       ADVI=true
        VIEW=dvi;
        case $2 in
        .) VIEWCOMMAND=dview;;
@@ -98,7 +116,8 @@ errlog () { echo "$*" 1>&2; }
 log () { 
   if [ -f $LOG ] 
   then
-    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES $LOG;
+    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES;
+#    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES $LOG;
   fi
   false; 
 }
@@ -115,7 +134,7 @@ else
 fi
 
 cleaning () {
-   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id) 
+   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id)
    rm -f $WYSI.* $NAME.fmt 
    rm -rf $WYSI
    rm -f $LOCK
@@ -131,6 +150,7 @@ suicide () {
    then
      PID=$(cat $LOCK)
      rm -f $LOCK
+     kill $JOBS 
      kill -KILL $PID
    fi
    errlog "Killing WYSI=$WYSI, LOCK=$LOCK"
@@ -139,16 +159,23 @@ suicide () {
 
 # To fix: does not work
 
-trap cleansuicide 3
+trap clean 3
 
 wakeup () {
-  kill -CONT $(cat $LOCK)
+  [ -f $LOCK ] && kill -CONT $(cat $LOCK)
+}
+
+runinitex () {
+  ( ulimit -t $LIMIT; initex "$@" )
+}
+runtex () {
+  ( ulimit -t $LIMIT; latex "$@" )
 }
 
 # Making format
 
 format () {
- initex \&latex '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\usepackage{'"$DUMP"'}}\input{'"$NAME.tex"'}'
+ ( runinitex $FMT '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\usepackage{'"$DUMP"'}\WhizzyAdvi'"$ADVI"'}\input{'"$NAME.tex"'}' )
 }
 
 SECTION='\\\(chapter\|section\|subsection\)'
@@ -163,7 +190,7 @@ marks () {
     grep -n -e "^$SECTION" $NAME.tex | \
     sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/' \
       > $WYSI.sec
-    initex \&$NAME '\WysitexInput{'"$NAME"'}'
+    runtex $FORMAT '\WysitexInput{'"$NAME"'}'
     intersect
     ( echo "(setq whizzytex-marks '("; \
       ( join -t @  $WYSI.pag $WYSI.sec | \
@@ -178,7 +205,7 @@ batchmarks () {
     sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/g' \
         -e 's/\\/\\\\/g' \
       > $WYSI.sec
-    if initex \&$NAME '\WysitexInput{'"$NAME"'}' 
+    if runtex $FORMAT '\WysitexInput{'"$NAME"'}' 
     then
       cp $NAME.dvi $NAME.dview
       if $1
@@ -309,14 +336,29 @@ case $VIEW in
           mv $WYSI._ps $WYSI.ps; }
         }
     view () {
+       PIDS=
+       if $DUPLEX
+       then
+         [ -f $NAME.dview ] || cp $WYSI.dview $NAME.dview
+         $VIEWCOMMAND $NAME.ps &
+         PIDS="$!"
+       fi
        $VIEWCOMMAND $WYSI.ps &
+       PIDS="$PIDS $!"
        }
-    SIG=$SIGPS
     ;;   
   dvi)
     preview () { mv $WYSI.dvi $WYSI.dview; }
     view () {
-      $VIEWCOMMAND $WYSI.dview &
+       PIDS=
+       if $DUPLEX
+       then
+         [ -f $NAME.dview ] || cp $WYSI.dview $NAME.dview
+         $VIEWCOMMAND $NAME.dview &
+         PIDS="$!"
+       fi
+       $VIEWCOMMAND $WYSI.dview &
+       PIDS="$PIDS $!"
       }
     SIG=$SIGDVI
     PSBUG=0
@@ -327,7 +369,7 @@ newfiles () {
   mv $(find $HERE/$WYSI -type f -print || suicide) $HERE/  2>/dev/null
 }
 
-defaultmake () { mv $SLICE $WYSI.tex 2>/dev/null; true; }
+defaultmake () { mv $SLICE $WYSI.tex 2>/dev/null; }
 
 preprocess () {
   if $MAKE $WYSI.tex >$LOG 2>$ERR && [ -f $WYSI.tex ]
@@ -344,7 +386,7 @@ preprocess () {
 process () {
   rm -f $WYSI.aux
   echo -n '<Recompiling '
-  if { initex $FORMAT $WYSI && preview; } > $LOG
+  if { runtex $FORMAT $WYSI && preview; } > $LOG
   then
      echo 'compilation succeeded>'
      ln -f $WYSI.tex $WYSI.xet
@@ -373,7 +415,7 @@ fi
 # Initial run
 
 # to make sure the dvi file exists 
-initex $FORMAT $WYSI.nil > $LOG && preview || log
+runtex $FORMAT $WYSI.nil > $LOG && preview || log
 
 # To give it a chance to see citations and other global information.
 
@@ -386,11 +428,11 @@ mkdir $WYSI 2>/dev/null
 
 if newfiles; then preprocess && process; fi
 
-# lauch the previewer
+# lauch the previewer(s)
 if view 2>$ERR
 then 
    ID=$!
-   echo $ID > $WYSI.id
+   echo $PIDS > $WYSI.id
    sleep 1
    if kill -CONT $ID
    then 

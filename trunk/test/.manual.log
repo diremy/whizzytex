@@ -1,5 +1,2 @@
-/home/morgon/remy/bin/whizzytex -marks -dvi advi -html #Start-Document -nowatch manual.tex
-advi -html #Start-Document -nowatch
-kill: (31765) - No such pid
-kill: (31765) - No such pid
-Killing WYSI=_whizzy_manual, LOCK=._whizzy_manual.tex
+/home/morgon/remy/bin/whizzytex -marks -advi advi -html Start-Document manual.tex
+advi -html Start-Document

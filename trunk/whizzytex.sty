@@ -1,9 +1,11 @@
 \nonstopmode
 \let \scrollmode \relax
+\newif \if@whizzysafe  \@whizzysafefalse
 \def \whizzy@A {\def \whizzy@do{\catcode `\^^A 2\WhizzyMarkBegin}\ifinner
 \ifmmode \else\def \whizzy@do{}\fi \fi \whizzy@do}
 \begingroup
 \catcode `\^^A \active
+\gdef \whizzy@@active {\def ^^A{\whizzy@A}}
 \global \def ^^A{\whizzy@A}
 \catcode `\[ 1 \catcode `\] 2
 \catcode `\{ 12 \catcode `\} 12
@@ -22,7 +24,8 @@
 \def \whizzy@begindocumenthook {}
 \def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
 \let \latex@document \document
-\def \whizzy@document {\whizzy@begindocumenthook \latex@document}
+\def \whizzy@document
+   {\whizzy@begindocumenthook \latex@document}
 \let \@whizzy@fulldocument \relax
 \def \whizzy@ignore #1{}
 \def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay {1}\fi}
@@ -38,8 +41,14 @@
   \endgroup
   }
 
+\def \whizzy@advi 
+   {\ifWhizzyAdvi \whizzy@par \else \let \whizzy@writelineno \relax \fi}
 \def \document 
   {\endgroup
+   \@ifundefined {Whizzysafe}
+      {\usepackage{color}}
+      {\@whizzysafetrue}
+   \AtBeginDocument {\whizzy@@active \whizzy@advi}
    \IfFileExists{whizzy.sty}{\usepackage{whizzy}}{}
    \begingroup \def \@currenvir {document}%
    \whizzy@loadaux
@@ -53,6 +62,8 @@
 %   \AtBeginDocument {\whizzy@begindocumenthook}%
    \let \document \latex@document
    \dump}
+
+%%% Macros for dumping sections in \@whizzy  (\jobname.pag)
 
 \def \whizzy@markon #1#2{
 \expandafter \let \expandafter \@aux \csname #1\endcsname
@@ -81,6 +92,14 @@
 
 \edef\whizzy@quote{\string"}
 
+%%% Macros for dumping lines number, putting cursor, etc. 
+
+% \jobname should be the current file, instead. It is stored somewhere?
+\def \whizzy@writelineno
+   {\ifhmode \unskip \fi \special {line: \the\inputlineno \space \jobname.tex}}
+\def \whizzy@lineno@display 
+   {\whizzy@writelineno \aftergroup \whizzy@writelineno}
+% To insert the mark ``around'' the current line number
 \def \whizzy@starthere
    {%\ifhmode \unskip \fi
     \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
@@ -92,12 +111,10 @@
     \global \let \whizzy@check@line \relax
     \global \let \begin \whizzy@begin
     \global \let \whizzy@starthere \relax
-%     \ifx \whizzy@catcode \relax 
-%     \else \catcode `\.\whizzy@catcode \let \whizzy@catcode \relax \fi
     }
 \let \latex@@par \@@par
 \let \whizzy@checkline \relax
-\def \whizzy@@par {\whizzy@checkline \latex@@par}
+\def \whizzy@@par {\whizzy@checkline \whizzy@writelineno \latex@@par}
 \let \whizzy@catcode \relax
 \def \whizzy@@check@limit 
   {\ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi}
@@ -127,15 +144,32 @@
  \let \leqno \whizzy@leqno \let \eqno \whizzy@eqno}
 %%
 \def \whizzy@line{}
+\def \whizzy@nopar {\let \@@par \latex@@par \let \par \@@par}
+\def \WhizzySkip {\ifWhizzyAdvi \whizzy@nopar\fi}
+\def \WhizzyStart {\ifWhizzyAdvi \whizzy@par \whizzy@writelineno \fi}
+\def \whizzy@par {\let \@@par \whizzy@@par \let \par \@@par}
 \def \WhizzyLine #1{%
   \def \whizzy@line{#1}%
   \bgroup \count0 #1\advance\count0 by -20
   \global \edef \whizzy@linelimit {\the \count0}\egroup%
-  \let \@@par \whizzy@@par\let \par \@@par
   \let \whizzy@checkline \whizzy@@checkline
-  \everydisplay{\whizzy@check@line@}%
+  \whizzy@par
+  \everydisplay{\whizzy@lineno@display \let \halign \whizzy@halign
+                \whizzy@check@line@}%
   \let \begin \whizzy@@begin%
 }
+
+%%% Hack because \whizzy@lineno@display generates $$\hbox{}\halign
+%%% which is not correct. The \hbox cannot be removed.
+%%% The other option is to remove lineno at beginning of display
+%%% might be better.
+
+\let \latex@halign \halign
+\def \whizzy@endhalign {\egroup $$}
+\def \whizzy@halign {\ifmmode 
+ \vcenter \bgroup \everydisplay{}\let \halign \latex@halign 
+  \abovedisplayskip 0em $$\aftergroup  \whizzy@endhalign \else
+  \latex@halign \fi} 
 
 \def \WysitexInput #1{
 \message {[WysiTeX is dumping positions in _whizzy_#1.pag]}
@@ -198,6 +232,12 @@
   }
 
 \AtBeginDocument {\catcode `\ \active}
+
+\newif \ifWhizzyAdvi \WhizzyAdvifalse
+\def \@Meaning #1{\string #1=\meaning #1\egroup}
+\newcommand{\Meaning}
+  {\par  \medskip \hrule \smallskip \vbox \bgroup
+       \tt \hsize 0.7\hsize\makeatletter \@Meaning}
 
 
 \endinput
