@@ -1,0 +1,96 @@
+1. Installation
+----------------
+
+   To use whizzytex, you nead emacs or xemacs, latex2e, and bash installed.
+   Get the source whizzytex.tgz, untar it in some working directory.
+
+gunzip whizzytex-1.0.tgz
+tar -xf whizztex-1.0.tar
+ls -1 whizzytex
+
+   Then, the installation can be automatic, or manual.
+
+1.1  Automatic installation
+---------------------------
+
+   By  default, librairies will be installed in /usr/local/lib/whizzytex/
+   and in Emacs site-lisp library. 
+
+./configure  
+
+   produces Makefile.config, which you can edit and modify. 
+
+   To produced configured copies of the source and install them, type
+
+make all
+make install
+
+
+1.2  Manual installation
+-------------------------
+
+  1.2  Manual installation
+  
+   Since  WhizzyTeX  only  need  three files installed, these can also be
+   installed by hand:
+
+   whizzytex.el
+
+       This  should be installed in a directory visible by emacs, so that
+       it can be autoloaded, or loaded by hand.
+       No default location.
+
+   whizzytex
+
+       This  is  a  bash-shell script that should be executable. There is
+       not  reason  to  have it visible from the executabl path, since it
+       should not be used but with WhizzyTeX.
+       The   variable   whizzytex-command-name  defined  in  whizzytex.el
+       contains  its  full  path  (or  just  its name if visible from the
+       executable path).
+       Default value is /usr/local/lib/whizzytex/whizzytex
+
+   whizzytex.sty
+
+       This  is  a latex2e macros package. There is no reason to put this
+       visible  from  LaTeX  path, since it should not be used but with
+       WhizzyTeX.
+       Variable  variable  PACKAGE defined in whizzytex the full path (or
+       just the name if the path is visible from LaTeX.
+       Default value is /usr/local/lib/whizzytex/whizzytex.sty
+       
+
+2.  Using WhizzyTeX
+-------------------
+
+  2.1  Quit start
+  
+   WhizzyTeX  runs  as  a minor mode of emacs to be launched on a LaTeX
+   emacs  buffer.  One  the  library  whizzytex.el  has  been loaded (you
+   propbably  want  to  declare  it  autoload in your Emacs startup file)
+   simply type
+                             
+ESC-X whizzytex-mode                  
+
+   By  default,  this  should add new bindings so that you can later turn
+   mode on and off with key strokes C-C C-W. 
+
+   When  whizzytex-mode is started for the first time on a new buffer, it
+   may  prompt  for  confirmation  of  default  settings,  which  you may
+   confirm,  change  interactively,  or  change  permanenty  by inserting
+   comments in the source file (see manual for details).
+
+   Once  in  whizzytex-mode,  just  type in as usual. WhizzyTeX should do
+   everything  automatically,  refresshing  the presentation as you type.
+
+   Additionally,  it  should  put  a  gray overlay outside of the current
+   slice  (the  region  of  your  buffer that is under focus). Whenever a
+   Latex  error  occors,  it will also attempt to localize the error in
+   the source buffer and mark it with a yellow overlay.
+
+   Furthermore,  when  an  error is persistent for several slices or some
+   amount  of  time,  it will pop up its interaction-buffer with a log of
+   the error (this option can be turn on or off from the Whizzy menu).
+   
+
+See the documentation for more information

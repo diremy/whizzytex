@@ -1,27 +1,29 @@
 #!/bin/sh
 #
-#  WhizzyTeX - a wysiwyg environment for TeX
-#  Copyright (C) 2002 Didier Rémy
+#  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
+#  Copyright (C) 2001, 2002 Didier Rémy
 #  
-#  This library is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU Lesser General Public
-#  License as published by the Free Software Foundation; either
-#  version 2 of the License, or (at your option) any later version.
-#  
-#  This library is distributed in the hope that it will be useful,
+#  WhizzyTeX is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2, or (at your option)
+#  any later version.
+#
+#  WhizzyTeX is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#   
-#  See the GNU Lesser General Public License version 2.1 for more
-#  details (enclosed in the file LGPL).
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details 
+#  (enclosed in the file GPL).
+#
+#  See the file COPYING enclosed with the distribution.
 #############################################################################
-#  File whizzytex
+#  File whizzytex (Bash shell-script)
 #############################################################################
+
 
 ### Configuration
 
-# time in milliseconds to sleep when the pool is empty.
-typeset -i WHIZZYPAUSE=100
+# name (or full path) of the dump latex2e package file (without the extension)
+PACKAGE=whizzytex.sty
 
 # limit the length of error messages sent back to stdout.
 TEXERRORMAXLINES=50
@@ -31,24 +33,19 @@ TEXERRORAROUND=20
 LIMIT=20
 
 
-# whether WhizzyTeX should send itself a STOP signal (then it must be waken up)
-# or just sleep for a while when done and no slicing is available
-
-STOP=true
-
-# name (or full path) of the dump package file (without the extension)
-
-DUMP=whizzytex
-
-# Signals telling gv and xdvi to refresh
-
+# Signals telling gv and xdvi/advi to refresh
 SIGDVI=SIGUSR1
 SIGPS=SIGHUP
+
+# Option to read command, could be use to send timeout, in case, whizzytex 
+# should watch other files that those controlled by emacs
+# READOPTION=-t 5
+READOPTION=
 
 ### End of manual configuration
 
 case $# in
- 0) echo 'Need a file name'; exit 1;;
+ 0) echo 'Usage: whizzytex [ OPTIONS ] FILENAME'; exit 1;;
 esac
 
 COMMAND="$0 $*"
@@ -56,14 +53,13 @@ TOUCH=false
 MAKE=defaultmake
 
 FMT='&latex'
-DO=loop
+DO=normal
 DOMARKS=false
 VIEW=ps
 VIEWCOMMAND=gv
 WATCHFILES=
 DUPLEX=false
-DEBUG=false
-ADVI=false
+ADVI=0
 while true
 do
   case $1 in
@@ -74,20 +70,18 @@ do
    -duplex) DUPLEX="true"; shift;;
    -marks) DOMARKS=true; shift;;
    -fmt) FMT='&'"$2"; shift 2;;
-   -nostop) STOP=false; shift;;
    -marksonly) DO=marks; shift;;
    -watch) WATCHFILES="$*"; shift $#;;
-   -debug) DEBUG=true; shift;;
   -dvi)
-       VIEW=dvi;
+       VIEW=dview;
        case $2 in
        .) VIEWCOMMAND=dview;;
        *) VIEWCOMMAND=$2;;
        esac
        shift 2;;
    -advi)
-       ADVI=true
-       VIEW=dvi;
+       ADVI=1
+       VIEW=dview;
        case $2 in
        .) VIEWCOMMAND=dview;;
        *) VIEWCOMMAND=$2;;
@@ -126,22 +120,39 @@ HERE=$(pwd)
 NAME=$(basename $1 .tex)
 FORMAT=\&$NAME
 WHIZZY=_whizzy_$NAME
+LOCK=.$WHIZZY.tex
 SLICE=$WHIZZY.new
-LOG=$WHIZZY.gol
-ERR=$WHIZZY.err
+INPUT=$HERE/$WHIZZY/input
+OUTPUT=$HERE/$WHIZZY/output
+TMP=$HERE/$WHIZZY/tmp
+LOG=$TMP/log
+ERR=$TMP/err
 
 errlog () { echo "$*" 1>&2; }
+fatal () { 
+  errlog '*** Fatal error: ' "$*"
+  [ -f $ERR ] && cat $ERR
+  echo '<Fatal error>'
+  suicide
+}
+warning () {
+  echo "Warning: " $*
+}  
+
+quit () { 
+  echo '<Quitting>'
+  errlog 'Warning: ' "$*"
+  cleanquit
+}
+
 log () { 
-  if [ -f $LOG ] 
+  if [ -f $OUTPUT/$1 ] 
   then
-    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES;
-#    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES $LOG;
+    grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES;
   fi
   false; 
 }
 errlog "$COMMAND"
-
-LOCK=.$WHIZZY.tex
 
 if [ -f $NAME.tex ]
 then 
@@ -151,56 +162,48 @@ else
    exit 1
 fi
 
-cleaning () {
-   [ -f $WHIZZY.id ] && kill -QUIT $(cat  $WHIZZY.id)
+clean () {
+   [ -f $TMP/pids ] && kill -QUIT $(cat  $TMP/pids) 2>/dev/null
    rm -f $WHIZZY.* $NAME.fmt 
    rm -rf $WHIZZY
    rm -f $LOCK
-   errlog "Cleaning WHIZZY=$WHIZZY, LOCK=$LOCK"
+   [ -f $WHIZZY ] && "Cleaning up..."
 }
-# trap cleaning EXIT
+
+cleanquit () { clean; exit 0; }
+trap cleanquit 3
 
 suicide () {
-   [ -f $WHIZZY.id ] && kill -QUIT $(cat  $WHIZZY.id) 
-   rm -f $WHIZZY.* $NAME.fmt 
-   rm -rf $WHIZZY
-   if [ -f $LOCK ]
+   if [ -f $LOCK ] 
    then
-     PID=$(cat $LOCK)
-     rm -f $LOCK
-     kill $JOBS 
-     kill -KILL $PID
+      PID=$(cat $LOCK)
+      clean 
+      kill -KILL $PID
+   else
+      clean
    fi
-   errlog "Killing WHIZZY=$WHIZZY, LOCK=$LOCK"
    exit 2
 }
 
-# To fix: does not work
+wakeup () { [ -f $LOCK ] && kill -CONT $(cat $LOCK); }
+runinitex () { ( ulimit -t $LIMIT; initex "$@" ); }
+runtex    () { ( ulimit -t $LIMIT; latex  "$@" ); }
 
-trap clean 3
-
-wakeup () {
-  [ -f $LOCK ] && kill -CONT $(cat $LOCK)
-}
-
-runinitex () {
-  ( ulimit -t $LIMIT; initex "$@" )
-}
-runtex () {
-  ( ulimit -t $LIMIT; latex "$@" )
-}
 
 # Making format
 
 format () {
- ( runinitex $FMT '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\usepackage{'"$DUMP"'}\WhizzyAdvi'"$ADVI"'}\input{'"$NAME.tex"'}' )
+ ( runinitex $FMT '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\input{'"$PACKAGE"'}}\input{'"$NAME.tex"'}' )
 }
+
+############################################################################
+# BEGIN sections
 
 SECTION='\\\(chapter\|section\|subsection\|subsubsection\)'
 intersect () {
-    sort $WHIZZY.sec $WHIZZY.pag > $WHIZZY.spg
-    sort -n -t : +0 +1 -u $WHIZZY.pag $WHIZZY.sec | sort | comm -1 -3 - $WHIZZY.spg > $WHIZZY.sec.1
-    sort -n -t : +0 +1 -u $WHIZZY.sec $WHIZZY.pag | sort | comm -1 -3 - $WHIZZY.spg > $WHIZZY.pag.1
+    sort $TMP/sec $WHIZZY.pag > $TMP/spg
+    sort -n -t : +0 +1 -u $WHIZZY.pag $TMP/sec | sort | comm -1 -3 - $TMP/spg > $TMP/sec.1
+    sort -n -t : +0 +1 -u $TMP/sec $WHIZZY.pag | sort | comm -1 -3 - $TMP/spg > $TMP/pag
 }
 
 premark () {
@@ -212,47 +215,46 @@ premark () {
     fi
     grep -n -e "^$SECTION" $SOURCES /dev/null | \
     sed -e 's/^\([^:]*\):\([0-9]*\):'"$SECTION"'/\1:\2:\3@/' -e 's/"/\\"/' \
-      > $WHIZZY.sec
+      > $TMP/sec
 }
 postmark () {
     intersect
-    ( join -t @  $WHIZZY.pag.1 $WHIZZY.sec.1 | \
-      sed -e 's/^\([^:]*\):[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/\1:("\\\2\4"."\\WhizzyTeX\3")/' -e 's/\\/\\\\/g' ) > $WHIZZY.tmp
+    ( join -t @  $TMP/pag $TMP/sec.1 | \
+      sed -e 's/^\([^:]*\):[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/\1:("\\\2\4"."\\WhizzySlice\3")/' -e 's/\\/\\\\/g' ) > $TMP/tmp
     ( echo "(setq whizzytex-marks '("; 
       for file in $SOURCES
       do
         if [ -f $file ]
         then
           echo '("'$file'".('
-          ( grep -e "$file" $WHIZZY.tmp | sed -e 's/^\([^:]*:\)\(.*\)/\2/' ) 
+          ( grep -e "$file" $TMP/tmp | sed -e 's/^\([^:]*:\)\(.*\)/\2/' ) 
           echo '))'
         fi
       done
       echo '))'
-    ) > $WHIZZY.tmp.1
-    mv $WHIZZY.tmp.1 $WHIZZY.pos
+    ) > $OUTPUT/sections
 }
 marks () {
     premark
     runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
     postmark
-    cat $WHIZZY.pos
+    cat $OUTPUT/sections
 }
 
 batchmarks () {
     premark
-    if runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' 
+    if runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/whole
     then
       cp $NAME.dvi $NAME.dview
       if $1
       then
          postmark
       fi
-      if [ -f $NAME.toc ]; then cp $NAME.toc $WHIZZY.toc; fi
+      [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
       if grep 'LaTeX Warning: Citation' $NAME.log
       then
          bibtex $NAME; 
-         if [ -f $NAME.bbl ]; then cp $NAME.bbl $WHIZZY.bbl; fi
+         [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
          true
       fi
     else 
@@ -261,9 +263,10 @@ batchmarks () {
     
 }
 
+# END sections
 
 ############################################################################
-# wdiff
+# BEGIN Worddiff
 
 wordify () { 
     tr '\n' '' | 
@@ -271,7 +274,7 @@ wordify () {
     tr '' '\n' 
 }
 
-wdiff () { 
+worddiff () { 
   FST=$1
   SND=$2
   DIF=$WHIZZY.dif
@@ -309,47 +312,55 @@ wdiff () {
   fi
 }
 
-############################################################################
+# END Wordify
 
+############################################################################
+# So what should we do
 
 case $DO in
   kill) suicide && exit 0 || exit 1;;
   wakeup) wakeup && exit 0 || exit 1;;
   format) format && exit 0 || exit 1;;
   marks) marks && exit 0 || exit 1;;
-  loop) 
-      # To ensure that only one deamon is running on the spool file.
-      if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
-      then
-        echo 'Remove running process first'
-        exit 1
-      else
-        echo $$ > $LOCK
-      fi
+  normal) 
+    # To ensure that only one deamon is running on the spool file.
+    if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
+    then
+      fatal 'Remove running WhizzyTeX process first'
+    else
+       echo $$ > $LOCK
+    fi
    ;;
 esac
+
+############################################################################
+# We go for good
+
+mkdir $WHIZZY $INPUT $OUTPUT $TMP 2>/dev/null
 
 if [ -f $NAME.fmt -a $NAME.tex -ot $NAME.fmt ]
 then 
   :
 else
   echo -n '<Initial formating '
-  if format >$LOG 2>$ERR && [ -f $NAME.fmt ]
+  if { format >$OUTPUT/format 2>$ERR || \
+       { echo 'failed>'; 
+         echo Removing $NAME.aux; 
+         echo '<Retrying '; 
+         rm -f $NAME.aux && format >$OUTPUT/format 2>$ERR; }; } \
+     && [ -f $NAME.fmt ] 
   then
      echo 'succeeded>'
   else
      echo 'failed>'
-     echo '<*** Fatal error: could not build initial format ***>'
-     [ -f $ERR ] && cat $ERR
-     log
-     echo '<Exiting>'
-     suicide
+     log format
+     fatal 'could not build initial format'
   fi
 fi
 
 # Initial file
 
-echo '\begin{document}[Initial empty page]\end{document}' > $WHIZZY.nil
+echo '\begin{document}\WhizzyEmptyPage\end{document}' > $WHIZZY.nil
 
 # Texing...
 
@@ -359,189 +370,160 @@ ANTIDATE=$(date +%m%d%H%M.%S)
 case $VIEW in
   ps)
     preview () {
-        dvips -o $WHIZZY._ps $WHIZZY.dvi 2>/dev/null && \
-        { if [ $WHIZZY._ps -nt $WHIZZY.ps ]; then true; \
-             else touch -t $ANTIDATE $WHIZZY._ps; fi; \
-          mv $WHIZZY._ps $WHIZZY.ps; }
-        }
-    view () {
-       PIDS=
-       if $DUPLEX
-       then
-         [ -f $NAME.dview ] || cp $WHIZZY.dview $NAME.dview
-         $VIEWCOMMAND $NAME.ps &
-         PIDS="$!"
-       fi
-       $VIEWCOMMAND $WHIZZY.ps &
-       PIDS="$PIDS $!"
-       }
+        dvips -o $WHIZZY.pst $WHIZZY.dvi 2>/dev/null && \
+        { [ ! $WHIZZY.pst -nt $WHIZZY.ps ] && touch -t $ANTIDATE $WHIZZY.pst
+          mv $WHIZZY.pst $WHIZZY.ps ; }
+    }
+    SIG=$SIGPS
     ;;   
-  dvi)
+  dview)
     preview () { mv $WHIZZY.dvi $WHIZZY.dview; }
-    view () {
-       PIDS=
-       if $DUPLEX
-       then
-         [ -f $NAME.dview ] || cp $WHIZZY.dview $NAME.dview
-         $VIEWCOMMAND $NAME.dview &
-         PIDS="$!"
-       fi
-       $VIEWCOMMAND $WHIZZY.dview &
-       PIDS="$PIDS $!"
-      }
     SIG=$SIGDVI
-    PSBUG=0
     ;;   
 esac
 
 newfiles () {
-  mv $(find $HERE/$WHIZZY -type f -print || suicide) $HERE/  2>/dev/null
+  mv $(find $INPUT -type f -print || suicide) $HERE/  2>/dev/null
 }
 
 defaultmake () { mv $SLICE $WHIZZY.tex 2>/dev/null; }
 
 preprocess () {
-  if $MAKE $WHIZZY.tex >$LOG 2>$ERR && [ -f $WHIZZY.tex ]
+  if $MAKE $WHIZZY.tex >$OUTPUT/make 2>$ERR && [ -f $WHIZZY.tex ]
   then 
      true
   else
      echo '<Preprocessing failed>'
      [ -f $ERR ] && cat $ERR
-     log
+     log make
      false
   fi
 }
 
+PROCESS=false
 process () {
+  PROCESS=false
   rm -f $WHIZZY.aux
-  echo -n '<Recompiling '
-  if { runtex $FORMAT $WHIZZY && preview; } > $LOG
+  echo '<Recompiling>'
+  if { runtex $FORMAT $WHIZZY && preview; } 1>$OUTPUT/slice
   then
-     echo 'compilation succeeded>'
-     ln -f $WHIZZY.tex $WHIZZY.xet
+     echo "<Compilation succeeded>"
+     ln -f $WHIZZY.tex $TMP/tex
   else
-     echo 'recompilation failed>'
-     if [ -f $WHIZZY.xet ] && wdiff  $WHIZZY.xet $WHIZZY.tex 
+     echo "<Recompilation failed>"
+     if [ -f $TMP/tex ] && worddiff  $TMP/tex $WHIZZY.tex 
      then 
-        :
+       :
      else
-        log
-        echo 'l.'$[ $(wc -l < $WHIZZY.tex) - 1 ]' '
+       log slice
+       [ -f $TMP/tex ] && echo 'l.'$[ $(wc -l < $TMP/tex) - 1 ]' '
      fi
      echo '<Continuing>'
      false
   fi
 }
 
-# debugging information
-
-if $DEBUG; then 
-errlog "NAME=$NAME"
-errlog "WHIZZY=$WHIZZY"
-errlog "DOMARKS=$DOMARKS"
-fi
-
+############################################################################
 # Initial run
 
-# to make sure the dvi file exists 
-runtex $FORMAT $WHIZZY.nil > $LOG && preview || log
+# We ensure that the dvi file exists 
+if runtex $FORMAT $WHIZZY.nil > $OUTPUT/nil
+then
+  preview || fatal 'Cannot preview initial page'
+else
+  cat $OUTPUT/nil
+  fatal 'Cannot build initial page'
+fi
 
 # To give it a chance to see citations and other global information.
 
-if [ -f $NAME.bbl ]; then cp $NAME.bbl $WHIZZY.bbl; fi
-if [ -f $NAME.toc ]; then cp $NAME.toc $WHIZZY.toc; fi
+[ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+[ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
 
 # process $WHIZZY.tex is present. Will override $WHIZZY.dvi if it succeeds
 
-mkdir $WHIZZY 2>/dev/null
-
 if newfiles; then preprocess && process; fi
 
-# lauch the previewer(s)
-if view 2>$ERR
-then 
-   ID=$!
-   echo $PIDS > $WHIZZY.id
-   sleep 1
-   if kill -CONT $ID
-   then 
-      : 
-   else
-      echo '<Fatal error: viewing process terminated prematurely>' 
-      suicide
-   fi
-else 
-   echo '<Fatal error: viewing process failed>'
-   cat $ERR
-   suicide
-fi
+# lauch the previewer(s) in background, storing its pid in $ID
+# and putting a handler on its termination. 
+
+rm -f $TMP/ID
+{
+  $VIEWCOMMAND $WHIZZY.$VIEW 2>$ERR &
+  echo $! >> $TMP/pids
+  ID=$!
+  echo $ID > $TMP/ID
+  wait $ID \
+      && quit 'Quitting viewer' \
+      || fatal 'Viewing process terminated abnormally'
+} &
+while [ ! -f $TMP/ID ]; do usleep 10; done
+ID=$(cat $TMP/ID)
+
+checkviewer () {
+  kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
+}
 
 whole () {
-#     if head $WHIZZY.tex | grep '%DOMARKS'
-#     then DOMARKS=true
-#     else DOMARKS=false
-#     fi
-#  if $DOMARKS && [ ! -f $WHIZZY.pag ]
-#  then 
    echo '<Recompiling whole document>'
-   if batchmarks $1 </dev/null >$LOG.pag
+   if batchmarks $1 </dev/null >$LOG
    then
       echo '<Whole document updated>'
       if $1; then echo '<Pages and sections updated>'; fi
    else
       echo '<Whole document recompilation failed>'
    fi
-#  fi
 }
 whole $DOMARKS
 
-# The loop watching changes
+## Reformating
 
-PSDATE=0
+reformat () {
+  echo '<Reformating>'
+  touch -r $NAME.tex $NAME.fmt
+  mv -f $NAME.fmt $WHIZZY.fmt
+  if format 1>$OUTPUT/format 2>$ERR
+  then
+      echo '<Reformatting succeeded>'
+      PROCESS=true
+      whole $DOMARKS
+  else
+      mv -f $WHIZZY.fmt $NAME.fmt
+      echo '<Reformatting failed>'
+      log format
+      echo '<Contuning with the old format>'
+  fi
+}
+
+## Duplex
+
+duplex () {
+  [ -f $NAME.$VIEW ] || \
+  { cp $WHIZZY.$VIEW $NAME.$VIEW; 
+    warning '(duplex) Using ' $WHIZZY.$VIEW ' instead of missing ' $NAME.$VIEW
+  }
+  $VIEWCOMMAND $NAME.$VIEW &
+  echo $! >> $TMP/pids
+}
+
+## The loop watching changes
+
 while true
 do
-  REFORMATED=false
   if [ $NAME.fmt -ot $NAME.tex ]
-  then
-      echo '<Reformating>'
-      touch -r $NAME.tex $NAME.fmt
-      mv -f $NAME.fmt $WHIZZY.fmt
-      if format > $LOG
-      then
-          echo '<Reformating succeeded>'
-          REFORMATED=true
-          whole $DOMARKS
-#            if $DOMARKS 
-#            then
-#               echo '<Recomputing pages and sections>'
-#               if batchmarks </dev/null >$LOG.pag
-#               then
-#                  echo '<Pages and sections updated>'
-#               else
-#                  echo '<Pages and sections are ignored>'
-#               fi
-#            fi
-      else
-          mv -f $WHIZZY.fmt $NAME.fmt
-          echo '<Reformatting failed>'
-          log
-          echo '<Contuning with the old format>'
-      fi
-  fi
-  if newfiles && preprocess || $REFORMATED
-  then
-      if process
-      then 
-         kill -$SIG $ID \
-          || (echo '<Fatal error: could not refresh! Exiting>'; \
-              suicide; exit 2)
-      else
-         echo '<Continuing>'
-      fi
+  then reformat
+  elif newfiles && preprocess || $PROCESS
+  then process && checkviewer
   else
-      if $STOP; then kill -STOP $$; else usleep $WHIZZYPAUSE; fi
-      kill -CONT $ID || (suicide; exit 2)
+     read $READOPTION
+     case /$REPLY/ in
+       /duplex/) duplex ;;
+       /reformat/) reformat ;;
+       /exit/) break ;;
+     esac
   fi
 done
 
-exit 0
+cleanquit
+
+# whizzytex ends here

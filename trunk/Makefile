@@ -1,62 +1,42 @@
-BIN=$(HOME)/bin
-EMACS=$(HOME)/lib/gnu-emacs
-TEX=$(HOME)/lib/tex
-
-LOCALFILES= bin/whizzytex  lib/tex/whizzytex.sty lib/gnu-emacs/whizzytex.el
-SRCFILES=$(patsubst %,$(HOME)/%,$(LOCALFILES))
-TESTFILES= manual.tex slides.tex Makefile.tpl
-
-FILES = $(SRCFILES) $(patsubst %,test/%,$(TESTFILES)) CHANGES
-       
-EXPORTS = index.html whizzytex.tgz whizzytex.dvi whizzytex.html CHANGES
-
-PAUILLAC=pauillac:public_html/whizzytex/
+include Makefile.config
 
 what:
-	@echo 'make what ? [all export]'
+	@echo 'make what? [ config all install ]'
 
-all: diff $(EXPORTS) whizzytex.elc
+.PHONY: all
+all: prep/whizzytex.el prep/whizzytex.elc prep/whizzytex
 
-whizzytex.dvi: test/manual.tex
-	latex $< && mv manual.dvi whizzytex.dvi 
+.PHONY: config
+config: 
+	./configure
 
-whizzytex.html: test/manual.tex
-	hevea -o $@ $< 
+prep: 
+	if test -d prep; then : ; else mkdir -p prep; fi
 
-whizzytex.tgz: $(FILES) Makefile 
-	mkdir tmpdir
-	cp $(FILES) tmpdir
-	tar -z -cvf $@ tmpdir
-	rm -r tmpdir
+prep/whizzytex.el: whizzytex.el prep
+	sed -e 's|\((defvar whizzy-command-name "\)[^"]*\(".*\)|\1$(BASHDIR)/whizzytex\2|' \
+	 <  $< > $@
 
+prep/whizzytex.elc: prep/whizzytex.el
+	cd prep; $(EMACS) -batch -q -l $(PWD)/byte-compile.el
 
-diff:
-	for i in $(LOCALFILES); \
-	do diff -q `basename $$i` $(HOME)/$$i || exit 1; done
+prep/whizzytex: whizzytex prep 
+	sed -e 's|PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
+	 <  $< > $@
+	chmod +x $@
 
-install:
-	for i in $(LOCALFILES); \
-	do cp `basename $$i` $(HOME)/$$i; done
-
-whizzytex.el: $(HOME)/lib/gnu-emacs/whizzytex.el
-	cp $(HOME)/lib/gnu-emacs/whizzytex.el .
-
-whizzytex.elc: whizzytex.el
-	emacs -batch -q -l emacs.el -l compile.el -compile $< 2>$*.log && \
-	if grep -e '\*\*' $*.log; then rm -f $@; cat $*.log; false; \
-	else rm $*.log; fi
-	xemacs -batch -q -l xemacs.el -l compile.el -compile $< 2>$*.log && \
-	if grep -e '\*\*' $*.log; then rm -f $@; cat $*.log; false; \
-	else rm $*.log; fi
-
-export: $(EXPORTS) whizzytex.elc
-	rcp $(EXPORTS) $(PAUILLAC)
+clean:
+	rm -rf prep
 
 
-smallclean:
-	rm -rf {.,test}/*.{aux,log,dvi,dview,ps}
-
-clean: smallclean
-	rm -rf whizzytex.tgz *.{aux,log,dvi,dview,ps} 
-
-.SUFFIXES: .tgz
+.PHONY: install
+install: all
+	@echo "Installing whizzytex.el in $(EMACSDIR)..."
+	if test -d $(EMACSDIR); then : ; else mkdir -p $(EMACSDIR); fi
+	cp prep/whizzytex.el prep/whizzytex.elc $(EMACSDIR)
+	@echo "Installing whizzytex in $(BASHDIR)..."
+	if test -d $(BASHDIR); then : ; else mkdir -p $(BASHDIR); fi
+	cp prep/whizzytex $(BASHDIR)
+	@echo "Installing whizzytex.sty in $(LATEXDIR)..."
+	if test -d $(LATEXDIR); then : ; else mkdir -p $(LATEXDIR); fi
+	cp whizzytex.sty $(LATEXDIR)

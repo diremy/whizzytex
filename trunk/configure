@@ -1,0 +1,64 @@
+#!/bin/sh
+
+if emacs -batch 2>/dev/null
+then EMACS=emacs
+  if xemacs -batch 2>/dev/null
+  then 
+    echo 'You have both emacs and xemacs install.'
+    echo 'Choose one for the installation'
+    echo
+    echo -n 'EMACS=' 
+    read EMACS
+  else EMACS=xemacs
+  fi
+else
+  if xemacs -batch 2>/dev/null
+  then EMACS=xemacs
+  else
+   echo 'Neither emacs nor xemacs seem to be installed';   exit 2
+  fi
+fi
+
+echo $EMACS
+case $EMACS in
+  emacs)
+    set xxx `($EMACS -batch -eval "(mapcar 'print load-path)") \
+               2>/dev/null | sed -n -e '/\/site-lisp\/*"/s/"//gp'`;
+    ;;
+  xemacs)
+    set xxx `($EMACS -batch -eval "(mapcar 'print load-path)") \
+               2>/dev/null | sed -n -e '/\/xemacs-packages\/lisp\/*"/s/"//gp'`
+    ;;
+esac
+
+if test "$2" != "" && test -d "$2" 
+then 
+   EMACSDIR="$2"
+else
+   echo 'Cannot determine EMACSDIR (Emacs site-lisp directory)'; 
+   echo -n 'EMACSDIR='; 
+   read EMACSDIR
+fi
+if test -d /usr/local/lib
+then 
+   LIBDIR=/usr/local/lib/whizzytex
+elif test -d /usr/local/lib
+then
+   LIBDIR=/usr/lib/whizzytex
+else
+   echo 'Cannot determine LIBDIR (library directory)'
+fi
+
+sed \
+ -e "s%@EMACS@%$EMACS%" \
+ -e "s%@EMACSDIR@%$EMACSDIR%" \
+ -e "s%@LIBDIR@%$LIBDIR%" \
+  < Makefile.config.in > Makefile.config; 
+
+echo
+echo " EMACS = $EMACS "
+echo " EMACSDIR = $EMACSDIR "
+echo " LIBDIR = $LIBDIR "
+echo
+echo 'See Makefile.config for details'
+echo
