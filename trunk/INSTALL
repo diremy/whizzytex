@@ -60,6 +60,56 @@ make install
        Default value is /usr/local/lib/whizzytex/whizzytex.sty
        
 
+1.3 Automatic upgrading
+-----------------------
+
+  1.3  Automatic upgrading
+
+      For  convenience,  the distribution also offers a facility to download
+      and upgrade to new versions. This requires wget installed.
+      To benefit from this service you must first execute (once for all)   
+
+   make install.pkg
+
+      This  will  install create a link Makefile in your parent directory to
+      the file whizzytex/Makefile.pkg. This assumes that you have not rename
+      the   parent   directory   after  installation,  which  should  remain
+      whizzytex.
+      If  you  wish to edit this file, you should copy it instead of
+      creating a  link,  since upadtes may update (hence override) the file
+      whizzytex/Makefile.pkg itself.
+
+      Then, from the parent directory, you can type
+
+   make update
+   make unpack
+   make build
+   make install
+
+      Respectively,  to  check  for newer version and download if nevessary,
+      unpack  the newest version, build the current version, and install the
+      current version
+      You can also use
+
+   make upgrade
+
+        as a show-cut for "make update unpack build"
+
+   make VERSION=xxx restore
+
+        to restore (unpack only) version xxx
+
+   make save-version
+
+        To  pack  current  version in case, you lost its original tar file,
+        which  is recommended before an updare, in case you want to restore 
+        the old version later.
+
+      The  upgrading  may ask questions to the users. To be fully automatic,
+      you   can  also  pass  the  option  FORCE=true,  which  will  let  the
+      installation make (hopefully reasonable) choices in your place.
+
+
 2.  Using WhizzyTeX
 -------------------
 

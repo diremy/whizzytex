@@ -1,74 +1,86 @@
 #!/bin/bash
 
-PS3="choice ==> "
+PS3="Your choice ==> "
 
-if test -z "$EMACS"; then EMACS=emacs; fi
-if test -z "$XEMACS"; then XEMACS=xemacs; fi
+
+if test -z "$EMACS"; then EMACS=emacs; else BOTH=true; fi
+if test -z "$XEMACS"; then XEMACS=xemacs; else BOTH=true; fi
 
 unset EDITORS
-if $EMACS -batch 2>/dev/null; then EDITORS="$EDITORS $EMACS"; fi
-if $XEMACS -batch 2>/dev/null; then EDITORS="$EDITORS $XEMACS"; fi
+if $EMACS -batch 2>/dev/null
+  then EDITORS="$EDITORS $EMACS"; 
+  else unset EMACS
+fi
+if $XEMACS -batch 2>/dev/null
+  then EDITORS="$EDITORS $XEMACS"
+  else unset XEMACS
+fi
+
 set xxx $EDITORS
 shift
 case $# in
   0) 
     echo "Neither $EMACS nor $XEMACS seemed to be installed."
-    echo "Please, install them first or"
-    echo "Edit EMACS or XEMACS variables in Makefile.config.in"
+    echo "Please, install them first or set EMACS or XEMACS variables"
     exit 2;;
   1);;
   2) 
-    echo "Both $EMACS and $XEMACS are installed."
-    echo 'Do you wish to install whizzytex for... '
-    PS3="choice ==> "
-    select ANSWER in $EDITORS both
-    do
-      echo "you selected $ANSWER"
-      case /$ANSWER/ in
-       //) ;;
-       /both/) break;;
-       /$EMACS/) EDITORS=$EMACS; unset XEMACS; break;;
-       /$XEMACS/) EDITORS=$XEMACS; unset EMACS; break;;
-      esac
-    done
-    echo "you selected EDITORS=$EDITORS"
+    if $BOTH
+    then :
+    else
+      echo "Both $EMACS and $XEMACS are installed."
+      echo 'Do you wish to install whizzytex for... '
+      PS3="choice ==> "
+      select ANSWER in $EDITORS both
+      do
+        echo "you selected $ANSWER"
+        case /$ANSWER/ in
+         //) ;;
+         /both/) break;;
+         /$EMACS/) EDITORS=$EMACS; unset XEMACS; break;;
+         /$XEMACS/) EDITORS=$XEMACS; unset EMACS; break;;
+        esac
+      done
+      echo "you selected EDITORS=$EDITORS"
+    fi
     ;;
 esac
-echo $EDITORS
 
 if test ! -z "$USER"; then INIT="-u $USER"; fi
 
 for EXEC in $EDITORS
 do 
   case `$EXEC -batch -eval "(princ emacs-version)" 2>/dev/null` in
-   *XEmacs*) X=X;;
-   *) X='';;
+   *XEmacs*) X=X; DIR=$XEMACSDIR;;
+   *) X=''; DIR=$EMACSDIR;;
   esac
-  echo "Determining ${X}EMACSDIR for $EXEC"
-  set xxx \
-    `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" 2>/dev/null`
-  shift
-  case $# in
-   0) 
-      echo "Cannot determine ${X}EMACSDIR ---site-lisp directory for $EXEC "
-      echo "Please enter full path name"
-      echo -n "${X}EMACSDIR ==> "
-      read DIR
-      ;;
-   1)
-      DIR=$1
-      ;;
-   *)
-      echo "Several $DIR are possible for $EXEC"
-      echo 'Please select one'
-      select DIR in $*
-      do
-        case /$DIR/ in
-         //) ;;
-         *) break ;;
-        esac
-      done;;
-  esac
+  if test -z $DIR 
+  then
+    set xxx \
+      `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" \
+        2>/dev/null`
+    shift
+    case $# in
+     0) 
+        echo "Cannot determine ${X}EMACSDIR ---site-lisp directory for $EXEC "
+        echo "Please enter full path name"
+        echo -n "${X}EMACSDIR ==> "
+        read DIR
+        ;;
+     1)
+        DIR=$1
+        ;;
+     *)
+        echo "Please select one value for ${X}EMACSDIR (for $EXEC)"
+        select DIR in $*
+        do
+          case /$DIR/ in
+           //) ;;
+           *) break ;;
+          esac
+        done;;
+    esac
+  fi
   if test -d "$DIR"; 
   then declare ${X}EMACSDIR=$DIR
   else echo "$DIR is not a directory"; exit 2; 

@@ -1,0 +1,53 @@
+VERSION=1.00-alpha
+FORCE=false
+
+# Url of sources
+URL=http://cristal.inria.fr/~remy/whizzytex
+
+# Command to retreive new versions
+WGET=wget --cache off --timestamping
+
+
+.PHONY: update upgrade restore save-current
+
+update: 
+	$(WGET) $(URL)/VERSION 
+	$(WGET) $(URL)/whizzytex-`cat VERSION`.tgz 2>wget.log
+	cat wget.log
+	@if grep 'not retrieving' wget.log > /dev/null; \
+	 then echo 'Version is up-to-date' ; rm wget.log; exit 1; \
+	rm wget.log; fi 
+
+unpack: VERSION whizzytex/VERSION
+	@if diff VERSION whizzytex/VERSION >/dev/null && ! $(FORCE); then \
+	 echo "Last version is already current version! "; \
+	 echo -n "Do you wish to force upgrade? (y/n) [n] "; \
+	 read YORN; if test "$$YORN" != y; then exit 1; fi; \
+	fi
+	@if test ! -f whizzytex-`cat whizzytex/VERSION`.tgz; then \
+	 echo -n "Do you wish to save current version? (y/n) [y] "; \
+	 read YORN; \
+	 if test "$$YORN" != n || $(FORCE); then make save-version; fi; \
+	fi
+	make VERSION=`cat VERSION` restore
+
+restore: whizzytex-$(VERSION).tgz
+	gunzip -c whizzytex-$(VERSION).tgz | tar -xvf -
+
+save-version: 
+	if test -f whizzytex-$(VERSION).tgz && ! $(FORCE); then \
+	 echo -n "Whizzytex-$(VERSION).tgz already there. Remove it!" \
+	 exit 1; fi
+	tar -cf whizzytex-$(VERSION).tar `cat whizzytex/FILES` 
+	gzip -c whizzytex-$(VERSION).tar > whizzytex-$(VERSION).tgz
+
+build:
+	cd whizzytex; make all
+
+install:
+	cd whizzytex; make install
+
+clean:
+	cd whizzytex; make clean
+
+upgrade: update unpack build 

@@ -391,7 +391,7 @@ it overrides this regexp locally, even if the submode is not paragraph. ")
             (bol) (there) (bow) (tmp))
         (beginning-of-line)
         (if (looking-at "\n[ \t]*[^\n \t]")
-            (progn (next-line 1) (setq near (point))))
+            (progn (next-line 1) (beginning-of-line) (setq near (point))))
         (setq bol (point))
         (if (or
              (looking-at
@@ -450,23 +450,22 @@ it overrides this regexp locally, even if the submode is not paragraph. ")
 
 
 (defun whizzy-write-slice (from to &optional local word)
-  (message "Writing slice")
-    (if local
-        (let ((old write-region-annotate-functions)
-              ;; (coding coding-system-for-write)
+  (if local
+      (let ((old write-region-annotate-functions)
+            ;; (coding coding-system-for-write)
+            )
+        (setq write-region-annotate-functions
+              (list 'whizzy-write-region-annotate))
+        (setq whizzy-write-at-begin-document word)
+        (condition-case nil
+            (unwind-protect
+                (write-region from to (whizzy-get whizzy-slicename)
+                              nil 'ignore)
+              (setq write-region-annotate-functions old)
               )
-          (setq write-region-annotate-functions
-                (list 'whizzy-write-region-annotate))
-          (setq whizzy-write-at-begin-document word)
-          (condition-case nil
-              (unwind-protect
-                  (write-region from to (whizzy-get whizzy-slicename)
-                                nil 'ignore)
-                (setq write-region-annotate-functions old)
-                )
-            (quit (message "Quit occured during slicing has been ignored"))
-            ))
-      (write-region from to (whizzy-get whizzy-slicename) nil 'ignore))
+          (quit (message "Quit occured during slicing has been ignored"))
+          ))
+    (write-region from to (whizzy-get whizzy-slicename) nil 'ignore))
   (whizzy-wakeup))
 
 (defun whizzy-write-region-annotate (start end)
@@ -555,7 +554,6 @@ it overrides this regexp locally, even if the submode is not paragraph. ")
 
 (defun whizzy-slice (layer)
   ; adjust the mode info string
-  (message "Slicing")
   (if (> (whizzy-get whizzy-slice-time) 0)
       (setq whizzy-speed-string
             (int-to-string (/ (whizzy-get whizzy-slice-time) 100))))
@@ -685,15 +683,12 @@ or other processus be more responsive.")
 
 (defun whizzy-wait (miliseconds)
   (let ((delay (round (/ miliseconds whizzy-load-factor))))
-    (let ((r
     (if (> (- (whizzy-current-time) (whizzy-get whizzy-slice-date))
            delay) t
       (while (and
               (< (whizzy-get whizzy-slice-time) 0)
               (whizzy-sit-for 0 delay)))
-      (whizzy-sit-for 0 delay))))
-        (message "%S => %S" (point) r)
-        r)
+      (whizzy-sit-for 0 delay))
       ))
 
 (defun whizzy-duplex ()
@@ -1576,12 +1571,12 @@ automatically, according to errors")
         (set-buffer (whizzy-get whizzy-active-buffer))
         (whizzy-mode-off)
         (whizzy-show-interaction t)
-        (message "External Fatal error. WhizzyTeX Mode turn off. ")
+        (message "External Fatal error. WhizzyTeX Mode switched off. ")
         )
        ((string-match "<Quitting>" s)
         (set-buffer (whizzy-get whizzy-active-buffer))
         (whizzy-mode-off)
-        (message "Mode turn off externally")
+        (message "Mode switched off externally")
         )
        ))
 

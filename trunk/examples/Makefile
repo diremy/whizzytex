@@ -1,4 +1,4 @@
-DIRS= basic multiple includes slides
+DIRS= basic multiple includes slides advanced
 FILES= $(patsubst %,%/main.dvi,$(DIRS))
 
 all: $(FILES)
@@ -10,7 +10,7 @@ clean:
 	rm -f */*.{aux,log,dvi,ans,dview,wiz,fmt}
 
 superclean: clean
-	rm -f *~ */*~
+	rm -f {.,*}/{*~,.#*,#*#}
 	rm -rf */_whizzy_*
 
 .SUFFIXES: .tex .dvi

@@ -1,21 +1,7 @@
 include Makefile.config
 
 what:
-	@echo 'make what? [ config all install ]'
-
-TGZ=whizzytex.tgz
-
-update:   
-	mkdir tmp
-	cd tmp; wget $(URL)/DATE
-	if diff DATE tmp/DATE; then \
-	echo `cat $DATE` up-to-date; exit 0; else \
-	(cd tmp; wget $(URL)/$(TGZ) && mv $(TGZ) ..); fi
-	rm -rf tmp
-
-promote: $(TGZ)
-	(cd ..; gunzip -c whizzytex/whizzytex.tgz | tar -xvf -)
-
+	@echo 'make what? [ config all doc install ]'
 
 Makefile.config: 
 	@echo 'run "make config" by hand to create $@'
@@ -57,24 +43,28 @@ prep/whizzytex: whizzytex prep
 	 <  $< > $@
 	chmod +x $@
 
-clean:
-	rm -rf prep
-
-
 .PHONY: install
 install: all
 	@echo; echo "## Installing whizzytex.el in $(EMACSDIR)"
-	if test -n "$(EMACSDIR)"; then \
-	  install -d $(EMACSDIR); \
-	  install prep/whizzytex.el prep/$(EMACS)/whizzytex.elc $(EMACSDIR); fi
+	if test -d "$(EMACSDIR)"; then \
+	  install prep/whizzytex.el prep/$(EMACS)/whizzytex.elc $(EMACSDIR); \
+	else echo "$(EMACSDIR) is not a directory"; fi
 	@echo; echo "## Installing whizzytex.el in $(XEMACSDIR)"
-	if test -n "$(XEMACSDIR)"; then \
-	  install -d $(XEMACSDIR) && \
+	if test -d "$(XEMACSDIR)"; then \
 	  install prep/whizzytex.el prep/$(XEMACS)/whizzytex.elc \
-		$(XEMACSDIR); fi
+		$(XEMACSDIR); \
+	else echo "$(EMACSDIR) is not a directory"; fi
 	@echo; echo "## Installing whizzytex in $(BASHDIR)"
 	install -d $(BASHDIR)
 	install prep/whizzytex $(BASHDIR)
 	@echo; echo "## Installing whizzytex.sty in $(LATEXDIR)"
 	install -d $(LATEXDIR) && \
 	install whizzytex.sty $(LATEXDIR)
+
+install.pkg:
+	cd ..; ln -s Makefile whizzytex/Makefile.pkg
+
+clean::
+	rm -rf prep
+	cd examples; make clean
+
