@@ -1,9 +1,27 @@
 #!/bin/sh
+#
+#  WhizzyTeX - a wysiwyg environment for TeX
+#  Copyright (C) 2002 Didier Rémy
+#  
+#  This library is free software; you can redistribute it and/or
+#  modify it under the terms of the GNU Lesser General Public
+#  License as published by the Free Software Foundation; either
+#  version 2 of the License, or (at your option) any later version.
+#  
+#  This library is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#   
+#  See the GNU Lesser General Public License version 2.1 for more
+#  details (enclosed in the file LGPL).
+#############################################################################
+#  File whizzytex
+#############################################################################
 
 ### Configuration
 
 # time in milliseconds to sleep when the pool is empty.
-typeset -i WYSIPAUSE=100
+typeset -i WHIZZYPAUSE=100
 
 # limit the length of error messages sent back to stdout.
 TEXERRORMAXLINES=50
@@ -13,7 +31,7 @@ TEXERRORAROUND=20
 LIMIT=20
 
 
-# whether Whysitex should send itself a STOP signal (then it must be waken up)
+# whether WhizzyTeX should send itself a STOP signal (then it must be waken up)
 # or just sleep for a while when done and no slicing is available
 
 STOP=true
@@ -107,10 +125,10 @@ HERE=$(pwd)
 
 NAME=$(basename $1 .tex)
 FORMAT=\&$NAME
-WYSI=_whizzy_$NAME
-SLICE=$WYSI.new
-LOG=$WYSI.gol
-ERR=$WYSI.err
+WHIZZY=_whizzy_$NAME
+SLICE=$WHIZZY.new
+LOG=$WHIZZY.gol
+ERR=$WHIZZY.err
 
 errlog () { echo "$*" 1>&2; }
 log () { 
@@ -123,7 +141,7 @@ log () {
 }
 errlog "$COMMAND"
 
-LOCK=.$WYSI.tex
+LOCK=.$WHIZZY.tex
 
 if [ -f $NAME.tex ]
 then 
@@ -134,18 +152,18 @@ else
 fi
 
 cleaning () {
-   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id)
-   rm -f $WYSI.* $NAME.fmt 
-   rm -rf $WYSI
+   [ -f $WHIZZY.id ] && kill -QUIT $(cat  $WHIZZY.id)
+   rm -f $WHIZZY.* $NAME.fmt 
+   rm -rf $WHIZZY
    rm -f $LOCK
-   errlog "Cleaning WYSI=$WYSI, LOCK=$LOCK"
+   errlog "Cleaning WHIZZY=$WHIZZY, LOCK=$LOCK"
 }
 # trap cleaning EXIT
 
 suicide () {
-   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id) 
-   rm -f $WYSI.* $NAME.fmt 
-   rm -rf $WYSI
+   [ -f $WHIZZY.id ] && kill -QUIT $(cat  $WHIZZY.id) 
+   rm -f $WHIZZY.* $NAME.fmt 
+   rm -rf $WHIZZY
    if [ -f $LOCK ]
    then
      PID=$(cat $LOCK)
@@ -153,7 +171,7 @@ suicide () {
      kill $JOBS 
      kill -KILL $PID
    fi
-   errlog "Killing WYSI=$WYSI, LOCK=$LOCK"
+   errlog "Killing WHIZZY=$WHIZZY, LOCK=$LOCK"
    exit 2
 }
 
@@ -178,56 +196,67 @@ format () {
  ( runinitex $FMT '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\usepackage{'"$DUMP"'}\WhizzyAdvi'"$ADVI"'}\input{'"$NAME.tex"'}' )
 }
 
-SECTION='\\\(chapter\|section\|subsection\)'
+SECTION='\\\(chapter\|section\|subsection\|subsubsection\)'
 intersect () {
-    sort $WYSI.sec $WYSI.pag > $WYSI.spg
-    sort -n -t : -u $WYSI.pag $WYSI.sec | sort | comm -1 -3 - $WYSI.spg > $WYSI.sec.1
-    sort -n -t : -u $WYSI.sec $WYSI.pag | sort | comm -1 -3 - $WYSI.spg > $WYSI.pag.1
-    mv $WYSI.pag.1 $WYSI.pag
-    mv $WYSI.sec.1 $WYSI.sec
+    sort $WHIZZY.sec $WHIZZY.pag > $WHIZZY.spg
+    sort -n -t : +0 +1 -u $WHIZZY.pag $WHIZZY.sec | sort | comm -1 -3 - $WHIZZY.spg > $WHIZZY.sec.1
+    sort -n -t : +0 +1 -u $WHIZZY.sec $WHIZZY.pag | sort | comm -1 -3 - $WHIZZY.spg > $WHIZZY.pag.1
+}
+
+premark () {
+    if [ -f $WHIZZY.pag ]
+    then 
+       SOURCES=$(sed -n -e 's/^\([^:]*\):\(.*\)$/\1/p' $WHIZZY.pag | sort -u); 
+    else
+       SOURCES=$NAME.tex
+    fi
+    grep -n -e "^$SECTION" $SOURCES /dev/null | \
+    sed -e 's/^\([^:]*\):\([0-9]*\):'"$SECTION"'/\1:\2:\3@/' -e 's/"/\\"/' \
+      > $WHIZZY.sec
+}
+postmark () {
+    intersect
+    ( join -t @  $WHIZZY.pag.1 $WHIZZY.sec.1 | \
+      sed -e 's/^\([^:]*\):[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/\1:("\\\2\4"."\\WhizzyTeX\3")/' -e 's/\\/\\\\/g' ) > $WHIZZY.tmp
+    ( echo "(setq whizzytex-marks '("; 
+      for file in $SOURCES
+      do
+        if [ -f $file ]
+        then
+          echo '("'$file'".('
+          ( grep -e "$file" $WHIZZY.tmp | sed -e 's/^\([^:]*:\)\(.*\)/\2/' ) 
+          echo '))'
+        fi
+      done
+      echo '))'
+    ) > $WHIZZY.tmp.1
+    mv $WHIZZY.tmp.1 $WHIZZY.pos
 }
 marks () {
-    grep -n -e "^$SECTION" $NAME.tex | \
-    sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/' \
-      > $WYSI.sec
-    runtex $FORMAT '\WysitexInput{'"$NAME"'}'
-    intersect
-    ( echo "(setq whizzytex-marks '("; \
-      ( join -t @  $WYSI.pag $WYSI.sec | \
-        sed -e 's/^[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/("\\\1\3"."\\WhizzyTeX\2")/' -e 's/\\/\\\\/'); \
-      echo "))" \
-    ) >> $WYSI.tmp
-    cat $WYSI.tmp
-
+    premark
+    runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
+    postmark
+    cat $WHIZZY.pos
 }
+
 batchmarks () {
-    grep -n -e "^$SECTION" $NAME.tex | \
-    sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/g' \
-        -e 's/\\/\\\\/g' \
-      > $WYSI.sec
-    if runtex $FORMAT '\WysitexInput{'"$NAME"'}' 
+    premark
+    if runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' 
     then
       cp $NAME.dvi $NAME.dview
       if $1
       then
-         intersect
-         ( echo "(setq whizzy-marks '("; \
-           ( join -t @  $WYSI.pag $WYSI.sec | \
-             sed -e 's/^[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/("\\\\\1\3"."\\\\WhizzyTeX\2")/' \
-           ); \
-           echo "))" \
-         ) > $WYSI.tmp
-         mv $WYSI.tmp $WYSI.pos
+         postmark
       fi
-      if [ -f $NAME.toc ]; then cp $NAME.toc $WYSI.toc; fi
+      if [ -f $NAME.toc ]; then cp $NAME.toc $WHIZZY.toc; fi
       if grep 'LaTeX Warning: Citation' $NAME.log
       then
          bibtex $NAME; 
-         if [ -f $NAME.bbl ]; then cp $NAME.bbl $WYSI.bbl; fi
+         if [ -f $NAME.bbl ]; then cp $NAME.bbl $WHIZZY.bbl; fi
          true
       fi
     else 
-       rm -f $WYSI.pag; false
+       rm -f $WHIZZY.pag; false
     fi
     
 }
@@ -245,7 +274,7 @@ wordify () {
 wdiff () { 
   FST=$1
   SND=$2
-  DIF=$WYSI.dif
+  DIF=$WHIZZY.dif
   diff $FST $SND > $DIF
   if [ $(grep -v -e '^[-><]' $DIF | wc -l) -eq 1 ] && \
      [ $(wc -l < $DIF) -lt 3 ] && \
@@ -320,7 +349,7 @@ fi
 
 # Initial file
 
-echo '\begin{document}[Initial empty page]\end{document}' > $WYSI.nil
+echo '\begin{document}[Initial empty page]\end{document}' > $WHIZZY.nil
 
 # Texing...
 
@@ -330,34 +359,34 @@ ANTIDATE=$(date +%m%d%H%M.%S)
 case $VIEW in
   ps)
     preview () {
-        dvips -o $WYSI._ps $WYSI.dvi 2>/dev/null && \
-        { if [ $WYSI._ps -nt $WYSI.ps ]; then true; \
-             else touch -t $ANTIDATE $WYSI._ps; fi; \
-          mv $WYSI._ps $WYSI.ps; }
+        dvips -o $WHIZZY._ps $WHIZZY.dvi 2>/dev/null && \
+        { if [ $WHIZZY._ps -nt $WHIZZY.ps ]; then true; \
+             else touch -t $ANTIDATE $WHIZZY._ps; fi; \
+          mv $WHIZZY._ps $WHIZZY.ps; }
         }
     view () {
        PIDS=
        if $DUPLEX
        then
-         [ -f $NAME.dview ] || cp $WYSI.dview $NAME.dview
+         [ -f $NAME.dview ] || cp $WHIZZY.dview $NAME.dview
          $VIEWCOMMAND $NAME.ps &
          PIDS="$!"
        fi
-       $VIEWCOMMAND $WYSI.ps &
+       $VIEWCOMMAND $WHIZZY.ps &
        PIDS="$PIDS $!"
        }
     ;;   
   dvi)
-    preview () { mv $WYSI.dvi $WYSI.dview; }
+    preview () { mv $WHIZZY.dvi $WHIZZY.dview; }
     view () {
        PIDS=
        if $DUPLEX
        then
-         [ -f $NAME.dview ] || cp $WYSI.dview $NAME.dview
+         [ -f $NAME.dview ] || cp $WHIZZY.dview $NAME.dview
          $VIEWCOMMAND $NAME.dview &
          PIDS="$!"
        fi
-       $VIEWCOMMAND $WYSI.dview &
+       $VIEWCOMMAND $WHIZZY.dview &
        PIDS="$PIDS $!"
       }
     SIG=$SIGDVI
@@ -366,13 +395,13 @@ case $VIEW in
 esac
 
 newfiles () {
-  mv $(find $HERE/$WYSI -type f -print || suicide) $HERE/  2>/dev/null
+  mv $(find $HERE/$WHIZZY -type f -print || suicide) $HERE/  2>/dev/null
 }
 
-defaultmake () { mv $SLICE $WYSI.tex 2>/dev/null; }
+defaultmake () { mv $SLICE $WHIZZY.tex 2>/dev/null; }
 
 preprocess () {
-  if $MAKE $WYSI.tex >$LOG 2>$ERR && [ -f $WYSI.tex ]
+  if $MAKE $WHIZZY.tex >$LOG 2>$ERR && [ -f $WHIZZY.tex ]
   then 
      true
   else
@@ -384,20 +413,20 @@ preprocess () {
 }
 
 process () {
-  rm -f $WYSI.aux
+  rm -f $WHIZZY.aux
   echo -n '<Recompiling '
-  if { runtex $FORMAT $WYSI && preview; } > $LOG
+  if { runtex $FORMAT $WHIZZY && preview; } > $LOG
   then
      echo 'compilation succeeded>'
-     ln -f $WYSI.tex $WYSI.xet
+     ln -f $WHIZZY.tex $WHIZZY.xet
   else
      echo 'recompilation failed>'
-     if [ -f $WYSI.xet ] && wdiff  $WYSI.xet $WYSI.tex 
+     if [ -f $WHIZZY.xet ] && wdiff  $WHIZZY.xet $WHIZZY.tex 
      then 
         :
      else
         log
-        echo 'l.'$[ $(wc -l < $WYSI.tex) - 1 ]' '
+        echo 'l.'$[ $(wc -l < $WHIZZY.tex) - 1 ]' '
      fi
      echo '<Continuing>'
      false
@@ -408,23 +437,23 @@ process () {
 
 if $DEBUG; then 
 errlog "NAME=$NAME"
-errlog "WYSI=$WYSI"
+errlog "WHIZZY=$WHIZZY"
 errlog "DOMARKS=$DOMARKS"
 fi
 
 # Initial run
 
 # to make sure the dvi file exists 
-runtex $FORMAT $WYSI.nil > $LOG && preview || log
+runtex $FORMAT $WHIZZY.nil > $LOG && preview || log
 
 # To give it a chance to see citations and other global information.
 
-if [ -f $NAME.bbl ]; then cp $NAME.bbl $WYSI.bbl; fi
-if [ -f $NAME.toc ]; then cp $NAME.toc $WYSI.toc; fi
+if [ -f $NAME.bbl ]; then cp $NAME.bbl $WHIZZY.bbl; fi
+if [ -f $NAME.toc ]; then cp $NAME.toc $WHIZZY.toc; fi
 
-# process $WYSI.tex is present. Will override $WYSI.dvi if it succeeds
+# process $WHIZZY.tex is present. Will override $WHIZZY.dvi if it succeeds
 
-mkdir $WYSI 2>/dev/null
+mkdir $WHIZZY 2>/dev/null
 
 if newfiles; then preprocess && process; fi
 
@@ -432,7 +461,7 @@ if newfiles; then preprocess && process; fi
 if view 2>$ERR
 then 
    ID=$!
-   echo $PIDS > $WYSI.id
+   echo $PIDS > $WHIZZY.id
    sleep 1
    if kill -CONT $ID
    then 
@@ -448,11 +477,11 @@ else
 fi
 
 whole () {
-#     if head $WYSI.tex | grep '%DOMARKS'
+#     if head $WHIZZY.tex | grep '%DOMARKS'
 #     then DOMARKS=true
 #     else DOMARKS=false
 #     fi
-#  if $DOMARKS && [ ! -f $WYSI.pag ]
+#  if $DOMARKS && [ ! -f $WHIZZY.pag ]
 #  then 
    echo '<Recompiling whole document>'
    if batchmarks $1 </dev/null >$LOG.pag
@@ -476,7 +505,7 @@ do
   then
       echo '<Reformating>'
       touch -r $NAME.tex $NAME.fmt
-      mv -f $NAME.fmt $WYSI.fmt
+      mv -f $NAME.fmt $WHIZZY.fmt
       if format > $LOG
       then
           echo '<Reformating succeeded>'
@@ -493,7 +522,7 @@ do
 #               fi
 #            fi
       else
-          mv -f $WYSI.fmt $NAME.fmt
+          mv -f $WHIZZY.fmt $NAME.fmt
           echo '<Reformatting failed>'
           log
           echo '<Contuning with the old format>'
@@ -510,7 +539,7 @@ do
          echo '<Continuing>'
       fi
   else
-      if $STOP; then kill -STOP $$; else usleep $WYSIPAUSE; fi
+      if $STOP; then kill -STOP $$; else usleep $WHIZZYPAUSE; fi
       kill -CONT $ID || (suicide; exit 2)
   fi
 done

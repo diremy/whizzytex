@@ -1,3 +1,21 @@
+%  WhizzyTeX - a wysiwyg environment for TeX
+%  Copyright (C) 2002 Didier Rémy
+% 
+%  This library is free software; you can redistribute it and/or
+%  modify it under the terms of the GNU Lesser General Public
+%  License as published by the Free Software Foundation; either
+%  version 2 of the License, or (at your option) any later version.
+% 
+%  This library is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% 
+%  See the GNU Lesser General Public License version 2.1 for more
+%  details (enclosed in the file LGPL).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File whizztex.sty (TeX and LaTeX macros)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \nonstopmode
 \let \scrollmode \relax
 \newif \if@whizzysafe  \@whizzysafefalse
@@ -14,12 +32,13 @@
 |endgroup
 \def \dump@restart {\begingroup \let \do \@makeother \dospecials \dump@skip}
 
-\def \dump@resume {\endgroup 
-                   \@whizzy@fulldocument
-                   \message {[WisyTeX is resuming in LaTeX mode]}
-                   \whizzy@wizfalse \relax
-                   \let \documentclass \@documentclass
-                   \begin{document}}
+\def \dump@resume
+  {\endgroup 
+   \@whizzy@fulldocument
+   \message {[WisyTeX is resuming in LaTeX mode]}
+   \whizzy@wizfalse \relax
+   \let \documentclass \@documentclass
+   \begin{document}}
 
 \def \whizzy@begindocumenthook {}
 \def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
@@ -47,16 +66,26 @@
   {\endgroup
    \@ifundefined {Whizzysafe}
       {\usepackage{color}}
-      {\@whizzysafetrue}
-   \AtBeginDocument {\whizzy@@active \whizzy@advi}
-   \IfFileExists{whizzy.sty}{\usepackage{whizzy}}{}
+      {\@whizzysafetrue}%
+   \AtBeginDocument {\whizzy@@active \whizzy@advi}%
+   \IfFileExists{whizzy.sty}{\usepackage{whizzy}}{}%
    \begingroup \def \@currenvir {document}%
    \whizzy@loadaux
    \endgroup
    \@ifundefined {overlay}{}%{\let \@whizzy@fulldocument \relax}
       {\let \whizzy@overlay \overlay
        \let \overlay \whizzy@ignore
-       \def \whizzy@fulldocument {\let \overlay \whizzy@overlay}}
+       \def \whizzy@fulldocument {\let \overlay \whizzy@overlay}}%
+   \g@addto@macro \@begindvi
+       {\g@addto@macro \@begindvi {\whizzy@writelastpage}}%
+%    \@ifundefined {AtEndPage}
+%      {\def \endpage@hook {\whizzy@writelastline}
+%       \g@addto@macro \@begindvi 
+%          {\endpage@hook \g@addto@macro \@begindvi {\endpage@hook}}}
+%      {\AtEndPage {\whizzy@writelineno}}
+% comment if necessary
+   \let \@iinput \whizzy@iinput
+   \let \@input@ \whizzy@input@
    \let \@documentclass \documentclass
    \let \documentclass \dump@restart
 %   \AtBeginDocument {\whizzy@begindocumenthook}%
@@ -65,30 +94,30 @@
 
 %%% Macros for dumping sections in \@whizzy  (\jobname.pag)
 
-\def \whizzy@markon #1#2{
-\expandafter \let \expandafter \@aux \csname #1\endcsname
-\expandafter \let \csname whizzy@#1\endcsname \@aux
-\def \@aux {\whizzy@mark {#2}\csname whizzy@#1\endcsname}
-\expandafter \let \csname #1\endcsname \@aux
+\def \whizzy@markon #1#2{%
+  \expandafter \let \expandafter \@do \csname #1\endcsname
+  \expandafter \let \csname whizzy@#1\endcsname \@do
+  \def \@do {\whizzy@mark {#2}\csname whizzy@#1\endcsname}%
+  \expandafter \let \csname #1\endcsname \@do
 }
-\def \whizzy@markafter #1#2{
-\expandafter \let \expandafter \@aux \csname #1\endcsname
-\expandafter \let \csname whizzy@#1\endcsname \@aux
-\def \@aux {\csname whizzy@#1\endcsname\whizzy@mark {#2}}
-\expandafter \let \csname #1\endcsname \@aux
+\def \whizzy@markafter #1#2{%
+  \expandafter \let \expandafter \@do \csname #1\endcsname
+  \expandafter \let \csname whizzy@#1\endcsname \@do
+  \def \@do {\csname whizzy@#1\endcsname\whizzy@mark {#2}}%
+  \expandafter \let \csname #1\endcsname \@do
 }
-\def \whizzy@putmarks {
-\@ifundefined{c@chapter}{}{\whizzy@markon {chapter}{chapter}}
-\whizzy@markon {section}{section}
-\whizzy@markon {subsection}{subsection}
-%\whizzy@markafter {@outputpage}{page}
+\def \whizzy@putmarks {%
+  \@ifundefined{c@chapter}{}{\whizzy@markon {chapter}{chapter}}%
+  \whizzy@markon {section}{section}%
+  \whizzy@markon {subsection}{subsection}%
+  \whizzy@markon {subsubsection}{subsubsection}%
+  %\whizzy@markafter {@outputpage}{page}%
 }
 \def \whizzy@mark #1{\immediate \write \@whizzy
-% {(whizzy-mark '((\the\inputlineno\space . "#1") .
-% "\thepage.\the\c@section.\the\c@subsection."))}}
-{\the\inputlineno:#1@\thepage.%
-\@ifundefined{c@chapter}{}{\the\c@chapter.}%
-\the\c@section.\the\c@subsection.}}
+  {\whizzy@curfile.tex:\the\inputlineno:#1@\thepage.%
+  \@ifundefined{c@chapter}{}{\the\c@chapter.}%
+  \the\c@section.\the\c@subsection.}%
+}
 
 \edef\whizzy@quote{\string"}
 
@@ -96,7 +125,19 @@
 
 % \jobname should be the current file, instead. It is stored somewhere?
 \def \whizzy@writelineno
-   {\ifhmode \unskip \fi \special {line: \the\inputlineno \space \jobname.tex}}
+   {\ifhmode \unskip \fi
+    \xdef \whizzy@lastparno {\the\inputlineno}%
+    \special {line: \the\inputlineno \space \whizzy@curfile}}
+\def \whizzy@pageno {0}
+\def \whizzy@lastpageno {0}
+\def \whizzy@writelastpage
+  {\special {line: \whizzy@lastpageno \space \whizzy@curfile}%
+   \xdef \whizzy@lastpageno {\whizzy@pageno}%
+   \xdef \whizzy@pageno {\the \inputlineno}%
+}
+% \def \whizzy@writeline@page
+%    \xdef \whizzy@lastlineno {\the\inputlineno}%
+
 \def \whizzy@lineno@display 
    {\whizzy@writelineno \aftergroup \whizzy@writelineno}
 % To insert the mark ``around'' the current line number
@@ -105,7 +146,8 @@
     \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
     \special {html:</A>}%
     %\ifhmode \hskip \lastskip \fi
-    \message {[Start-Document @ \whizzy@line -> \the\inputlineno]}%
+    \message {[Start-Document @ \whizzy@line -> \the\inputlineno\space
+               \whizzy@curfile]}%
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
     \global \let \whizzy@check@line \relax
@@ -114,20 +156,24 @@
     }
 \let \latex@@par \@@par
 \let \whizzy@checkline \relax
-\def \whizzy@@par {\whizzy@checkline \whizzy@writelineno \latex@@par}
+\def \whizzy@@par 
+  {\whizzy@checkline \whizzy@writelineno \latex@@par}
 \let \whizzy@catcode \relax
 \def \whizzy@@check@limit 
   {\ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi}
-\def \whizzy@@checkline 
-  {\ifnum \inputlineno>\whizzy@linelimit
-      \ifnum \inputlineno>\whizzy@line \whizzy@starthere 
-      \else 
-         \let \whizzy@checkline \whizzy@@check@limit
-         \global \let \whizzy@@checkline \whizzy@@check@limit
-         \edef \@tmp {\noexpand \whizzy@check@line  \the\everymath}%
-         \everymath \expandafter {\@tmp}%
+\def \whizzy@@checkline {%
+   \ifx \whizzy@curfile \whizzy@local
+      \ifnum \inputlineno>\whizzy@linelimit
+         \ifnum \inputlineno>\whizzy@line \whizzy@starthere 
+         \else 
+            \let \whizzy@checkline \whizzy@@check@limit
+            \global \let \whizzy@@checkline \whizzy@@check@limit
+            \edef \@tmp {\noexpand \whizzy@check@line  \the\everymath}%
+            \expandafter \everymath \expandafter {\@tmp}%
+         \fi
       \fi
-   \fi}
+   \fi
+}
 \let \whizzy@begin \begin
 \def \whizzy@@begin {\whizzy@checkline \whizzy@begin}
 \def \whizzy@check@line {\whizzy@checkline \aftergroup\whizzy@checkline}
@@ -147,6 +193,33 @@
 \def \whizzy@nopar {\let \@@par \latex@@par \let \par \@@par}
 \def \WhizzySkip {\ifWhizzyAdvi \whizzy@nopar\fi}
 \def \WhizzyStart {\ifWhizzyAdvi \whizzy@par \whizzy@writelineno \fi}
+\def \whizzy@fill 
+  {\leavevmode \leaders \hrule height 0.15em \hfill \kern \z@}
+\def \whizzy@master@banner
+  {{\LARGE\bf \whizzy@fill\space
+    File mastered by \whizzy@master{} \whizzy@fill}}
+\def \whizzy@outputline #1#2{\ifWhizzyAdvi\special {line: #1 #2 }\fi}
+\def \whizzy@outputmaster {%
+  \noindent
+  \whizzy@outputline {0}{\whizzy@master}%
+  \whizzy@master@banner
+  \whizzy@outputline {0}{\whizzy@master}%
+}
+\def \whizzy@master@end{%
+  \par \bigskip
+  \whizzy@setfile {\whizzy@master}
+  \whizzy@setfile {\whizzy@master}\whizzy@outputmaster
+  \whizzy@setfile {\whizzy@local}%
+\par
+}
+
+\def \WhizzyMaster #1#2{%
+  \def \whizzy@master {#1}\def \whizzy@local {#2}%
+  \special {line: 0 #1 }%
+  \par\noindent \whizzy@master@banner \par\bigskip
+  \whizzy@setfile {#2}%  
+  \special {line: 0 #1 }\special {line: 0 #2 }%
+  \AtEndDocument {\whizzy@master@end}\WhizzyTeX@file}
 \def \whizzy@par {\let \@@par \whizzy@@par \let \par \@@par}
 \def \WhizzyLine #1{%
   \def \whizzy@line{#1}%
@@ -171,12 +244,12 @@
   \abovedisplayskip 0em $$\aftergroup  \whizzy@endhalign \else
   \latex@halign \fi} 
 
-\def \WysitexInput #1{
-\message {[WysiTeX is dumping positions in _whizzy_#1.pag]}
+\def \WhizzytexInput #1{
+\message {[WhizzyTeX is dumping positions in _whizzy_#1.pag]}
 \newwrite \@whizzy 
 \immediate \openout \@whizzy _whizzy_#1.pag
 \whizzy@putmarks
-\input {#1.tex}
+\latex@iinput {#1.tex}%
 }
 
 \newif \ifwhizzy@wiz \whizzy@wiztrue
@@ -193,6 +266,10 @@
 \def \WhizzyTeX@chapter #1.#2.#3.#4.{%
    \setcounter{page}{#1}\setcounter{chapter}{#2}%
    \setcounter{section}{#3}\setcounter{subsection}{#4}}
+\def \WhizzyTeX@file {%
+   \@ifundefined {whizzy@\whizzy@local @}{}
+     {\edef \@do {\csname whizzy@\whizzy@local @\endcsname}%
+      \expandafter \WhizzyTeX \@do\relax}}
 \@ifundefined {c@chapter}{}{\let \WhizzyTeX \WhizzyTeX@chapter}
 
 \newcommand {\WhizzyTeXslide}[2][]
@@ -200,7 +277,7 @@
     \whizzy@line{#2}\def \whizzy@layer{#1}}
 
 \def \WhizzyMarkBegin
-  {\ifmmode \setbox0 \hbox \bgroup \aftergroup {\WhizzyMarkEnd}\ensuremath 
+  {\ifmmode \setbox0 \hbox \bgroup \aftergroup \WhizzyMarkEnd \ensuremath 
    \else \setbox0 \hbox \bgroup \aftergroup \WhizzyMarkEnd \fi
    \catcode `\ 2}
    
@@ -239,6 +316,43 @@
   {\par  \medskip \hrule \smallskip \vbox \bgroup
        \tt \hsize 0.7\hsize\makeatletter \@Meaning}
 
+%% experimental
+
+\let \latex@iinput \@iinput
+\let \latex@input@ \@input@
+
+\def \whizzy@tex {tex}
+\def \whizzy@setfile #1{\xdef \whizzy@curfile {#1}}
+\def \whizzy@setnorm #1{%
+  \begingroup 
+     \filename@parse {#1}%
+     \xdef \whizzy@curfile
+       {\filename@area\filename@base
+        \@ifundefined {filename@ext}{}
+           {\ifx \filename@ext \whizzy@tex \else .\filename@ext\fi}}%
+  \endgroup
+}
+% We could interprepret the absence of file name as the master file name
+\whizzy@setfile {\jobname}
+\def \whizzy@iinput 
+   {\expandafter \whizzy@input \expandafter{\whizzy@curfile}{\latex@iinput}}
+\def \whizzy@input@
+   {\expandafter \whizzy@input \expandafter{\whizzy@curfile}{\latex@input@}}
+\def \whizzy@input #1#2#3{%
+   \IfFileExists{#3}
+      {\whizzy@setnorm{#3}%
+       \immediate \write \@mainaux 
+           {\string \gdef \string \whizzy @\whizzy@curfile @%
+               {\thepage.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
+                \the\c@section.\the\c@subsection.}}%
+           % could be removed if unsafe
+          \whizzy@outputline {1}{\whizzy@curfile}%
+      }{}%
+    #2{#3}%
+    \whizzy@setfile {#1}%
+    \whizzy@writelineno
+}
+%% comment  \let \@iinput \whizzy@iinput above to cancel
 
 \endinput
 
