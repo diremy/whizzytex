@@ -33,7 +33,7 @@ EXPORTS = index.html animation.html older.html Announce \
 
 
 whatelse: 
-	@echo 'make what ? [pack xxxport Export ]'
+	@echo 'make what ? [faq pack xxxport Export ]'
 
 pack: FILES $(EXPORTS) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
 
@@ -42,6 +42,9 @@ doc/manual.dvi: doc/manual.tex VERSION
 
 manual.dvi: doc/manual.dvi
 	cp $< $@
+
+faq: FAQ.html FAQ
+	rcp $< $(PAUILLAC)
 
 FAQ: FAQ.html 
 	lynx -dump $< > $@
@@ -83,6 +86,7 @@ INSTALL.txt: doc/manual.html
 
 VERSION: makefile
 	test `grep '^ORIGIN=' Manager` = 'ORIGIN=$(VERSION)'
+	echo $(RELEASE) > RELEASE
 	echo $(VERSION) > $@
 
 FILES: $(TARFILES) makefile

@@ -15,8 +15,6 @@ case "$1" in
     esac;;
 esac
 
-
-
 configure_options="$*"
 prefix=/usr/local
 bindir=''
@@ -34,6 +32,7 @@ latex=latex
 initex=initex
 format=''
 fmt=''
+bibtex=bibtex
 
 emacs=emacs
 xemacs=xemacs
@@ -42,6 +41,8 @@ advi=advi
 xdvi=xdvi
 gv=gv
 dvips=dvips
+
+configfile='/etc/whizzytex/whizzytex.conf'
 
 # Parse command-line arguments
 is_absolute () {
@@ -142,6 +143,10 @@ while : ; do
         ## Set the name of the format extension
         fmt=$2; shift;;
 ##
+  -bibtex) ## <command>                         # bibtex
+        ## Set the default command for BIBTEX
+        bibtex=$2; shift;;
+##
   -advi) ## false|<command>                     # advi
         ## Set the Advi-like previewer command name; false means do not use 
         ## advi-like previewer at all (default if  the command is not found)
@@ -158,6 +163,10 @@ while : ; do
   -dvips) ## <command>                          # dvips
         ## Set the DVI-to-Postcript-converter command name
         dvips=$2; shift;;
+##
+  -configfile|--configfile) ## <file>           # /etc/whizzytex/whizzytex.conf
+        ## Set the system configuration file (full path)
+        configfile=$2; shift;;
 ##
   -help|--help) ##
 ##
@@ -391,6 +400,7 @@ findcommand "$latex" true 1>/dev/null
 findcommand "$initex" true 1>/dev/null
 output LATEX "$latex"
 output INITEX "$initex"
+output BIBTEX "$bibtex"
 
 cat <<EOF > dummy.tex
 \documentclass{article}
@@ -471,6 +481,8 @@ output ADVI "$advi"
 output XDVI "$xdvi"
 output GV "$gv"
 output DVIPS "$dvips"
+
+output CONFIGFILE "$configfile"
 
 if test -z "$advi$xdvi$gv"
 then error "At least one previewer amoing advi, xdvi, gv should be defined"

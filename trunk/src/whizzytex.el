@@ -789,7 +789,7 @@ alist is not empty, and nil otherwise."
 
 ; slicing
 
-(defvar whizzy-write-annotate t
+(defvar whizzy-use-write-annotate t
   "*Tells whether `write-region-annotate-functions' can be used.
 
 This is the normal way to append annotations strings during write, 
@@ -804,22 +804,32 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
 (defun whizzy-write-slice (from to &optional local word)
   (unless (or (< (point) from) (>= from to) (> (point) to))
     (if local
-        (if (or whizzy-write-annotate
+        (if (or whizzy-use-write-annotate
                 (not (functionp 'call-with-transparent-undo)))
             ;; we insert annotations on the fly
-            (let ((old write-region-annotate-functions))
-              (setq write-region-annotate-functions
-                    (cons 'whizzy-write-region-annotate
-                          write-region-annotate-functions))
-              (setq whizzy-write-at-begin-document word)
+            (let ((write-region-annotate-functions
+                   (cons 'whizzy-write-region-annotate
+                         write-region-annotate-functions))
+                  (whizzy-write-at-begin-document word))
               (condition-case nil
-                  (unwind-protect
-                      (write-region from to (whizzy-get whizzy-slicename)
-                                    nil 'ignore)
-                    (setq write-region-annotate-functions old)
-                    )
-                (quit (message "Quit occured during slicing has been ignored"))
-                ))
+                  (write-region from to (whizzy-get whizzy-slicename)
+                                nil 'ignore)
+                (quit 
+                 (message "Quit occured during slicing has been ignored"))))
+
+          ;; (let ((old write-region-annotate-functions))
+          ;;  (setq write-region-annotate-functions
+          ;;        (cons 'whizzy-write-region-annotate
+          ;;              write-region-annotate-functions))
+          ;;  (setq whizzy-write-at-begin-document word)
+          ;;  (condition-case nil
+          ;;      (unwind-protect
+          ;;          (write-region from to (whizzy-get whizzy-slicename)
+          ;;                        nil 'ignore)
+          ;;        (setq write-region-annotate-functions old)
+          ;;        )
+          ;;    (quit (message "Quit occured during slicing has been ignored"))
+          ;;    ))
           ;; insert and delete
           (setq whizzy-write-at-begin-document word)
           (let ((insertions (whizzy-write-region-annotate from to))
@@ -1040,6 +1050,21 @@ numeric value is 0.
         (message "Inconsistent time"))
       )))
 
+(defvar whizzy-watch nil)
+(defun whizzy-watch ()
+  (if whizzy-timer (cancel-timer whizzy-timer))
+  (setq whizzy-timer 
+        (run-with-timer 2 nil 'whizzy-check-consistency (current-buffer)))
+)
+(defun whizzy-check-consistency (buffer)
+  (unless (= whizzy-last-tick (buffer-modified-tick))
+    (if (equal buffer (current-buffer))
+      (whizzy-observe-changes)
+      ;; else we might have changed buffer ---do not reslice
+      ;; to be consistent, there should have been a consistency check 
+      ;; when exiting the buffer
+      )))
+
 (defun whizzy-wakeup ()
   (let* ((p (whizzy-get whizzy-process))
          (s (and p (processp p) (process-status p))))
@@ -1155,7 +1180,7 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
          (timeout (- (round (/ slice whizzy-load-factor priority))
                      (max 0 (- now date))))
          )
-    ;;     (message "Waiting priority=%S timeout=%S date=%S now=%S slicing=%S load=%S"
+    ;; (message "Wait priority=%S timeout=%S date=%S now=%S slicing=%S load=%S"
     ;;              priority timeout
     ;;              (whizzy-get whizzy-slice-date)
     ;;              (whizzy-current-time)
@@ -1164,7 +1189,7 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
     (let ((res
            (or (<= timeout 0) (whizzy-sit-for 0 timeout))
            ))
-      ;;  (message "%s" (if res "exhausted" "aborted"))
+      ;; (message "%s" (if res "exhausted" "aborted"))
       res)
     ))
 
@@ -1200,7 +1225,18 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
 
 ;;
 
+;; Need to fix the following problem:
+;; when some sit-for in filter-output... 
+;; is aborted by a new event, the following whizzy-wait 
+;; seems to abort as well, so the slice may not be updated after 
+;; the last change. It seems that sit-for should not be used in filter-output
+;; check waiting-for-user-input-p or find an other way to close the 
+;; error window, such as return immediate but leave a flag that will be check 
+;; by the main window.
+;; could this be the cause of the bug en new versions of emacs?
+
 (defun whizzy-observe-changes (&optional ignore-check force)
+  ;; (message "--> %S" last-input-event)
   (if executing-kbd-macro  t
     (if (or (and (equal whizzytex-mode t) (whizzy-get whizzy-running))
             ignore-check)
@@ -1243,7 +1279,10 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
                                  (if (equal (whizzy-get whizzy-running) 0) 3
                                    1))
                               4.0))
-                          (> ticks (/ 10 whizzy-load-factor))))
+                          ;; some input came earlier, but too many changes 
+                          (> ticks (/ 10 whizzy-load-factor))
+                          (whizzy-watch)
+                          ))
                      (and whizzy-point-visible
                           (not (equal (point) whizzy-last-point))
                           (whizzy-wait (/ (+ 1 ticks) 4.0)))
@@ -1320,7 +1359,7 @@ configuration file (usually ~/.emacs) to customize...
 
  - Downgrade performance for compatibility with other packages
 
-    `whizzy-write-annotate'
+    `whizzy-use-write-annotate'
 
 You can override default values for any of these variables by including
 lines such as:
@@ -1678,7 +1717,7 @@ Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
 
 (defvar whizzy-command-options 
   '(("-ext" . t)
-    ("-mkslice" . t) ("-mkfile" . t) ("-makeindex" . t)
+    ("-mkslice" . t) ("-mkfile" . t) ("-makeindex" . t) ("-bibtex" . t)
     ("-initex" . t) ("-latex" . "latex") ("-format" . t) ("-fmt" . t)
     ("-dvicopy" . "dvicopy")
     ("-duplex") ("-trace"))
@@ -2487,7 +2526,7 @@ Toggle if ARG is ommitted."
           (if hide
               (if window-alive
                   (progn
-                    (whizzy-set whizzy-process-window nil)e
+                    (whizzy-set whizzy-process-window nil)
                     (delete-window window)
                     (bury-buffer shell)))
             (if (equal buf (whizzy-get whizzy-active-buffer))
@@ -2511,19 +2550,45 @@ Toggle if ARG is ommitted."
           )
         )))
 
+;; User timer instead of sit-for
+;; sit-for does not work with xemacs and may disturb execution such as 
+;; flashing parens, other sit-for, etc. 
+(defvar whizzy-error-timer nil)
+(defun whizzy-watch-error ()
+  (if whizzy-error-timer (cancel-timer whizzy-error-timer))
+  (setq whizzy-error-timer 
+        (run-with-timer 2 nil 'whizzy-show-error (current-buffer)))
+  (message "SET %S" whizzy-error-timer)
+)
+(defun whizzy-show-error (buffer)
+  (message "CHECK %S" whizzy-error-timer)
+  (let ((status (whizzy-get whizzy-running)))
+    (message "STATUS %S" status)
+    (if (and status (> status 0) (equal buffer (current-buffer)))
+        (whizzy-show-interaction t)
+      )))
 
 (defun whizzy-auto-show (arg)
-  (if (and whizzy-auto-show-output
-           (or (= arg 0)
-               (or (and whizzy-xemacsp
-                        (= whizzy-last-tick (buffer-modified-tick)))
-                   (and (not (whizzy-get whizzy-slice-fed))
-                        (whizzy-sit-for 2))
-                   ))
-           (or (window-live-p (whizzy-get whizzy-process-window))
-               (not (= arg 0)))
-           )
-      (whizzy-show-interaction arg)))
+  (if whizzy-auto-show-output
+      (if (or (= arg 0)
+              (window-live-p (whizzy-get whizzy-process-window)))
+          (whizzy-show-interaction arg)
+        (if (not (whizzy-get whizzy-slice-fed))
+            (whizzy-watch-error)))))
+
+; (defun whizzy-auto-show (arg)
+;   (if (and whizzy-auto-show-output
+;            (or (= arg 0)
+;                (or (and whizzy-xemacsp
+;                         (= whizzy-last-tick (buffer-modified-tick)))
+;                    (and (not (whizzy-get whizzy-slice-fed))
+;                         ;; (whizzy-sit-for 2)
+;                         )
+;                    ))
+;            (or (window-live-p (whizzy-get whizzy-process-window))
+;                (not (= arg 0)))
+;            )
+;       (whizzy-show-interaction arg)))
 
 (defun iso-translate-string (string trans-tab)
   "Use the translation table TRANS-TAB to translate STRING."
@@ -2876,7 +2941,8 @@ Log file name is obtain from suffix by removing leading character."
          (t (setq from nil))
          )
         (if from (setq from (+ from 1)))
-        ))))
+        )
+      )))
 
 (make-face 'whizzy-slice-face)
 (set-face-background 'whizzy-slice-face "LightGray")

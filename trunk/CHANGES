@@ -3,6 +3,7 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * add BIBTEX switching support, to allow use of jbibtex.
  * added per-file hooks
  * fixed/changed parsing of options
  * added parsing of the option -dvicopy
@@ -10,6 +11,9 @@ Emacs-mode:
 
 Shell-script: 
 
+ * add system and per-user CONFIGFILE support.
+ * add BIBTEX switching support, to allow use of jbibtex.
+ * support -display option for whizzytex.
  * added the option -dvicopy to postprocess the dvi
 
 LaTeX macros:
@@ -18,9 +22,23 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ * add system and per-user CONFIGFILE support.
+ * add BIBTEX switching support, to allow use of jbibtex.
 
 SINCE LAST RELEASE:
 ===================
+
+Emacs-mode:
+
+Shell-script: 
+
+LaTeX macros:
+
+Installation/Documentation:
+
+
+OLDER CHANGES:
+==============
 
 Emacs-mode:
 
@@ -53,6 +71,18 @@ Emacs-mode:
  * fixed overlays of errors.
  * temptative fix of whizzy-write-slice to work with X-symbols mode.
  * added whizzy-key-bindings with two default values for latex or auctex
+ - Version 1.00
+ * fixed whizzy-read-mode-from-file 
+ - Version 1.00-beta
+ * Added whizzy-write-configuration to dump file configuration
+ * Fixed key bindings in menu
+ * Rewrote reading of file configuration.
+ * Added whizzy-load-factor to adjust slicing speed.
+ * Improved the online documentation (it is now pretty detailed)
+ * Récupération d'erreur lorsque le buffer principal est effacé ses esclaves.
+ * Corrected setup of multi-file documents
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
 
 Shell-script: 
 
@@ -72,6 +102,10 @@ Shell-script:
  * rename .dview extension into .wdvi and filename.wdvi is deleted on exit.
  * renamed auxiliary filename.fmt into _whizzy_filename.fmt (deleted on exit).
  * Fix a typo in read of commands (duplex reformat were not understood)
+ - Version 1.00
+ - Version 1.00-beta
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
 
 LaTeX macros:
 
@@ -80,6 +114,10 @@ LaTeX macros:
  * made it work with all file extensions but those internally used
  * fixed a bug in use of \everydisplay
  * renamed filename.wiz into filename.waux
+ - Version 1.00
+ - Version 1.00-beta
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
 
 Installation/Documentation:
 
@@ -91,42 +129,6 @@ Installation/Documentation:
  * Change of Manager makefile to call ./configure when changed
  * Rewrote ./configure to work in batch and take command line arguments
  * Reorganized Web page, added FAQ.html
-
-
-OLDER CHANGES:
-==============
-
-Emacs-mode:
-
- - Version 1.00
- * fixed whizzy-read-mode-from-file 
- - Version 1.00-beta
- * Added whizzy-write-configuration to dump file configuration
- * Fixed key bindings in menu
- * Rewrote reading of file configuration.
- * Added whizzy-load-factor to adjust slicing speed.
- * Improved the online documentation (it is now pretty detailed)
- * Récupération d'erreur lorsque le buffer principal est effacé ses esclaves.
- * Corrected setup of multi-file documents
- - Version 1.00-alpha
- * Cleaned up and rewritten for version 1.00-alpha
-
-Shell-script: 
-
- - Version 1.00
- - Version 1.00-beta
- - Version 1.00-alpha
- * Cleaned up and rewritten for version 1.00-alpha
-
-LaTeX macros:
-
- - Version 1.00
- - Version 1.00-beta
- - Version 1.00-alpha
- * Cleaned up and rewritten for version 1.00-alpha
-
-Installation/Documentation:
-
  - Version 1.00
  * Moved URL  to http://pauillac.inria.fr/whizzytex
  * Manager check for compatility of Makefile.config of previous version

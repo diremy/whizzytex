@@ -22,33 +22,49 @@
 
 The URL is \url{http://pauillac.inria.fr/whizzytex}
 
-The last major release is 1
+The last major release is {\release}
 and the stable version is {\version}
+
+The last version of the FAQ can be found at 
+\url{http://pauillac.inria.fr/whizzytex/FAQ.html}
 
 
 \section {Known problems}
 
 Fixed refers to last stable version.
-\def \FIXED {\textit{Fixed in version > 1.1}}
+\def \FIXED {\textit{Fixed in version > {\version}}}
 
 \begin {enumerate}
 
 \item
-Its has been reported with versions of \textsf{XEmacs 21.4.*}
-that sometimes the cursor move to the end of the buffer while typing.
+Its has been reported with versions of \textsf{XEmacs 21.4.*} that sometimes
+the cursor jumps to the end of the buffer while typing, and the mark is left
+a few characters before where the point was when the cursor jumped.
 
-So fars, this happens at unpredictable times and leaves the mark a few
-characters before the point was when the cursor moved. 
+So far, this happens at unpredictable times, but apparently always when
+typing fast.
 
 I have seen this on someone else screen, but I have not yet been able to
 reproduce it on my own machine. Any help to better identify this phenomenom
-is welcome. 
+is welcome (either a sequence of user-actions that reproduces the bug, or a
+chain of Emacs-functions calls that always occur when the bug shows up
+---the later may need some Emacs knowledge to trace or instrument a few
+function calls).
+
+The only known workaround so far, is to reduce the slicing speed \emph{e.g.}
+by the follow setting (you may need to adjust the value):
+\begin{verbatim}
+        (setq whizzy-load-factor 0.1)
+\end{verbatim}
 
 
 \item Its does not work with the  \lst"x-symbol" package.
 
-The  \lst"x-symbol" package should now work together with WhizzyTeX, 
-provided you have a version of {\tt x-symbol} greater than v4.3.3. 
+The \lst"x-symbol" package may now work together with WhizzyTeX, provided
+you have a version of {\tt x-symbol} greater than v4.3.3.  However, the
+option Page-to-point may still not work (under \lst"x-symbol", the cursor
+would be inserted at the end of the buffer instead of at the
+current-position).  Then, you may use the following alternative.
 
 Alternatively, with (X)Emacs version 21 and above, you may set
 \lst"whizzy-write-annotate" to nil to tell WhizzyTeX not to use
@@ -91,7 +107,7 @@ the script \lst"whizzytex" and change some findings as follows
 \begin{verbatim}
 INITEX=iniptex
 LATEX=platex
-LATEXFMT=platex
+FORMAT=platex
 \end{verbatim}
 
 \end{document}

@@ -204,13 +204,14 @@ For instance, \lst"platex" could be use the default configuration
 \begin{tt}
 INITEX = iniptex\\
 LATEX = platex\\
-LATEXFMT = platex
+LATEXFMT = platex\\
+BIBTEX = jbibtex
 \end{tt}
 \end{quote}
 This would be produced directly with the configuration line:
 \begin{quote}
 \begin{tt}
-./configure -initex iniptex -latex platex -latexfmt latex
+./configure -initex iniptex -latex platex -latexfmt latex -bibtex jbibtex
 \end{tt}
 \end{quote}
 If you wish to run {\whizzy} with several configurations, you must still
@@ -218,10 +219,22 @@ choose a default configuration, but you will still be able to call {\whizzy}
 with another configuration from Emacs (see Section \ref{configuration.tex}
 below).
 
-Similarly, you must at least choose one default previewer type among
-\lst"advi", \lst"xdvi", and \lst"ps", and at most one default previewer for
-each previewer type you chose. You will still be able to call {\whizzy}
-with other previewers from Emacs, via Emacs configuration (see Section 
+It is possible to customize the set up on a per-user basis by creating
+a file \lst"~/.whizzytexrc" containing, for example, the following lines: 
+\begin{quote}
+\begin{tt}
+INITEX = iniptex\\
+LATEX = platex\\
+FORMAT = platex\\
+BIBTEX = jbibtex
+\end{tt}
+\end{quote}
+
+During the configuration, you must at least choose one default previewer
+type among \lst"advi", \lst"xdvi", and \lst"ps", and at most one default
+previewer for each previewer type you chose. You will still be able to call
+{\whizzy} with other previewers from Emacs, via Emacs configuration (see
+Section
 \ref {configuration.viewers}). 
 
 \subsection {Manual installation}
@@ -585,7 +598,8 @@ If whizzytex fails at lauch time, you may also use the option {\tt -trace}
 of file configuration (see Section~\ref {configuration.trace}).
 
 
-\section {\label{manual}Manual} 
+\section{Manual} 
+\label{manual}
 
 This section describes how to use and parameterize {\whizzy}.  So as to
 avoid redundancy, {\bf most of the documentation is only available online in
@@ -644,7 +658,8 @@ The keywords are:
 \\
 This only makes sense for a file loaded by a {\em master} file. 
 \arg{master} is the relative or full name of the
-master file. Optional surrounding quotes (character \lst$"$) are
+master file. Optional surrounding quotes (character \lst`"`) %" 
+%
 stripped off, so that \lst$"foo.tex"$ and \lst"foo.tex" are equivalent.
 
 \item[whizzy] 
@@ -656,6 +671,7 @@ stripped off, so that \lst$"foo.tex"$ and \lst"foo.tex" are equivalent.
 \opt{\texttt{-initex} \arg{initex}}
 \opt{\texttt{-latex} \arg{latex}}
 \opt{\texttt{-fmt} \arg{format}}\\
+\opt{\texttt{-bibtex} \arg{bibtex}}
 \opt{\texttt{-dvicopy} \arg{command}}
 \opt{\texttt{-watch}}
 \opt{\texttt{-duplex}}
@@ -694,6 +710,16 @@ This is safe, since {\whizzy} tests itself for needed recompilations.}
 executes ``\arg{command} \arg{filename}'' before recompiling every time a
 buffer is saved. The argument ``\arg{filename}'' is the buffer-file-name
 path relative to the path of the master file directory.
+
+\item[\texttt{-makeindex} \arg{command}]\indent\\
+uses ``\arg{command} \arg{filename.idx}'' for rebuilding the index instead
+the default ``\arg{makeindex} \arg{filename.idx}''.  If ``\arg{command}'' is
+false, then do not attempt to rebuild the index.
+
+\item[{\bf {\tt -bibtex \arg{bibtex}}}]\indent
+
+uses \arg{bibtex} for the bibtex command instead of the value 
+assign to BIBTEX in \lst"Makefile.config" (or \lst"whizzytex")
 
 \item[{\bf {\tt -initex \arg{initex}}}]\indent
 

@@ -43,6 +43,11 @@ INITEX=initex
 LATEX=latex
 FORMAT=latex
 FMT=fmt
+BIBTEX=bibtex
+
+# Default place for configuration files
+
+CONFIGFILE=/etc/whizzytex/whizzytex.conf 
 
 ### Configuration (manual only)
 
@@ -88,6 +93,16 @@ VIEWCOMMAND=advi
 NEWFILES=newfile
 DUPLEX=false
 ADVI=0
+
+# Load config files
+for CONFIG in $CONFIGFILE {$HOME,.}/.whizzytexrc
+do
+  if [ -f "$CONFIG" ]
+  then
+    . "$CONFIG"
+  fi
+done
+
 while true
 do
   case $1 in
@@ -105,6 +120,7 @@ do
         *) MAKEINDEX="$2";;
       esac 
       shift;;
+   -bibtex) BIBTEX="$2"; shift;;
    -ext) EXT="$2"; shift;;
    -initex) INITEX="$2"; shift;;
    -latex) LATEX="$2"; shift;;
@@ -151,6 +167,7 @@ where <option> is
     -initex <initex command>
     -latex <latex command>
     -format <latex format file name>
+    -bibtex <bibtex command>
     -fmt <format extension>
     -marks
     -pre <preprocess-command>
@@ -274,7 +291,7 @@ format () {
 # BEGIN sections
 
 makebibtex () {
-  bibtex $NAME 1>$OUTPUT/bibtex
+  $BIBTEX $NAME 1>$OUTPUT/bibtex
   [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
   true
 }
@@ -297,7 +314,6 @@ batchmarks () {
     else 
        rm -f $WHIZZY.pag; false
     fi
-    
 }
 
 # END sections
@@ -306,10 +322,9 @@ batchmarks () {
 # BEGIN Worddiff
 
 wordify () { 
-    tr '\n' '' | 
-    sed -e 's/[ ][ ]*//g' | \
-    tr '' '\n' 
+  awk '{for (i=1; i<=NF; i++) {print $i}}'
 }
+
 
 worddiff () { 
   FST=$1
