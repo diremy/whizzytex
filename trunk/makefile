@@ -96,9 +96,6 @@ activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
 	cp anim/$*{,009}.gif .
 
-doc/FILES: doc/manual.tex
-	cd doc; make 
-
 INSTALL.txt: doc/manual.html
 	lynx -dump $< | sed -f INSTALL.sed > $@
 
@@ -174,7 +171,7 @@ Release: Export
 xxxport: $(EXPORTS) pack $(RPMNAME).src.rpm
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
-	rcp $(XXXPORTS) doc/manual0*.gif whizzytex-xxx.tgz DATE \
+	rcp $(XXXPORTS) `cat doc/FILES` whizzytex-xxx.tgz DATE \
 	  $(RPMNAME).src.rpm $(PAUILLAC)
 
 smallclean:

@@ -9,6 +9,7 @@ Shell-script:
 
 LaTeX macros:
 
+ * set default hyperref option to hypertex (not best, but better than nothing)
  * write in .waux and read in .raux to be stable in face of errors
 
 Installation/Documentation:

@@ -337,11 +337,16 @@ persistent, and hidden when the error disapears.")
 ;; More variables
 
 (defconst whizzy-file-prefix "_whizzy_")
-(defvar whizzy-speed-string "?")
-(defvar whizzy-error-string nil)
+;; (defvar whizzy-speed-string "?")
+;; (defvar whizzy-error-string nil)
 (defvar whizzytex-mode-line-string
-  (list " Whizzy" 'whizzy-error-string "." 'whizzy-speed-string))
-
+  (list " Whizzy" 
+        '(:eval (whizzy-get whizzy-error-string)) 
+        "." 
+        '(:eval (whizzy-get whizzy-speed-string))))
+;; those two should rather be part of the status--- to be fixed XXX
+(make-variable-buffer-local 'whizzy-speed-string)
+(make-variable-buffer-local 'whizzy-error-string)
 
 ;; A vector of whizzytex parameters, shared between all buffers related to the
 ;; same session. This variable is made buffer local, but its content is
@@ -409,8 +414,10 @@ in format.")
 (defconst whizzy-configuration-loaded 26)
 (defconst whizzy-debug 25)
 (defconst whizzy-initialized 26)
+(defconst whizzy-error-string 27)
+(defconst whizzy-speed-string 28)
 
-(defconst whizzy-length 28)
+(defconst whizzy-length 30)
 (defun whizzy-get (f)
   (if whizzy-status (elt whizzy-status f)
      ;; (error "whizzy-get")
@@ -1110,7 +1117,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
 
 (defun whizzy-slice (layer)
   (if (> (whizzy-get whizzy-slice-time) 0)
-      (setq whizzy-speed-string
+      (whizzy-set whizzy-speed-string
             (int-to-string (/ (whizzy-get whizzy-slice-time) 100))))
   (if (equal (whizzy-get whizzy-slicing-mode) 'none) ; no slice
       (whizzy-write-slice (point-min) (point-max))
@@ -1312,12 +1319,12 @@ a sequence of editing while slicing could be distracting or annoying."
     (error "WhizzyTeX is not on"))
    ((equal whizzytex-mode t)
     (remove-hook  'post-command-hook 'whizzy-observe-changes t)
-    (setq whizzy-speed-string "Z")
+    (whizzy-set whizzy-speed-string "Z")
     (force-mode-line-update)
     (setq whizzytex-mode 'suspended))
    ((equal whizzytex-mode 'suspended)
     (add-hook 'post-command-hook 'whizzy-observe-changes t t)
-    (setq whizzy-speed-string "?")
+    (whizzy-set whizzy-speed-string "?")
     (force-mode-line-update)
     (setq whizzytex-mode t))
    (t
@@ -3117,8 +3124,8 @@ Log file name is obtain from suffix by removing leading character."
   (save-excursion
     (if (whizzy-set-active-buffer)
         (let ((string (or (assoc mes whizzy-error-name-alist) nil)))
-          (if (equal whizzy-error-string string) nil
-            (setq whizzy-error-string string)
+          (if (equal (whizzy-get whizzy-error-string) string) nil
+            (whizzy-set whizzy-error-string string)
             (force-mode-line-update))
           ))))
 
