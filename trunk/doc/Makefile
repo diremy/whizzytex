@@ -4,12 +4,17 @@ HVAOPT = -fix -nosymb
 
 all: manual.dvi manual.html whizzytex.info
 
+manual.hva: manual.sty
+	ln -s $< $@
 
+manual.ps: manual.dvi
 manual.dvi: manual.tex version.tex
 	latex $<
-	if grep 'LaTeX Warning: Label(s)' $*.log; then latex $<; fi
+	latex '\def\driver{dvips}\input' $<
+	dvips -o $*.ps $*.dvi
+	latex $<
 
-manual.html: manual.tex manual.dvi
+manual.html: manual.hva manual.tex manual.dvi 
 	$(HEVEA) $(HVAOPT) -o $@ $< && \
 	imagen manual
 

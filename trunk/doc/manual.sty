@@ -4,7 +4,11 @@
 \usepackage {color}
 \usepackage {graphicx}
 \usepackage {pst-node}
-\ifimagen
+\ifimagen \def \driver{dvips}\fi
+\def \dvips{dvips}
+\ifx \driver \dvips
+\usepackage [dvips]{bubble}
+\usepackage [ignore]{advi}
 \PassOptionsToPackage{ignore}{advi}
 \fi
 \usepackage {advi-annot}

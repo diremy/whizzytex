@@ -47,6 +47,9 @@ LaTeX documents</font>. </i>
 </h2>
 </td>
 </tr>
+<tr>
+<td colspan=2 align=center><a href="animation.html">Start mini demo</a></td>
+</tr>
 </table>
 
 <p> <font color=blue>WhizzyTeX</font> provides a minor mode for
@@ -66,16 +69,16 @@ much better visual effects and will offer more functionalities.
 <h2>Versions</h2>
 
 The major release version is 
-<a href="whizzytex-1.1.tgz">whizzytex-1.1.tgz</a>
+<a href="whizzytex-1.2.0.tgz">whizzytex-1.2.0.tgz</a>
 (see <a href="Announce">Announce</a>).
 
 <br>
 The <a href="VERSION">current stable version</a> is
-<a href="whizzytex-1.1.3.tgz">whizzytex-1.1.3.tgz</a>
+<a href="whizzytex-1.2.0.tgz">whizzytex-1.2.0.tgz</a>
 (see <a href="CHANGES">CHANGES</a>).
-also available as a redhat package 
-<a href="whizzytex-1.1.3-1.noarch.rpm">
-whizzytex-1.1.3-1.noarch.rpm</a> 
+It is also available as a redhat source package 
+<a href="whizzytex-1.2.0-1.src.rpm">
+whizzytex-1.2.0-1.src.rpm</a>.
 
 
 
@@ -90,16 +93,19 @@ Some <a href=older.html>older versions</a> are also available.
 
 <h2>Requirements</h2> <font color=blue>WhizzyTeX</font> runs on Unix-based
 platforms (you may still see the <a href="FAQ.html#cygwin">FAQ</a> for
-<i>unsupported</i> use with Cygwin).
-It requires LaTeX, Bash, either Emacs or XEmacs, and
-at least one viewer, which could be DVI-based such as <tt>xdvi</tt> or
-<tt>advi</tt> or Postscript-based such as <tt>gv</tt> provided
-you also have a DVI to Postsctipt converter such as <tt>dvips</tt>).
+<i>unsupported</i> use with Cygwin).  It requires LaTeX, Bash, either Emacs
+or XEmacs, and at least one viewer, which could be DVI-based such as
+<tt>xdvi</tt> or <tt>advi</tt> (Active-DVI) or Postscript-based such as
+<tt>gv</tt> provided you also have a DVI to Postsctipt converter such as
+<tt>dvips</tt>).  However, the advanced features of WhizzyTeX only works for
+<a href="http://pauillac.inria.fr/activedvi/">Active-DVI</a> previewer,
+version 1.6.0 or higher.
 
 <H2>Documentation</h2>
 
 Installation and user manual are available in 
-<a href="manual.html">HTML</a> and
+<a href="manual.html">HTML</a>,
+<a href="manual.ps">PS</a>, or
 <a href="manual.dvi">DVI</a> formats. 
 Most of the documentation is also available as online Emacs help 
 (via help for the function <tt>whizzytex-mode</tt> and following hyper-links). 
@@ -129,11 +135,11 @@ both of then first clean the page, and redraw online. Even though
 <tt>xdvi</tt> is quite fast, this produces a flashing effect that may be
 annoying or worse make you feel a little unconfortable.
 
-<p>
 Thus, we <strong>highly  recommend</strong>  the use of 
-<a href="http://pauillac.inria.fr/activedvi/">Active-DVI</a> 
-a DVI viewer written in <a href="http://pauillac.inria.fr/ocaml">Ocaml</a>.
+<a href="http://pauillac.inria.fr/activedvi/">Active-DVI</a>,
+a DVI viewer written in <a href="http://pauillac.inria.fr/ocaml">OCaml</a>.
 
+<!--
 <p><em> Alternatively, there is a 
 <a href="gv-3.5.8-patched.tgz">patched version</a> 
 of <code>gv</code> (<a href="gv-3.5.8.tgz">version 3.5.8</a>)
@@ -141,6 +147,7 @@ written by <a href="http://para.inria.fr/~lefessan">Fabrice
 Le Fessant</a> that inhibits flashing by drawing pages in a pixmap and
 flushing the page all at once.  Then, call <code>gv</code>  with the option
 <code>-nopixmap</code>.  </em> 
+-->
 
 <h2><a href="http://pauillac.inria.fr/advi/">Active-DVI</a></h2>
 

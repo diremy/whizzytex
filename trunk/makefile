@@ -1,8 +1,12 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
-RELEASE=1.1
+# Stable version
+RELEASE=1.2.0
+# Current version
+VERSION=1.2.0
+# rpm release version
 Release=1
-VERSION=1.1.3
+# YAP version
 YAPVERSION=1.1.3-1.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
@@ -33,7 +37,7 @@ XXXPORTS = CHANGES index.html animation.html \
 
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
-	   manual.dvi doc/manual.html \
+	   manual.dvi doc/manual.ps doc/manual.html \
 	   COPYING GPL INSTALL VERSION RELEASE \
 	   $(XXXPORTS) $(NAME).tgz \
 
@@ -56,6 +60,9 @@ doc/manual.dvi: doc/version.tex doc/manual.tex
 manual.dvi: doc/manual.dvi
 	cp $< $@
 
+index: index.html animation.html
+	rcp $^ $(PAUILLAC)
+
 faq: FAQ.html FAQ 
 	rcp $< $(PAUILLAC)
 
@@ -76,6 +83,7 @@ index.html: index.htm makefile
 
 animation.html: index.html
 	sed -e 's/009.gif/.gif/g' \
+	    -e 's/animation.html">Start/index.html">Stop/g' \
 	    -e 's/animation.html/index.html/g' $< > $@
 
 older.html: makefile archive
@@ -92,6 +100,9 @@ emacs.gif: anim/animation.tex anim/animation.sty anim/Makefile
 activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
 	cp anim/$*{,009}.gif .
+
+doc/manual.ps: doc/manual.tex
+	cd doc; make 
 
 doc/manual.html: doc/manual.tex
 	cd doc; make 
@@ -160,7 +171,7 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 
 
 Export: $(EXPORTS) xxxport DATE
-	rcp $(EXPORTS) doc/manual0*.gif $(PAUILLAC)
+	rcp $(EXPORTS) doc/manual0*.gif doc/caml.eps $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
 
@@ -168,11 +179,11 @@ Release: Export
 	cp Announce archive/Announce-$(RELEASE)
 	rcp Announce $(PAUILLAC)
 
-xxxport: $(EXPORTS) pack $(RPMNAME).noarch.rpm
+xxxport: $(EXPORTS) pack $(RPMNAME).src.rpm
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
 	rcp $(XXXPORTS) doc/manual0*.gif whizzytex-xxx.tgz DATE \
-	  $(RPMNAME).noarch.rpm $(PAUILLAC)
+	  $(RPMNAME).src.rpm $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean

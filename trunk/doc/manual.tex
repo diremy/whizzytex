@@ -1213,7 +1213,7 @@ environment that inline the answer rather than pushing it to the Appendix.
 \begin{quote}
 \em
 \noindent\NEW{1.1.3}\relax
-This feature requires version \texttt{1.50+3} or more recent of
+This feature requires at least version \texttt{1.60} of
 {\ActiveDVI}.
 \end{quote}
 
@@ -1221,38 +1221,40 @@ When used together with Active-DVI, {\whizzy} can be made much mode
 powerful. In particular, it is not difficult to lift  {\whizzy} from an
 incremental viewer to an assistant editor.
 
-Active-DVI provides a notion of active boxes (specified with advi
-\lst"\special" annotations.  When {\ActiveDVI} is put in edition mode,
-active boxes are drawn on screen and can be move or resized with the mouse.
-When the mouse is released, the new size or position is printed
-on standard output together with the action to be taken and received by
-emacs watching the output.
+What was a dream has now become real.
+%
+The latest version Active-DVI provides a notion of active boxes. 
+The DVI may be  annotated with \verb"advi: edit" specials commands.  
+When {\ActiveDVI} is put in edition mode,
+active boxes are drawn on top of the previewer window  and can be move or
+resized with the mouse. 
+When the mouse is released, the new size or position is printed on standard
+output together with the action to be taken and received by emacs watching
+the output.
 %
 Emacs has then enough information to adjust some dimensional parameters in
 the source buffer. Just after this edition, the new slice is processed and
 the new position is displayed.  Thanks to the short incremental loop, this
 almost appears as if actions where executed by Active-DVI itself.
-%
-This dream has now become real...
 
-However, \WhizzyEdit ing is not meant to break up the structual edition
-principle of {\TeX} and {\LaTeX}. Its incremental viewing is an assistance
-to source edition. Similarly, mouse editing should also be seen as an
-assistance to and not a replacement of strutural edition.  In particular,
-all editions are visible in the emacs source buffer, can be saved, manually
-changed or disable. Moreover, Whizzy-editing is not meant for document
-layout, but to the cases where some dimensions cannot be structurally
-computed and need manual tuning. 
+Indeed, \WhizzyEdit ing is not meant to break up the structual edition
+philosophy of {\TeX} and {\LaTeX}. Its incremental viewing is an assistant
+to an not a replacement of structural source edition. Mouse editing should
+also be seen similarly.  In particular, all editions are visible in the
+emacs source buffer, can be saved, manually changed or disable. Moreover,
+Whizzy-editing is not meant for document layout (even it can occassionally
+be used for that, \emph{e.g.} in slides), but rather to help adjust
+dinmensions that require manual tuning.
 
-For instance, think of importing a picture and placing some bubble whose
-origin must be precisely be placed above the head of some character: you'd
-better do it with the mouse rather than by small measurements or random
-adjustements. Drawing a graph with a few nodes may now become more
-confortable with PStricks remaining within {\LaTeX} rather than using some
-external tool. Finally, Whizzy-editing is likely to be more useful when
-writting slides, where many visual gadgets may be used. For instance,
-adjusting bubbles with the mouse is likely to be more efficient than doing
-it by hand.
+For instance, imaging you are importing an Encapsulated Postscript picture
+you would like to place some bubble whose origin must be position precisely
+inside the picture. Then, you'd better do it with the mouse rather than by
+small measurements or adjustements. Drawing a graph with a few nodes may now
+become quite confortable with PStricks, with the advantage of remaining
+within {\LaTeX} rather than using some external tool. Finally,
+Whizzy-editing is likely to be convenient when writting slides with visual
+gadgets. For instance, adjusting bubbles with the mouse is likely to be more
+efficient than doing it by hand.
 
 
 \subsection{Enabling edition with the \texttt{\protect\string\adviedit} macro}
@@ -1321,22 +1323,22 @@ This small page contains
 
 \hbox {\hbox to 0em
 {\hss\circlenode[linecolor=green,boxsep=0pt,framesep=0.4ex]{A}{}\hss}%
-\adviedit{x=0.2139,y=-0.1348,w=0.7020}
+\adviedit{x=0.3418,y=-0.1445,w=0.6574}
 {\pnode{P}\psframebox[linecolor=blue,framesep=0pt]{\setbox0=\hbox{\parbox[c]{\adviw}{This
 whizzy-editable parbox drawn in a blue rectangle. 
 The blue line in the middle of the rectangle marks the baseline of the box. 
-The green line attached to left hand-side of the baseline on the one hand
-is attached to the anchor of this object on the other hand, which is itself
-drawn as a small green circle. 
+The green line is attached to the left hand-side of the baseline on the one
+hand  and to the anchor of this object, dran as a small green circle, on the
+other hand. 
 }}\box0\pnode{Q}%
 \ncline[linecolor=green]{A}{P}%
 \ncline[linecolor=blue]{P}{Q}%
 }}}%
 and right
 
-below\ldots
+below is\ldots
 
-\setbox0=\hbox{\adviedit{d=0.2225}{\vtop{\vspace{\advid}}}}%
+\setbox0=\hbox{\adviedit{d=0.1780}{\vtop{\vspace{\advid}}}}%
 \wd0=1ex\ht0=1ex
 \psframebox[linecolor=blue,framesep=0pt]
 {\pnode{P2}\hbox to 0em
@@ -1346,17 +1348,18 @@ below\ldots
 a whizzy-editable vertical space. 
 
 \hspace{1.5em}%
-Note that the anchor of the vertical space is exactly at the left-hand side
-of the base line because it is unmovable. In this case, the object takes its
-real dimensions.  In contrast, the parbox above, which has been moved,
-behaved as a empty box.  }}}
+The vertical space is an unmovable resizable box whose dimensions are as
+displayed in blue.  
+In contrast, the parbox above is movable (and width-resizable) and behaved
+as an empty box.  }}}
 \end{toimage}\imageflush
 \end{center}
 \par\noindent
 You may edit such objects in two ways: 
 \begin{itemize}
 \item \textbf{move} them, using the middle button.
-\item \textbf{resize} them, using the right button.
+\item \textbf{resize} them, using the right button for width and height
+or the shift-right button for depth.
 \end{itemize}
 When pressing the button on the corresponding rectangle, the mouse shape
 should intuitively illustrate the action to be perfomed. 

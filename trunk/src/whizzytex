@@ -4,7 +4,7 @@
 #  Copyright (C) 2001, 2002, 20043, 2004 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.1.3
+#  Version        : 1.2.0
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -26,7 +26,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.1.3"
+VERSION="1.2.0"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
