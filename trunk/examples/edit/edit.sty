@@ -1,0 +1,28 @@
+\newcommand{\editbubble}[4][]
+   {\setbox0=\hbox{#3}\copy0\hbox to 0em
+    {\kern-0.5\wd0\bbb@dima=\ht0\bbb@dimb=\dp0%
+     \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+      {\adviedit[#1]{comm=\editbubble,unit=\bubbleunit,#2}
+         {\bubble{\box0}(\advicw,\advich){#4}}}\hfilneg}}
+
+\newcommand{\edithspace}[1]
+	{\adviedit{comm=\edithspace,#1}{\hspace{\adviw}}}
+
+\newcommand{\editvspace}[1]
+	{\adviedit{comm=\editvspace,#1}{\vtop {\vspace{\advid}}}}
+
+\newcommand{\editcirclenode}
+  {\@ifstar {\editcirclenode@lr{1}{1}}{\editcirclenode@lr{0}{0.5}}}
+\def \editcirclenode@lr #1#2#3%
+  {\@ifnextchar [{\editcirclenode@i{#1}{#2}{#3}}%
+        {\editcirclenode@ii{#1}{#2}{#3}}}
+
+\def \editcirclenode@i#1#2#3[#4]{\editcirclenode@ii{#1}{#2}{#3}{#4}}
+\def \editcirclenode@ii#1#2#3#4#5#6%
+ {\adviedit{comm=\editcirclenode,#3}%
+  {\hskip -#1\adviw\circlenode[#4]{#5}{\hskip #2\adviw\hskip #2\adviw}%
+   \hskip -#2\adviw
+   \hbox to 0em{\hss \begin{tabular}{c}#6\end{tabular}\hss}%
+  }}%
+
+

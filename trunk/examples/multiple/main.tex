@@ -1,0 +1,60 @@
+%; whizzy -advi "advi -html Start-Document -edit" -mkfile ls
+
+\documentclass{article}
+  
+\begin{document}
+
+\section {This is the {\em master} file}
+   
+This is a test with multiple files.  
+This  is the {\bf master} file \verb"main.tex".   
+It has two slaves files \verb"first.tex" and \verb"second.tex". 
+This is the fist section that does not input any file.
+Move to next section for file inclusion.
+
+\section {A master section, loading the first slave} 
+
+The reste section is input from \texttt{first.tex}.
+The rest of this section ends with:
+\begin{verbatim}
+\input {first}   
+\end{verbatim}
+\input {first}   
+
+
+ 
+\section {Another master section, loading the first slave}
+
+The next example is a few sections from an included file (hence the rest of
+the slice follows on the next page). Note that, even though slices are by
+section the included file, which contained several section is not sliced.
+You may click on one of the included sections, which will move the pointer
+and pass contol to the included file. Then, only one section of the
+included file will be sliced. The sliced is delimited with lines: 
+$$
+\centerline{\hrulefill\space \lower 0.5ex \hbox{\bf Mastered by main.tex}
+\hrulefill}
+$$
+on which you click to return to the master. 
+
+The rest of this section ends with:
+\begin{verbatim}
+\include {second}
+\end{verbatim}
+\include {second}
+
+\section {Last section, from master}
+
+You may also input a file from a subdirectory: 
+The rest of this section ends with:
+\begin{verbatim}
+\input {subdir/subfile}
+\end{verbatim}
+\input {subdir/subfile}
+
+\section{The end}
+The document ends here. 
+
+
+\end{document}
+
