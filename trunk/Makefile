@@ -83,12 +83,12 @@ $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
 	chmod +x $@
 
 ifdef EMACSDIR
-start-emacs.el: $(SRC)/start.el
+whizzytex-emacs-init.el: $(SRC)/whizzytex-init.el
 	@sed -e 's|^\( *"\)[^ ]*\(" *\)$$|\1$(EMACSDIR)/whizzytex\2|' $<
 endif
 
 ifdef XEMACSDIR
-start-xemacs.el: $(SRC)/start.el
+whizzytex-xemacs-init.el: $(SRC)/whizzytex-init.el
 	@sed -e 's|^\( *"\)[^ ]*\(" *\)$$|\1$(XEMACSDIR)/whizzytex\2|' $<
 endif
 

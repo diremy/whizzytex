@@ -16,7 +16,7 @@ BASEURL=http://pauillac.inria.fr/whizzytex/
 
 RPMNAME=whizzytex-$(VERSION)-$(Release)
 
-SRCFILES=whizzytex whizzytex.el start.el whizzytex.sty
+SRCFILES=whizzytex whizzytex.el whizzytex-init.el whizzytex.sty
 
 TARSOURCES = $(patsubst %,src/%,$(SRCFILES)) \
 	    GPL COPYING CHANGES \
@@ -26,7 +26,7 @@ TARSOURCES = $(patsubst %,src/%,$(SRCFILES)) \
 
 TARPRODUCED =  INSTALL VERSION 
 
-TARDIRS = doc examples 
+TARDIRS = examples 
 
 TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS) \
 
@@ -37,10 +37,8 @@ XXXPORTS = CHANGES index.html animation.html \
 
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
-	   manual.dvi doc/manual.ps doc/manual.html \
 	   COPYING GPL INSTALL VERSION RELEASE \
-	   $(XXXPORTS) $(NAME).tgz \
-
+	   $(XXXPORTS) $(NAME).tgz
 
 whatelse: 
 	@echo 'make what ? [faq pack xxxport Export ]'
@@ -54,11 +52,8 @@ doc/version.tex: RELEASE VERSION
 	 echo '\def\YAPVERSION{'$(YAPVERSION)'}' ) > $@
 
 
-doc/manual.dvi: doc/version.tex doc/manual.tex 
-	cd doc; make manual.dvi
-
-manual.dvi: doc/manual.dvi
-	cp $< $@
+doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
+	cd doc; make all 
 
 index: index.html animation.html
 	rcp $^ $(PAUILLAC)
@@ -101,10 +96,7 @@ activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
 	cp anim/$*{,009}.gif .
 
-doc/manual.ps: doc/manual.tex
-	cd doc; make 
-
-doc/manual.html: doc/manual.tex
+doc/FILES: doc/manual.tex
 	cd doc; make 
 
 INSTALL.txt: doc/manual.html
@@ -119,7 +111,7 @@ VERSION: makefile
 FILES: $(TARFILES) makefile 
 	make smallclean
 	(echo FILES; echo $(TAG); \
-	 tar zcvf /dev/null $(TARFILES)) \
+	 tar zcvf /dev/null $(TARFILES) $(cat doc/FILES)) \
 	  | grep -v CVS | grep -v '/$$' > $@
 
 $(NAME).tgz: FILES makefile
@@ -171,7 +163,7 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 
 
 Export: $(EXPORTS) xxxport DATE
-	rcp $(EXPORTS) doc/manual0*.gif doc/caml.eps $(PAUILLAC)
+	rcp $(EXPORTS) $(cat doc/FILES) $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
 

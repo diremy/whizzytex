@@ -2,26 +2,42 @@ HEVEA = hevea -exec xxdate.exe
 HVAOPT = -fix -nosymb
 # HVAOPT = -charset iso-8859-1 -fix -nosymb
 
-all: manual.dvi manual.html whizzytex.info
+DOCFORMATS=dvi ps pdf html info
+all: FILES
+
+FILES: $(addprefix whizzytex., dvi ps pdf html info) Makefile
+	cd ..; \
+	ls $(addprefix doc/whizzytex., dvi ps pdf html info) \
+	   doc/whizzytex00?.gif doc/whizzytex.info-* \
+	> doc/$@
 
 manual.hva: manual.sty
 	ln -s $< $@
 
-manual.ps: manual.dvi
-manual.dvi: manual.tex version.tex
+whizzytex.dvi: manual.tex version.tex
 	latex $<
-	latex '\def\driver{dvips}\input' $<
-	dvips -o $*.ps $*.dvi
 	latex $<
+	mv manual.dvi $@
 
-manual.html: manual.hva manual.tex manual.dvi 
+whizzytex.ps: whizzytex.dvi
+	latex '\def\driver{dvips}\input' manual.tex
+	dvips -o $@ manual.dvi
+
+whizzytex.pdf: whizzytex.ps
+	ps2pdf $<
+
+whizzytex.html: manual.tex manual.hva whizzytex.dvi 
 	$(HEVEA) $(HVAOPT) -o $@ $< && \
-	imagen manual
+	imagen whizzytex
 
 whizzytex.info: manual.tex
-	$(HEVEA) $(HVAOPT) -o $@ $<
+	$(HEVEA) $(HVAOPT) -info -o $@ $<
 
 clean:
-	rm -f {whizzytex,manual}.{aux,log,dvi,dview,wiz,fmt}
-	rm -f {whizzytex,manual}.{haux,htoc,waux,advi}
+	rm -f whizzytex.{log,image.*,h{aux,toc}}
+	rm -f manual.{aux,log,dvi,toc,dview,wiz,fmt}
+
+distclean: clean
+	rm -f whizzytex.{dvi,ps,pdf,html,info} manual.hva
+
 
