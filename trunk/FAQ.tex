@@ -32,27 +32,19 @@ The last version of the FAQ can be found at
 \section {Known problems}
 
 Fixed refers to last stable version.
-\def \FIXED {\textit{Fixed in version > {\version}}}
+\def \FIXED {\textit{Fixed in version $\ge$ {\version}}}
 
 \begin {enumerate}
 
 \item
-Its has been reported with versions of \textsf{XEmacs 21.4.*} that sometimes
-the cursor jumps to the end of the buffer while typing, and the mark is left
-a few characters before where the point was when the cursor jumped.
+Its has been reported with versions that sometimes the cursor jumps to the
+end of the buffer while typing fast, and the mark is left a few characters
+before where the point was when the cursor jumped.
 
-So far, this happens at unpredictable times, but apparently always when
-typing fast.
+The problem should be \FIXED. 
 
-I have seen this on someone else screen, but I have not yet been able to
-reproduce it on my own machine. Any help to better identify this phenomenom
-is welcome (either a sequence of user-actions that reproduces the bug, or a
-chain of Emacs-functions calls that always occur when the bug shows up
----the later may need some Emacs knowledge to trace or instrument a few
-function calls).
-
-The only known workaround so far, is to reduce the slicing speed \emph{e.g.}
-by the follow setting (you may need to adjust the value):
+Otherwise, an (imperfect) workaround is to reduce the slicing speed
+\emph{e.g.}  by the follow setting (you may need to adjust the value):
 \begin{verbatim}
         (setq whizzy-load-factor 0.1)
 \end{verbatim}

@@ -3,39 +3,53 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
- * add BIBTEX switching support, to allow use of jbibtex.
- * added per-file hooks
- * fixed/changed parsing of options
- * added parsing of the option -dvicopy
- * recognizes advi driven slive moves
-
 Shell-script: 
-
- * add system and per-user CONFIGFILE support.
- * add BIBTEX switching support, to allow use of jbibtex.
- * support -display option for whizzytex.
- * added the option -dvicopy to postprocess the dvi
 
 LaTeX macros:
 
- * load advi.sty in advi mode
-
 Installation/Documentation:
-
- * add system and per-user CONFIGFILE support.
- * add BIBTEX switching support, to allow use of jbibtex.
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
 
+ - Version 1.1.1
+ * warn and pop-up interaction window when fails during initialization
+ * added debug variable in emacs and menu entry to toggle it
+ * move to the first slice in not already in a slice when mode is turn on
+ * fixed (partially?) the bug with the cursor moving abruptly to the end of
+   buffer, when input was too fast.
+ * added a timer to make the slice always consistent after 2s. 
+ * replaceed sit-for by a timer to pop-up the interaction buffer after 2s. 
+ * added BIBTEX switching support, to allow use of jbibtex.
+ * added per-file hooks
+ * fixed/changed parsing of options
+ * added parsing of the option -dvicopy
+ * recognizes advi driven Next-Slice and Previous-Slice moves 
+   (by default, right and left clicks in Upper Left corner of the advi windown)
+
 Shell-script: 
+
+ - Version 1.1.1
+ * warn when fails during initialization
+ * keep log files when turn off in debug mode
+ * added system and per-user CONFIGFILE support.
+ * added BIBTEX switching support, to allow use of jbibtex.
+ * support -display option for whizzytex.
+ * added the option -dvicopy to postprocess the dvi
 
 LaTeX macros:
 
+ - Version 1.1.1
+ * load advi.sty in advi mode
+
 Installation/Documentation:
 
+ - Version 1.1.1
+ * adjusted the manual for initialization
+ * add system and per-user CONFIGFILE support.
+ * add BIBTEX switching support, to allow use of jbibtex.
 
 OLDER CHANGES:
 ==============

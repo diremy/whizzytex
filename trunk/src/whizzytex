@@ -4,7 +4,7 @@
 #  Copyright (C) 2001, 2002 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.1
+#  Version        : 1.1.1
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -184,6 +184,12 @@ done
 if $TRACE; then set -o xtrace; fi
 
 HERE=$(/bin/pwd)
+case "$1" in 
+  *" "*) 
+      echo 'Cannot WhizzyTeX a file '"$1"' whose name contain a space'
+      echo '<Quitting>'
+      exit 1;;
+esac
 FULLNAME=$1
 BASENAME=$(basename $1)
 FILEEXT=$(expr "$BASENAME" : '.*\(\.[^.]*\)')
@@ -202,12 +208,15 @@ TMP=$HERE/$WHIZZYDIR/tmp
 SECTIONS=$OUTPUT/sections
 LOG=$TMP/log
 ERR=$TMP/err
+# for persistent log
+# WLOG=$NAME.wlog
 
 errlog () { echo "$*" 1>&2; }
 fatal () { 
     errlog '*** Fatal error: ' "$*"
     [ -f $ERR ] && cat $ERR
-    cleanquit Fatal
+    echo '<Quitting>' 
+    cleanquit "$1"
 }
 warning () {
   echo "Warning: " $*
@@ -249,7 +258,7 @@ fi
 clean () {
    [ -f $TMP/pids ] && kill -TERM $(cat  $TMP/pids) 2>/dev/null
    rm -f $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW
-   rm -rf $WHIZZYDIR
+   if $TRACE; then : ; else rm -rf $WHIZZYDIR; fi
    rm -f $LOCK
 }
 
@@ -387,6 +396,7 @@ esac
 ############################################################################
 # We go for good
 
+# These directories are normally created by Emacs
 mkdir $WHIZZYDIR $INPUT $OUTPUT $TMP 2>/dev/null
 echo $COMMAND > $OUTPUT/command
 
@@ -407,8 +417,25 @@ else
   else
      rm -f $NAME.$FMT
      echo 'failed>'
+     set +o xtrace
      texlog format
-     fatal 'could not build initial format'
+     echo '<Initialization failed>'; 
+     { echo '
+        ******************************************************
+        An error occured while building the initial format.
+        Are you sure that your file can be correctly LaTeX-ed? 
+        To keep log files, start WhizzyTeX in debug mode. 
+        ******************************************************
+'         
+#         echo; echo '*** Command was:'; echo; 
+#         echo $COMMAND; 
+#         echo; echo '*** Formatting log:' ; echo; 
+#         cat $OUTPUT/format; 
+#         echo; echo '*** Other errors:' ; echo; 
+#         cat $ERR; 
+     }
+#     > $WLOG
+     fatal initialization 'Could not build format ---See message above'
   fi
 fi
 
@@ -443,6 +470,7 @@ newfiles () {
   mv $(find $INPUT -type f -print || cleanquit Find) $HERE/  2>/dev/null
 }
 newfile () {
+#  if [ -f $INPUT/$SLICE ]; then echo YES; else echo NO; fi
   mv $INPUT/$SLICE $HERE/  2>/dev/null
 }
 
@@ -600,6 +628,7 @@ viewps () {
   fi
 }
 
+echo '<Initialization succeeded, entering loop>'
 while true
 do
   if [ ! -d $WHIZZYDIR ]
@@ -623,7 +652,7 @@ do
 #       bash) bash -c "$REST";;
        info) 
         echo "
-        COMMAND=$COMAND
+        COMMAND=$COMMAND
         EXT=$EXT
         MKSLICE=$MKSLICE
         MKFILE=$MKFILE
@@ -639,6 +668,8 @@ do
         BASENAME=$BASENAME
         EXT=$EXT
         NAME=$NAME
+
+        TRACE=$TRACE
 ";;
        trace)
           case $REST in

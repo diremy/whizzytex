@@ -1,7 +1,7 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.1
-VERSION=1.1
+VERSION=1.1.1
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -28,7 +28,7 @@ XXXPORTS = CHANGES FAQ.html manual.dvi doc/manual.html FAQ
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
 	   manual.dvi doc/manual.html \
-	   COPYING GPL INSTALL VERSION \
+	   COPYING GPL INSTALL VERSION RELEASE \
 	   $(XXXPORTS) $(NAME).tgz  
 
 
@@ -37,7 +37,12 @@ whatelse:
 
 pack: FILES $(EXPORTS) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
 
-doc/manual.dvi: doc/manual.tex VERSION 
+doc/version.tex: RELEASE VERSION
+	(echo '\def\release{'`cat RELEASE`'}' ; \
+	 echo '\def\version{'`cat VERSION`'}' ) > $@
+
+
+doc/manual.dvi: doc/version.tex doc/manual.tex 
 	cd doc; make manual.dvi
 
 manual.dvi: doc/manual.dvi

@@ -316,8 +316,7 @@ make VERSION=<version> download downgrade install
 \end{tt}
 \end{quote}
 
-\section {Using {\whizzy}} 
-
+\section{Using {\whizzy}}
 \label{using}
 
 \subsection {Loading {\tt whizzytex.el}}
@@ -466,14 +465,27 @@ reached.
 
 \paragraph {Whizzytex cannot build a format}
 
-Then {\whizzy} will refuse to start.  This is most probably an error in your
-macros.  Try to compile {\LaTeX} your file.  
-Also try to erase all auxiliary files, since if those are erroneous, they
-may disturb the creation of the format (which loads some of the auxiliary
-files). 
+Then {\whizzy} will refuse to start. 
 
-There still could be some bad interaction between your macros and {\whizzy}
-macros, but this is very rare.
+The problem could result from an abnormal interaction between your macros
+and {\whizzy} macros, but this situation seems rather unfrequent.  So there
+is most probably an error in your macros.  Try to compile {\LaTeX} your
+file.  
+
+% You may also try to erase all auxiliary files, since if those are
+% erroneous, they may disturb the creation of the format (which loads some of
+% the auxiliary files). 
+
+
+By default the interaction window will pop-up with an section of the format
+log. If this is not enough, you may need to view log files.  However, log
+files are normally removed when {\whizzy} exits.  To keep log files on,
+you must retart {\whizzy} in debug mode (select the debug mode in the
+menu and restart {\whizzy}). Then, you can check the \lst"format" log and
+if necessary the \lst"command" with which {\whizzy} has been launched.
+(Once the bug is fixed, you should switch off the debug mode, which may slow
+down {\whizzy}.)
+
 
 \paragraph {Whizzytex cannot launch the previewer}
 
@@ -941,7 +953,7 @@ recompiled whenever the buffer itself is saved (manually).
 The recompilation of the whole document is off in slide mode.
 
 
-\section {Viewers}
+\section{Viewers}
 
 \def \ActiveDVI {Active-DVI}
 
@@ -990,7 +1002,7 @@ signal and respond by reloading the file.
 This does not work because they is no simple way to tell
 \lst"acroread" to reload its file in batch. 
 
-\section {Implementation principles}
+\section{Implementation principles}
 
 In short, {\sc \whizzy} is selecting a small slice of the document that 
 you are editing around the cursor (according to the selected mode) 

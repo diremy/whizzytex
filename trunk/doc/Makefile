@@ -5,11 +5,6 @@ manual.dvi: manual.tex version.tex
 	latex $<
 	if grep 'LaTeX Warning: Label(s)' $*.log; then latex $<; fi
 
-version.tex: ../VERSION ../RELEASE
-	(echo '\def\release{'`cat ../RELEASE`'}' ; \
-	echo '\def\version{'`cat ../VERSION`'}' ) > $@
-
-
 manual.html: manual.tex manual.dvi
 	hevea -fix -nosymb -o $@ $<
 
