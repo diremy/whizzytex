@@ -1,0 +1,333 @@
+%; wysitex   paragraph -dvi "xdvi -s 5 -expert -xoffset 0 -sidemargin 0.6 -topmargin 1 -geometry 625x960+10+35" -pre make
+%; wysitex   document -dvi "xdvi -s 5 -expert -geometry 625x960+10+35"
+%; wysitex   section  -dvi "xdvi -s 5 -expert -xoffset 0 -sidemargin 0.6 -topmargin 1 -geometry 625x960+10+35"
+
+% The previous three lines are possible configuration for wysitex. 
+% They may not be there, then, the default will be used. 
+% If not present the Time-stamp line will be added if necessary. 
+
+\documentclass{article}
+
+\let \lst \verb
+
+\def \wysitex{\textbf {WysiTeX}}
+\def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
+
+\begin{document}
+\pagestyle {empty}
+
+\author {Didier R{\'e}my}
+
+\title {
+{\huge \wysitex}
+\\[1em]
+{\em An {\bfseries Emacs mode} 
+for incremental display of \\ 
+{\bfseries {\LaTeX} documents}}
+}
+
+\maketitle 
+
+\begin{abstract}
+{\wysitex}\footnote {standing for {\em {\bf W}hat {\bf Y}ou {\bf S}ee
+{\bf I}s what you {\bf TeX}}} is an emacs minor mode for incrementally
+TeXing and Viewing the file while editing.
+%
+It is pre-configured to work with ghostview-based and xdvi-based previewers.
+
+{This documentation is also a test example. That is, you can test it yourself
+by visiting this source file in {\wysitex} mode (and modify it as you
+wish). }
+\instruction 
+{Please move the cursor foward}
+\end{abstract}
+
+
+\section {Principle}%% 1.0.0.
+
+In short {\sc \wysitex} is displaying a small slice of the document around
+the cursor. 
+
+This is a two-part engine: 
+
+\instruction 
+{Move the cursor to the subsection you wish to display/edit}
+
+\subsection {Emacs is watching you} typing and moving in the buffer attach%% 1.1.0.
+to the source file in keep saving the region (slide, section, or subsection)
+your are in  into a spooler file. 
+
+\subsection {A shell-script is watching the spooler file}%% 1.1.1.
+and keep recompiling it as soon as it is refreshed.
+
+
+\section {Test} %% 1.1.2.
+
+\instruction
+{You can use this section to test in editing mode: just type in some 
+latex code.}
+
+This is a test empty enumeration: 
+\begin {enumerate}
+
+\item
+
+\item
+
+\end {enumerate}
+
+\instruction
+{You may now continue reading this document and come back to this
+section for more tests later.}
+
+\paragraph{Remark:}
+A more interesting test file is \lst"wysitex-slides.tex". 
+
+
+\section {Implementation}%% 2.2.0.
+
+The section briefly describe the implementations, composed of three parts. 
+
+\subsection {Hacks}%% 2.3.0.
+
+\subsubsection* {Emacs hacks}
+
+Besides administrative business, the main trick is to use 
+\lst"post-command-hook" to make emacs watching if anything has changed. 
+
+It uses \lst"buffer-modified-tick" to tell if any editing has actually
+occurred, and compare the point position with the (remembered) position of
+the region being displayed to see if saving should occur. 
+
+Last, it uses \lst"sit-for" to delay savings until idleness or a
+significant number of editing changes. 
+
+\subsubsection* {TeX hacks}
+
+The only TeX hack to build a format file so as to avoid reloading the whole
+macros at each compilation. This is entirely transparent, that is, the
+source file does not have to understand this.
+
+The hack is to redefine \lst"\documentclass" which in turn  redefines
+\lst"\document" to execute \lst"\dump" (after redefining \lst"\document"
+to its old value and \lst"\documentclass" so that it skips everything till
+\lst"\document". (This is rather robust, as it works with my preferred macros
+latex package \lst"localmacros".)
+
+The formatted file also includes a command \lst"\WysitexInput" that can be
+used to dump page and section numbers while it is processed in an auxilliary
+file. This is used by emacs to annotate the source file with these numbers
+as latex comments. 
+
+\subsubsection* {Unix hacks}
+
+Mainly, a unix shell-script is watching the spooler file.  It recompiles the
+format file (and the page and section number, but in batch mode) whenever
+the source file (its unix date) has changed  and 
+recompiles the slice whenever it is present (since wysitex renames ---hence
+removes--- the slice before processing it).
+
+If the file has been recompiled successfully, it triggers the previewer
+(ghostscript or xdvi) so that it rereads the dvi or ps file. Otherwises, it
+cat the log (hence into the \lst"*TeX-shell*" buffer where it has been
+launched). 
+
+
+\subsection {Interaction between the components}%% 3.3.1.
+
+The control is normally done by emacs, which launches and kill the unix
+deamon. However, for robustness, the unix deamon will commit suicide if the
+previewer is dead, and in turn, the {\wysitex} mode will automatically turn
+itself off when it notices that deamon has dyied. This allows to turn off
+the {\wysitex} mode, simply by exiting the previewer. 
+
+To that purpose, the deamon pid is saved in a file. 
+This is also used to prevent several deamon running on the same file. 
+Then {\wysitex} must be called with \lst"-kill" option to cleanup an  old
+running session, which is done automatically when the mode is turn off.
+
+
+\section {Short manual}%% 3.3.2.
+
+This section is a very short manual that describes how to install, use and
+parameterize WysiTeX. 
+
+\subsection {Installation}%% 3.4.0.
+
+The file \lst"wysitex.el" should be installed in the appropriated directory, 
+the command \lst"wysitex-mode" can be made autoload (and, for instance, can
+bound to the keep \lst"^C-^W", in latex-mode-map). 
+
+The file \lst"wysitex" should be make executable, and visible in the emacs
+executable path (or the variable \lst"wysitex-command-name" should be
+adjusted in the file \lst"wysitex.el"). 
+
+The file \lst"wysitex.sty" should be installed at a place so that it is
+visible  from initex, or the DUMP variable should be adjusted in
+\lst"wysitex".  
+
+The shell-script \lst"wysitex" is written in bash and works for linux 6.2. 
+It should work with other systems as well, but some adjustements may be
+needed. 
+
+
+\subsection {Configuration}%% 3.4.1.
+
+All parameters are assigned default values, so WysiTeX should do something
+reasonable on any latex file.
+Configuration can be done by setting emacs variables (for instance via a
+wysitex-mode-hook) or by setting file-dependent parameters by 
+inserting configurations lines among the first lines of the file. 
+
+
+\paragraph {Configuration lines}
+
+A configuration line is of the form:
+$$
+\lst`"%; *\\(wysitex[^ \n]*\\) +\\([^\n]\\) *$"`
+$$
+The first group is one of the two keywords \lst"wysitex" and 
+\lst"wysitex-paragraph" recognized so far; the second group are arguments. 
+If two confirgurations lines appear with the same keyword, only the first
+one is taken into account. 
+\begin{description}
+\item[wysitex]
+The is the main configuration command. The arguments should match the
+regular expression: 
+$$
+\lst`"\\([^ \n]+\\) +\\([^ \n]+\\) +\\([^\n]*[^ \n]\\) *$"`
+$$
+They determine in order the mode, the previewer type, followed by the
+previewer command and other optional aguments to be passed to the wysitex
+program.  A the right most groups are optional.  The mode controls how the
+document is sliced. The previewer tells wether to use dvi-based or ps-based
+previewers and defines the command to call the previewer (the name of the
+file will be added to the command strings at the end).
+
+\item[wysitex-paragraph]
+This sets the emacs-variable wysitex-paragraph to the \lst"<args>"
+which should be a regular-expression string. 
+
+\end{description}
+The first group defines the mode to be used, as described in the next
+subsection. The second group the previewer type and its value should be either
+\lst"-dvi" or \lst"-ps". 
+The third group, that is, the remaining of the configuration line as 
+as list of arguments that will be passed to the \lst"wysitex" shell
+script. Arguments that contain blanks should be quoted.
+
+The first argument, which is mandatory, defines the previewer command that
+will be used to call the previewer (the name of the file will be appended).
+
+The second and third optional arguments if \lst"-pre <command>" defines
+the preprocessor used to build the tex file from the slice file. 
+The command will be passed the name of the target file
+\lst"_wysitex_$BASICFILENAME.tex", which it should produce from the source 
+file \lst"_wysitex_$BASICFILENAME.new" (the under which wysitex renames 
+the slice saved by emacs). 
+Here \lst"$BASICFILENAME" is the name of the file under \lst"WysiTeX"
+stripped off its suffix. By default, \lst"wysitex" will the source to
+the target. 
+
+\paragraph {Cool bindings}
+The emacs mode defines the command \lst"wysitex-next-slice" and
+\lst"wysitex-previous-slice", to move from slices forward or backward.
+Binding these to appropriate keys will help you move pages from the emacs
+buffer. 
+
+
+\subsection {Modes}%% 4.4.2.
+
+WysiTeX recognizes three modes \lst"slide", \lst"section", and \lst"document". 
+The mode determines the slice of the document beeing displayed and how
+frequently updates occurs. 
+\begin{description}
+
+\item [slide]
+
+The mode \lst"slide"  is mainly used for documents of the class seminar. 
+In slide mode, the slide is the text bewteen two \lst"\begin {slide}"
+comments (thus,  the text between two slides is displayed after the
+preceeding slide).  
+
+\item [section]
+In \lst"section" mode, the slice of text is the current chapter, section, or
+subsection.
+
+\item [paragraph]
+The \lst"paragraph" mode is a variation on section mode where, the separator
+\lst"wysitex-paragraph" is defined by the user (set to two empty lines by
+default) instead of using \lst"\section"  and \lst"subsection" commands. 
+subsection.
+
+\item [document]
+In \lst"document" mode, there is no sectionning unit and the whole document is
+recompiled altogether.
+
+\end{description}
+Both \lst"section" and \lst"paragraph" modes sets on the ``marks'' mode
+that tells the shell to recompilation section and page numbers in batchmode
+so that emacs can annotation sections commands with this numbers, and
+finally tell tex to adjust the numbers accordingly.
+
+There are several possible (future?) improvements to the \lst"section" mode:
+\begin {enumerate}
+
+\item
+An \lst"auto" mode could decide  at subsections or sections only could be made
+depending on the (source code) length of the current section. 
+
+\item
+The enclosing section title could be included when in a subsection.
+(Actually, all sections could be displayed, moving into sections and
+subsections acting as opening drawers.
+
+\end {enumerate}
+
+
+\subsection {Using the command make}%% 5.4.3. 
+
+This is made possible by using the \lst"-pre" option on the command line
+to  define a command that will be used to process the slice 
+\lst"_wysitex_$BASICFILENAME.slc" saved by emacs
+into the file \lst"_wysitex_$BASICFILENAME.slc" to be be processed 
+by latex.
+
+The command command \lst"make" can be used as a preprocessor (with an
+appropirate \lst"Makefile").  However, one may have to work around
+\lst"make"'s notion of time, which is usually too rought. 
+This is safe, since
+\lst"WysiTeX" tests itself for needed recomputations (it includes
+a slice-version stamp on the first line of the slice file for that
+purpose). 
+
+\subsection {Frequency of recompilation}%% 5.4.4.
+
+To obtain maximum {\wysitex} effect, a new slice should be save after any
+edition changed or any displacement that outside of the current slice.
+However, to avoid overloading the machine or useless and anoying
+refreshments, some compromise can is made: when either edition or movement
+is continuous, saving a new slice is delayed until at least 10 editing
+changes. The continuity is controlled in miliseconds by the emacs variable
+\lst"wysitex-pause". This variable is set to \lst"200" in slide
+mode, to \lst"1000" in section mode, and to \lst"2000" in document mode.
+
+The format is automatically recompiled at the beginning of each session, and
+whenever the buffer continaing the file is saved. That is, to load use new
+packages or define new global macros (before the \lst"\begin{document}"), it
+sufficies to save the current file.
+
+\subsection {Errors}%% 6.4.5.
+
+When latexing a slice produces an empty file or an error, the display is
+unchanged. Instead, the log of the session is printing in the emacs
+tex-shell buffer. 
+
+If an error occur when building the initial format, the log of the session
+is also displayed, but then, the mode is turned off. That is, a session can
+only be started in a configuration where the format can be correctly build. 
+
+If a reformating error occurs, the display won't be changed until the format
+can correctly be rebuilt.
+
+\end{document}

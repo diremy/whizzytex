@@ -1,0 +1,30 @@
+Time-stamp: <2001-03-04 15:25:38 remy>
+
+RECENT CHANGES:
+
+Emacs-mode
+
+ * error-report now first attempt to report the diff with the last sucessful
+   slice if local (a single block of differences); otherwise it falls back
+   to attempt to localize the error from the latex output.
+ * new previewer mode -master for files that are leaves of other tex
+   documents 
+ * whizzytex-mode now ask the user to confirm default values for variables.
+ * whizzytex-mode called with arg 16 recomputes default values for
+   variables. 
+ * whizzytex-mode called with arg 4 ask the user to confirm/change values
+   for variables. 
+ * whizzy-change-mode allows to change slicing mode while running. 
+ * slicing speed ajusts automatically to the speed with which slices are
+   processed. 
+ * (small) compatibility with xemacs. Should work but without frames and
+   overlays. 
+
+Shell-script: 
+
+ * Computes word-diff with the last successful slice.
+ * The shell-script can either pause with "usleep" or stop itself with  
+   "kill -STOP" when waiting for a new slice. 
+
+
+OLDER CHANGES:

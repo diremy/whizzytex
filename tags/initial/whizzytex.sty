@@ -1,0 +1,204 @@
+\nonstopmode
+\let \scrollmode \relax
+\def \whizzy@A {\def \whizzy@do{\catcode `\^^A 2\WhizzyMarkBegin}\ifinner
+\ifmmode \else\def \whizzy@do{}\fi \fi \whizzy@do}
+\begingroup
+\catcode `\^^A \active
+\global \def ^^A{\whizzy@A}
+\catcode `\[ 1 \catcode `\] 2
+\catcode `\{ 12 \catcode `\} 12
+\catcode `| 0 \catcode`\\ 12
+|global |long |def |dump@skip #1\begin{document}[|dump@resume]
+|endgroup
+\def \dump@restart {\begingroup \let \do \@makeother \dospecials \dump@skip}
+
+\def \dump@resume {\endgroup 
+                   \@whizzy@fulldocument
+                   \message {[WisyTeX is resuming in LaTeX mode]}
+                   \whizzy@wizfalse \relax
+                   \let \documentclass \@documentclass
+                   \begin{document}}
+
+\def \whizzy@begindocumenthook {}
+\def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
+\let \latex@document \document
+\def \whizzy@document {\whizzy@begindocumenthook \latex@document}
+\let \@whizzy@fulldocument \relax
+\def \whizzy@ignore #1{}
+\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay {1}\fi}
+\def \whizzy@newl@bel #1#2#3{\global \@namedef {#1@#2}{#3}}
+\def \whizzy@loadaux 
+ {\begingroup
+    \@floatplacement \@dblfloatplacement \makeatletter \let \@writefile
+     \@gobbletwo \global \let \@multiplelabels \relax 
+     \@input {\jobname .aux}%
+     \global \let \whizzy@multiplelabels \@multiplelabels
+     \global \let \@newl@bel \whizzy@newl@bel
+     \AtBeginDocument {\global \let  \@multiplelabels \whizzy@multiplelabels}%
+  \endgroup
+  }
+
+\def \document 
+  {\endgroup
+   \IfFileExists{whizzy.sty}{\usepackage{whizzy}}{}
+   \begingroup \def \@currenvir {document}%
+   \whizzy@loadaux
+   \endgroup
+   \@ifundefined {overlay}{}%{\let \@whizzy@fulldocument \relax}
+      {\let \whizzy@overlay \overlay
+       \let \overlay \whizzy@ignore
+       \def \whizzy@fulldocument {\let \overlay \whizzy@overlay}}
+   \let \@documentclass \documentclass
+   \let \documentclass \dump@restart
+%   \AtBeginDocument {\whizzy@begindocumenthook}%
+   \let \document \latex@document
+   \dump}
+
+\def \whizzy@markon #1#2{
+\expandafter \let \expandafter \@aux \csname #1\endcsname
+\expandafter \let \csname whizzy@#1\endcsname \@aux
+\def \@aux {\whizzy@mark {#2}\csname whizzy@#1\endcsname}
+\expandafter \let \csname #1\endcsname \@aux
+}
+\def \whizzy@markafter #1#2{
+\expandafter \let \expandafter \@aux \csname #1\endcsname
+\expandafter \let \csname whizzy@#1\endcsname \@aux
+\def \@aux {\csname whizzy@#1\endcsname\whizzy@mark {#2}}
+\expandafter \let \csname #1\endcsname \@aux
+}
+\def \whizzy@putmarks {
+\@ifundefined{c@chapter}{}{\whizzy@markon {chapter}{chapter}}
+\whizzy@markon {section}{section}
+\whizzy@markon {subsection}{subsection}
+%\whizzy@markafter {@outputpage}{page}
+}
+\def \whizzy@mark #1{\immediate \write \@whizzy
+% {(whizzy-mark '((\the\inputlineno\space . "#1") .
+% "\thepage.\the\c@section.\the\c@subsection."))}}
+{\the\inputlineno:#1@\thepage.%
+\@ifundefined{c@chapter}{}{\the\c@chapter.}%
+\the\c@section.\the\c@subsection.}}
+
+\edef\whizzy@quote{\string"}
+
+\def \whizzy@starthere
+   {%\ifhmode \unskip \fi
+    \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
+    \special {html:</A>}%
+    %\ifhmode \hskip \lastskip \fi
+    \message {[Start-Document @ \whizzy@line -> \the\inputlineno]}%
+    \global \let \whizzy@checkline \relax
+    \global \let \whizzy@@checkline \relax
+    \global \let \whizzy@check@line \relax
+    \global \let \begin \whizzy@begin
+    \global \let \whizzy@starthere \relax
+%     \ifx \whizzy@catcode \relax 
+%     \else \catcode `\.\whizzy@catcode \let \whizzy@catcode \relax \fi
+    }
+\let \latex@@par \@@par
+\let \whizzy@checkline \relax
+\def \whizzy@@par {\whizzy@checkline \latex@@par}
+\let \whizzy@catcode \relax
+\def \whizzy@@check@limit 
+  {\ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi}
+\def \whizzy@@checkline 
+  {\ifnum \inputlineno>\whizzy@linelimit
+      \ifnum \inputlineno>\whizzy@line \whizzy@starthere 
+      \else 
+         \let \whizzy@checkline \whizzy@@check@limit
+         \global \let \whizzy@@checkline \whizzy@@check@limit
+         \edef \@tmp {\noexpand \whizzy@check@line  \the\everymath}%
+         \everymath \expandafter {\@tmp}%
+      \fi
+   \fi}
+\let \whizzy@begin \begin
+\def \whizzy@@begin {\whizzy@checkline \whizzy@begin}
+\def \whizzy@check@line {\whizzy@checkline \aftergroup\whizzy@checkline}
+%% In display mode, to still ignorespaces after display. 
+%% hence \aftergroup \ignorespaces. Hoever, spaces would still ignored when
+%% the display ends with \eqno or \lqeno.  
+\let \latex@eqno \eqno
+\let \latex@leqno \leqno
+\def \aftergroup@ignorespaces  {\aftergroup \ignorespaces}
+\def \whizzy@eqno {\expandafter \latex@eqno \aftergroup@ignorespaces}
+\def \whizzy@leqno {\expandafter \latex@leqno \aftergroup@ignorespaces}
+\def \whizzy@check@line@ {\whizzy@checkline
+ \aftergroup\whizzy@checkline \aftergroup\ignorespaces
+ \let \leqno \whizzy@leqno \let \eqno \whizzy@eqno}
+%%
+\def \whizzy@line{}
+\def \WhizzyLine #1{%
+  \def \whizzy@line{#1}%
+  \bgroup \count0 #1\advance\count0 by -20
+  \global \edef \whizzy@linelimit {\the \count0}\egroup%
+  \let \@@par \whizzy@@par\let \par \@@par
+  \let \whizzy@checkline \whizzy@@checkline
+  \everydisplay{\whizzy@check@line@}%
+  \let \begin \whizzy@@begin%
+}
+
+\def \WysitexInput #1{
+\message {[WysiTeX is dumping positions in _whizzy_#1.pag]}
+\newwrite \@whizzy 
+\immediate \openout \@whizzy _whizzy_#1.pag
+\whizzy@putmarks
+\input {#1.tex}
+}
+
+\newif \ifwhizzy@wiz \whizzy@wiztrue
+\AtBeginDocument 
+ {\ifwhizzy@wiz \@input {\jobname .wiz}\fi 
+  \newwrite \@wizout \immediate \openout \@wizout \jobname.wiz
+  \def \@wiz #1{\immediate \write \@wizout {#1}}%
+ }
+
+\global \@specialpagefalse
+\def \WhizzyTeX #1.#2.#3.{%
+   \setcounter{page}{#1}%
+   \setcounter{section}{#2}\setcounter{subsection}{#3}}
+\def \WhizzyTeX@chapter #1.#2.#3.#4.{%
+   \setcounter{page}{#1}\setcounter{chapter}{#2}%
+   \setcounter{section}{#3}\setcounter{subsection}{#4}}
+\@ifundefined {c@chapter}{}{\let \WhizzyTeX \WhizzyTeX@chapter}
+
+\newcommand {\WhizzyTeXslide}[2][]
+   {\let \overlay \whizzy@@overlay
+    \whizzy@line{#2}\def \whizzy@layer{#1}}
+
+\def \WhizzyMarkBegin
+  {\ifmmode \setbox0 \hbox \bgroup \aftergroup {\WhizzyMarkEnd}\ensuremath 
+   \else \setbox0 \hbox \bgroup \aftergroup \WhizzyMarkEnd \fi
+   \catcode `\ 2}
+   
+\def \WhizzyMarkEnd 
+   {\bgroup
+      \@ifundefined {colorbox}
+           {\def \@do {\fbox}}
+           {\def \@do {\colorbox{yellow}}}%
+       \setbox1 \hbox
+           {\@do {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}\wd1 \wd0
+           \dp1 0em \ht1 0em \box1
+    \egroup
+   } 
+
+\def \WhizzyMarkBegin 
+  {\whizzy@starthere
+   \ifmmode \rlap {\setbox0 \hbox {\strut \space}\WhizzyMarkEnd}\else
+   \ifhmode \rlap {\setbox0 \hbox {\strut \space}\WhizzyMarkEnd}\else 
+      \ifvmode
+%         \bgroup 
+%              \setbox0 \hbox {\strut\space}\WhizzyMarkEnd%
+%             \wd0 0em\dp0 0em\box0\vskip -2\ht0\vskip -2\dp0% -\baselineskip
+%         \egroup
+        \vskip -\baselineskip 
+        \hbox {\vbox to 0em{\vskip 1em
+               \setbox0 \hbox {\strut\space}\box1\WhizzyMarkEnd \vss}}%
+      \fi
+   \fi \fi
+  }
+
+\AtBeginDocument {\catcode `\ \active}
+
+
+\endinput
+
