@@ -1,0 +1,564 @@
+%; whizzy   document -dvi "dview -whizzy"
+%; whizzy   document -dvi "xdvi" -pre "make -f Makefile.tpl"
+%; whizzy   paragraph -dvi "xdvi" 
+%; whizzy   section  -dvi "xdvi"
+
+% The previous three lines are possible configuration for whizzytex. 
+% They may not be there, then, the default will be used. 
+% If not present the Time-stamp line will be added if necessary. 
+
+\documentclass{article}
+
+\topmargin 0em
+\headsep 0in
+\headheight 0in
+\evensidemargin 0em
+\oddsidemargin 0em
+
+\usepackage {color}
+\let \lst \verb
+
+\def \whizzy{{Whizzy\kern -0.3ex\raise 0.2ex \hbox{\TeX}}}
+\def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
+\def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
+
+%% The following lines are to help HeVeA make  the HTML version of the manual
+
+%HEVEA \def \instruction #1{}
+%HEVEA\def \whizzy{{Whizzy{\TeX}}}
+%HEVEA\renewcommand{\@bodyargs}{TEXT=black BGCOLOR=white}
+
+\begin{document}
+\pagestyle {empty}
+
+\author {Didier R{\'e}my}
+
+\title {
+{\huge \Whizzy}
+\\[1em]
+{\em An {\bfseries Emacs mode} 
+for incremental display of \\ 
+{\bfseries {\LaTeX} documents}}
+}
+
+\maketitle   
+
+
+\begin{abstract}
+\def \B{\textbf}
+{\whizzy}\footnote {Standing for {\em {\B W}hat {\B i} {\B z}ee
+{\B i}z what {\B y}ou {\expandafter \B \TeX}}} is an emacs minor mode for
+incrementally ({\TeX}ing and) previewing the file while you are editing.
+%
+It is pre-configured to work with ghostview-based and xdvi-based previewers.
+This emacs-mode comes with two companion files ---a {\LaTeX} package and a
+shell script acting as deamon. 
+
+\instruction 
+{This manual can be viewed from emacs in {\whizzy} {\tt paragraph}
+mode. Then, it is self-illustrating and you may follow these instructions;
+Otherwise, please ignore them.}
+
+\instruction {Move the cursor foward in the editor to continue.}
+\end{abstract}
+
+
+\section {Principle} 
+
+In short, {\sc \whizzy} is selecting a small slice of the document that 
+you are editing around the cursor (according to the selected mode) 
+and redisplay the slice incrementally as it changes through edition. 
+
+\paragraph {Emacs is watching you} typing and moving in the 
+emacs buffer attached to the {\TeX} source file that your editing and keeps
+saving the current slice (current slide, section, or subsection, according
+to the mode) into {\bf a pool}.
+
+\paragraph {A shell-script is watching the pool}
+and keeps recompiling when some new slice (or other companion files) 
+are made available in the pool, and, whenever recompilation succeeds, it 
+updates the display of the slice. 
+
+\instruction 
+{Move the cursor to different parts of the documments, to observe 
+slices both in emacs and on the display. }
+
+\instruction {Move to the next section for an interactive demo}
+
+
+\section {Test}
+
+\instruction
+{You can use this section to test in editing mode.
+You may want to save a copy of the file first :-). 
+Just type in some latex code below.}
+
+This is an empty enumeration that you can fill in: 
+\begin {enumerate}
+\item
+\item
+\end {enumerate}
+
+\instruction
+{You may now continue reading this document and come back to this
+section for more tests later.}
+
+\paragraph{Remark:}
+A more interesting test file is \lst"slides.tex".
+
+\paragraph{Errors:}
+Note that, while you are editing the document, it may temporarily be
+ill-formed. That is, \TeX-ing the slice will fail. In this case, the slice in
+not redisplayed; instead, {\whizzy} tries to hilight the ill-formed region.
+(In fact, the region where \TeX\ detects some inconsistency, which sometimes
+may be much further that the error itself). The hilighting disappears as
+soon as the slice is successfully \TeX-ed (and re-displayed). 
+
+When an error occurs the {\whizzy} shell window also pops up after a few
+seconds of latency (if you keep typing, {\whizzy} asumes that you are in the
+middle of editing some {\TeX} macro or environment only highlights the
+error). 
+
+\instruction
+{You may intentionally typed some incorrect tex to see how the error is
+highlighted.}
+
+
+\section {Implementation}
+
+This section briefly describe the implementations, composed of three parts.
+
+\subsection {Code} 
+
+\subsubsection* {Emacs code}
+
+Besides administrative business, the main trick is to use 
+\lst"post-command-hook" to make emacs watch changes. 
+It uses \lst"buffer-modified-tick" to tell if any editing has actually
+occurred, and compare the point position with the (remembered) position of
+the region being displayed to see if saving should occur. It also uses
+\lst"sit-for" to delay savings until idleness or a 
+significant number of editing changes. 
+
+{\whizzy} can also show the current point on the display, in which case
+slices are also recomputed when the cursor moves, but with lower priority.
+
+\subsubsection* {TeX code}
+
+The main TeX hack is to build a format file so as to avoid reloading the
+whole macros at each compilation. This is (almost\footnote{{\tt
+$\backslash$begin\{document\}} should be typed as such without any white
+white space}) entirely transparent, that is, the source file does not have
+to understand this.
+
+The hack is to redefine \lst"\documentclass" which in turn  redefines
+\lst"\document" to execute \lst"\dump" (after redefining \lst"\document"
+to its old value and \lst"\documentclass" so that it skips everything till
+\lst"\document"). This is rather robust ---it even works with 
+complex macros such as my prefered package \lst"localmacros" that reads
+macros at the end of the document.
+
+There are a few other less important hacks. For instance, the following
+macros are also made available (but only for expert use):
+\begin {itemize}
+\item
+\lst"\WysitexInput" is used by the shell-script to tell {\TeX} to dump page
+and section  numbers in some format that is later processed by unix to be
+passed back to emacs as eamcs-lisp code.
+\item
+\lst"\WysitexTex" is used by emacs to tell {\TeX} to adjust counters to
+the current section. 
+\item
+\lst"\WhizzyLine" is used by emacs to tell where the cursor is.
+Then \TeX\ will diplsay the cursor if possible, {\em ie.} if the cursor is
+not in a special mode. This usually works fine, but may sometimes interfere
+with the output. 
+\end {itemize}
+When compiling the format, {\whizzy} also look for a file of name
+\lst"whizzy.sty", which if existing is loaded at the end of the macros. 
+This may be used to add other macros in {whizzy} mode, {\em eg.} 
+some {\TeX} environments may be redefined to changed they type setting,
+according to whether the current line is inside or outside the environment. 
+(We have written such an extension for an exercise package that sends the
+answers at the end in an appendix, unless the cursor is inside the answer,
+in which case the answer is inline.)
+
+\subsubsection* {Unix code}
+
+Mainly, a unix shell-script is watching the spooler file.  It recompiles the
+format file (and the page and section number, but in batch mode) whenever
+the source file (its unix date) has changed  and 
+recompiles the slice whenever it is present (since {\whizzy} renames ---hence
+removes--- the slice before processing it).
+
+If the file has been recompiled successfully, it triggers the previewer
+(ghostscript or xdvi) so that it rereads the dvi or ps file. Otherwises, it
+process the {\TeX} log file and tries to locate the error. It then sends part
+of the log file with annotations to the \lst"*TeX-shell*" buffer from which
+emacs has been {\whizzy}, so that emacs can repport the error. 
+
+
+\subsection{Some dirty hacks}
+
+{\whizzy} works best with the \lst"advi" previewer, as explained below. 
+However, it also works with \lst"xdvi" and \lst"gv". 
+
+Sending the signal \lst"-HUP" to \lst"gv" should make it reopen the file.
+However, \lst"gv" does not execute the update if the newer version has the
+same time stamp as the older version. Fortunately, it executes the reopen if
+the new version has a modified time older than the old version :-) Here the
+ouput postcript file  is antidated whenever necessary to force \lst"gv"
+to reopen it.
+
+
+\subsection {Interaction between the components} 
+
+The control is normally done by emacs, which launches and kill the unix
+deamon. However, for robustness, the unix deamon will commit suicide if the
+previewer is dead, and in turn, the {\whizzy} mode will automatically turn
+itself off when it notices that deamon has dyied. This allows to turn off
+the {\whizzy} mode, simply by exiting the previewer.
+
+To that purpose, the deamon pid is saved in a file. 
+This is also used to prevent several deamon running on the same file. 
+Then {\whizzy} must be called with \lst"-kill" option to cleanup an  old
+running session, which is done automatically when the mode is turn off.
+
+
+\section {Short manual} 
+This section is a very short manual that describes how to install, use and
+parameterize {\whizzy}. 
+
+\subsection {Installation}
+
+The file \lst"whizzytex.el" should be installed in the appropriated directory, 
+the command \lst"whizzytex-mode" can be made autoload (and, for instance, can
+bound to the keep \lst"^C-^W", in latex-mode-map). 
+
+The file \lst"whizzytex" should be make executable, and visible in the emacs
+executable path (or the variable \lst"whizzy-command-name" should be
+adjusted in the file \lst"whizzytex.el"). 
+
+The file \lst"whizzytex.sty" should be installed at a place so that it is
+visible  from initex, or the DUMP variable should be adjusted in
+\lst"whizzytex".  
+
+The shell-script \lst"whizzytex" is written in bash and works for linux 6.2. 
+It should work with other systems as well, but some adjustements may be
+needed.
+
+\subsection {Configuration} 
+
+All parameters are assigned default values, so WysiTeX should do something
+reasonable on any latex file.
+Configuration can be done by setting emacs variables (for instance via a
+whizzytex-mode-hook) or by setting file-dependent parameters by 
+inserting configurations lines among the first lines of the file.
+
+Turning the {\whizzy} mode on, may ask the user to confirm or changed the
+default values if no local value has be specified (or if required explicity
+by appropriate optional argument).
+
+
+\subsubsection {Calling {\whizzy}}
+
+The main command is \lst"whizzytex-mode" is used to activate or desactive 
+{\whizzy} mode. It takes one optional parameter. 
+
+Without arguments it switches on and off the whizzytex-mode. With a zero or
+negative integer as argument it switches the mode off. With a strictly
+positive interger argument, it attempts to turn the mode on. This will
+examine the file for local configuration parameters, or for guessing a best
+mode for the file. If need be it will ask the user to confirm the default
+choises.
+
+If the argument is present and with a numeric value equal to 4, it will
+always ask the user to confirm (and let him change) the configuration
+variables.
+
+Emacs also offers several optional commands to move from slice to slice
+(see \lst"whizzy-suggested-hook" in the \lst"whizzytex.el" file). 
+There are also experimental commands for turning pages in the displayed
+document. 
+
+
+\subsubsection {File-based configuration}
+
+A configuration line is matched by the regular expression:
+$$
+\lst`"^%; *\\(whizzy[^ \n]*\\) +\\([^\n]\\) *$"`
+$$
+and should appear in the first 400 bytes of the file. 
+
+The first group is a configuration keyword. 
+So that the only-two  keywords are \lst"whizzy" and 
+\lst"whizzy-paragraph". If two confirgurations
+lines have the same keyword, only the first one is taken into
+account.
+\begin{description}
+\item[whizzy]
+This is the main configuration line and should match the following regular
+expressions (otherwise, {\whizzy} will assigned default values to the
+missing arguments): 
+$$
+\lst`"\\([^ \n]+\\) +\\([^ \n]+\\) +\\([^\n]*[^ \n]\\) *$"`
+$$
+The first group determines the mode, {\i.e. em} the type of document, and
+accordingly how it should be sliced.  The different modes are descriped in
+section~\ref {modes}.
+
+The second group defines the previewer type and are described in
+section~\ref{types}.  The third group, called is the previewer parameter
+whose semantics depends on the previwer type.
+
+\item[whizzy-paragraph]
+This sets the emacs-variable whizzy-paragraph to the \lst"<args>"
+which should be a regular-expression string. 
+\end{description} 
+
+
+% \paragraph {File names} 
+% The command will be passed the name of the target file
+% \lst"_whizzy_$BASICFILENAME.tex", which it should produce from the source 
+% file \lst"_whizzy_$BASICFILENAME.new" (the under which whizzy renames 
+% the slice saved by emacs). 
+% Here \lst"$BASICFILENAME" is the name of the file under \lst"WysiTeX"
+% stripped off its suffix. By default, \lst"whizzy" will the source to
+% the target. 
+%$
+
+
+\subsubsection {Emacs global configuration}
+
+\paragraph {Emacs cool bindings}
+
+The emacs mode defines the command \lst"whizzy-next-slice" and
+\lst"whizzy-previous-slice", to move from slices forward or backward.
+Binding these to appropriate keys will help you move pages from the emacs
+buffer. 
+
+These can be define using \lst"whizzytex-mode-hook". 
+{\whizzy} does not do any default binding for you, since those are often
+annoying when in conflict with personal bindins. 
+However, it defines a function \lst"whizzy-suggested-hook", so that you can
+get default bindinds by adding the line
+\begin{verbatim}
+    (add-hook whizzytex-mode-hook 
+        (function whizzy-suggested-hook))
+\end{verbatim}
+to your \lst".emacs" file. 
+Then, you will get most useful binding (see only help). 
+In particular, this will install a \lst"Whizzy" menu, from which you can
+call for help.
+
+Similarly, you can remove the other optional features, 
+such as error-display that are on by default, by adding the line
+\begin{verbatim}
+    (add-hook whizzytex-mode-hook 
+        (function whizzy-remove-options-hook)
+\end{verbatim}
+to your \lst".emacs" file.
+
+We also recommend the line:
+\begin{verbatim}
+    (autoload 'whizzytex-mode "whizzytex" 
+       "Local mode for interactive previewing of TeX" t)
+\end{verbatim}
+
+\paragraph {Emacs configuration variables}
+
+You can also change other configuration parameters globally by changing the
+default values of whizzytex-mode emacs variables. 
+Configurable variables are all listed at the beginning of the
+\lst"whizzytex.el" file. You can change them directly, or using a 
+the \lst"whizzytex-mode-hook". 
+
+
+\subsection {Modes} 
+\label {modes}
+
+WysiTeX recognizes three modes \lst"slide", \lst"section", and \lst"document". 
+The mode determines the slice of the document beeing displayed and how
+frequently updates occurs. 
+\begin{description}
+
+\item [slide]
+
+The mode \lst"slide"  is mainly used for documents of the class seminar. 
+In slide mode, the slide is the text bewteen two \lst"\begin {slide}"
+comments (thus,  the text between two slides is displayed after the
+preceeding slide).  
+
+In slice modes, overlays are ignored {\em i.e.} all overlays all displyed in
+the same slide, unless a command
+\lst"\overlay {"$n$\lst"}" occurs on the left of the point, on the same line
+(if several commands are on the same line, the 
+right-most one is taken), in which case only layers $p \le n$ are displayed.
+
+\item [section]
+In \lst"section" mode, the slice of text is the current chapter, section.
+
+\item [subsection]
+As \lst"section" but also slice at subsections. 
+
+\item [paragraph]
+The \lst"paragraph" mode is a variation on section mode where, the separator
+\lst"whizzy-paragraph" is defined by the user (set to two empty lines by
+default) instead of using \lst"\section"  and \lst"\subsection" commands. 
+subsection.
+
+\item [document]
+In \lst"document" mode, there is no sectionning unit and the whole document is
+recompiled altogether. Currently, pages are not turned to point and the 
+cursor is not shown in \lst"document" mode, because full document is not
+sliced. (A slicing document mode could be obtained by working in paragraph
+mode, with an appropriate regexp.)
+
+
+\end{description}
+Both \lst"section" and \lst"paragraph" modes sets on the ``marks'' mode
+that tells the shell to recompilation section and page numbers in batchmode
+so that emacs can annotation sections commands with this numbers, and
+finally tell tex to adjust the numbers accordingly.
+
+There are several possible (future?) improvements to the \lst"section" mode:
+\begin {enumerate}
+
+\item
+An \lst"auto" mode could decide  at subsections or sections only could be made
+depending on the (source code) length of the current section. 
+
+\item
+The enclosing section title could be included when in a subsection.
+(Actually, all sections could be displayed, moving into sections and
+subsections acting as opening drawers.
+
+\end {enumerate}
+
+\subsection {Previewer types}
+\label {types}
+
+The previewer types can have three possible values: 
+\begin{description}
+\item[{\bf {\tt -dvi} or {\tt -ps}}]\indent
+
+These indicate that file should be processed down to \lst"dvi" or
+\lst"Postscript" format respectively. Then, the previewer parameter is the
+command to call 
+the previewer.  This string will be passed as such to to the {\whizzy}
+shell-script. Note that the name of the \lst"dvi" or postscript file will be
+appended to the previewer's command.  Actually, other optional parameters to
+the {\whizzy} shell-script can be added at the end of the previwer
+parameter.  Arguments that contain blanks should be quoted (see \ref
+{make}).  (For instance \lst"-pre <command>" can be used to define a
+preprocessor to transform the slice into an input file for latex (\lst"cat"
+is used by default).
+
+\item[{\bf {\tt -master}}]\indent
+
+This previewer type must be used when the file is not a {\LaTeX} document
+but only a {\LaTeX} file included in a {\LaTeX} document. 
+In this case, the third group is the name of the master file of the {\LaTeX}
+document, {\em i.e.}, the one on which the \lst"latex" command can be run.
+
+When a file is masterred, turning {\whizzy} mode on requires that another
+buffer is already visiting the master file and that this buffer is in
+{\whizzy} mode. Turning {\whizzy} mode off in a mastered file only affects
+the local buffer and leaves {\whizzy} running on the master file. 
+
+When the file is mastered, the document mode will only slice the current
+file, not the entire {\LaTeX} document of the master file.
+
+\end{description}
+
+
+\subsection {Using the command make} 
+\label {make}
+
+This is made possible by using the \lst"-pre" option on the command line
+to  define a command that will be used to process the slice 
+\lst"_whizzy_$BASICFILENAME.slc" saved by emacs
+into the file \lst"_whizzy_$BASICFILENAME.slc" to be be processed 
+by latex.
+
+The command command \lst"make" can be used as a preprocessor (with an
+appropirate \lst"Makefile").  However, one may have to work around
+\lst"make"'s notion of time, which is usually too rought. 
+This is safe, since
+{\whizzy} tests itself for needed recomputations: it does so by dropping any
+new version in a pool directory (\lst"_whizzy_$BASICFILENAME/"). 
+
+\subsection {Watching other files}
+
+{\whizzy} is designed to watch other files than just the slice saved by
+emacs. In fact, it watches any file dropped in the pool directory. 
+For instance, 
+if your source file uses images, you can just change the image and
+drop the new version in the pool. Then {\whizzy} will pick the new version,
+move it to the working directory and recompile a new slice. Be aware of name
+clashes: if you drop a file in the pool, it will automatically be move to
+the working directory with the same name, overriding any file of the same
+name sitting there. 
+
+By default, {\whizzy} send itself a \lst"kill -STOP" signal when it finds
+nothing in the pool (this allows you to let {\whizzy} inactive for hours
+without consuming any CPU. Correspondingly, when emacs drops a new file in
+the pool, it sends a \lst"kill -CONT" signal. If you want to watch other
+files and not have to deal with waking up {\whizzy} you can pass the extra
+option \lst"-nonstop" to the \lst"whizzytex" command-line; then it will sleep
+instead of stopping itself, and will periodically watch for news files 
+in the pool without you need to signal it to continue. 
+In case, you want to keep with the stop-mode and wake it up explicitly, the
+process number is stored in the file \lst"._whizzy_$BASICNAME.tex".
+
+
+\subsection {Frequency of recompilation} 
+
+To obtain maximum {\whizzy} effect, a new slice should be save after any
+edition changed or any displacement that outside of the current slice.
+However, to avoid overloading the machine or useless and anoying
+refreshments, some compromise can is made: when either edition or movement
+is continuous, saving a new slice is delayed until at least 10 editing
+changes. The continuity is controlled in miliseconds by the emacs variable
+\lst"whizzy-pause". This variable is set to \lst"200" in slide
+mode, to \lst"1000" in section mode, and to \lst"2000" in document mode.
+
+The format is automatically recompiled at the beginning of each session, and
+whenever the buffer continaing the file is saved. That is, to load use new
+packages or define new global macros (before the \lst"\begin{document}"), it
+sufficies to save the current file.
+
+\subsection {Cross-references, page and section numbers} 
+
+The slice is always recompiled with the \lst".aux" file of the whole
+document.  In paragraph mode, cross references and section numbers are 
+recompiled whenever the buffer itself is saved (manually). 
+This recompilation operates in batch and concurrently with the recompilation
+of slices, so it may take several slices before the new counters or
+references are adjusted.
+
+(The recompilation of the whole document is off in slide mode.) 
+
+
+\subsection {Errors} 
+
+When  latexing a slice produces an empty file or an error, the display is
+unchanged. Instead, {\whizzy} attempts to localize the error in the editing
+bufffer. First it computes the word difference with the previous sucessfully
+recompiled slice. If this succeeds and the difference region is visible
+(appended or changed) and connexe, then this difference  is highlighted;
+otherwise, the log of the session is printing in the emacs tex-shell buffer, 
+and an attempt is made to localize and highlight the text in the editing
+buffer that is involved with the error.
+
+
+If an error occur when building the initial format, the log of the session
+is also displayed, but then, the mode is turned off. That is, a session can
+only be started in a configuration where the format can be correctly build. 
+
+If a reformating error occurs, the display won't be changed until the format
+can correctly be rebuilt.
+
+\end{document}
+
+\end{document}

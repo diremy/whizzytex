@@ -1,0 +1,2 @@
+/home/morgon/remy/bin/whizzytex -marks -dvi dview -nowatch -html #Start-Document h.tex
+dview -nowatch -html #Start-Document

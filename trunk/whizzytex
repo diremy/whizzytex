@@ -1,0 +1,476 @@
+#!/bin/sh
+
+### Configuration
+
+# time in milliseconds to sleep when the pool is empty.
+typeset -i WYSIPAUSE=100
+
+TEXERRORMAXLINES=50
+TEXERRORAROUND=20
+
+# whether Whysitex should send itself a STOP signal (then it must be waken up)
+# or just sleep for a while when done and no slicing is available
+
+STOP=true
+
+# name (or full path) of the dump package file (without the extension)
+
+DUMP=whizzytex
+
+# Signals telling gv and xdvi to refresh
+
+SIGDVI=SIGUSR1
+SIGPS=SIGHUP
+
+### End of manual configuration
+
+case $# in
+ 0) echo 'Need a file name'; exit 1;;
+esac
+
+COMMAND="$0 $*"
+TOUCH=false
+MAKE=defaultmake
+
+DO=loop
+DOMARKS=false
+VIEW=ps
+VIEWCOMMAND=gv
+WATCHFILES=
+DEBUG=false
+while true
+do
+  case $1 in
+   -kill) DO=kill; shift;;
+   -wakeup) DO=wakeup; shift;;
+   -format) DO=format; shift;;
+   -pre) MAKE="$2"; shift 2;;
+   -marks) DOMARKS=true; shift;;
+   -nostop) STOP=false; shift;;
+   -marksonly) DO=marks; shift;;
+   -watch) WATCHFILES="$*"; shift $#;;
+   -debug) DEBUG=true; shift;;
+   -dvi)
+       VIEW=dvi;
+       case $2 in
+       .) VIEWCOMMAND=dview;;
+       *) VIEWCOMMAND=$2;;
+       esac
+       shift 2;;
+   -ps)
+       case $2 in
+       .) VIEWCOMMAND=gv;;
+       *) VIEWCOMMAND=$2;;
+       esac
+       shift 2;;
+   -*)
+       echo 'Unrecognized argument '"$1"'
+
+Usage whizzytex: 
+
+  whizzytex <option> ... <option> <file>
+
+where <option> is 
+
+    -kill 
+    -format 
+    -marks 
+    -pre <preproces-command>
+    -dvi <view-command> 
+    -ps <view-command> 
+
+  ' 1>&2
+       exit 1;;
+   *) break;;
+  esac
+done
+
+HERE=$(pwd)
+
+NAME=$(basename $1 .tex)
+FORMAT=\&$NAME
+WYSI=_whizzy_$NAME
+SLICE=$WYSI.new
+LOG=$WYSI.gol
+ERR=$WYSI.err
+
+errlog () { echo "$*" 1>&2; }
+log () { 
+  if [ -f $LOG ] 
+  then
+    grep -B 3 -A $TEXERRORAROUND -e '^!' $LOG | head -$TEXERRORMAXLINES $LOG;
+  fi
+  false; 
+}
+errlog "$COMMAND"
+
+LOCK=.$WYSI.tex
+
+if [ -f $NAME.tex ]
+then 
+   :
+else
+   echo "File $NAME.tex does not exist"
+   exit 1
+fi
+
+cleaning () {
+   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id) 
+   rm -f $WYSI.* $NAME.fmt 
+   rm -rf $WYSI
+   rm -f $LOCK
+   errlog "Cleaning WYSI=$WYSI, LOCK=$LOCK"
+}
+# trap cleaning EXIT
+
+suicide () {
+   [ -f $WYSI.id ] && kill -QUIT $(cat  $WYSI.id) 
+   rm -f $WYSI.* $NAME.fmt 
+   rm -rf $WYSI
+   if [ -f $LOCK ]
+   then
+     PID=$(cat $LOCK)
+     rm -f $LOCK
+     kill -KILL $PID
+   fi
+   errlog "Killing WYSI=$WYSI, LOCK=$LOCK"
+   exit 2
+}
+
+# To fix: does not work
+
+trap cleansuicide 3
+
+wakeup () {
+  kill -CONT $(cat $LOCK)
+}
+
+# Making format
+
+format () {
+ initex \&latex '\nonstopmode\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\usepackage{'"$DUMP"'}}\input{'"$NAME.tex"'}'
+}
+
+SECTION='\\\(chapter\|section\|subsection\)'
+intersect () {
+    sort $WYSI.sec $WYSI.pag > $WYSI.spg
+    sort -n -t : -u $WYSI.pag $WYSI.sec | sort | comm -1 -3 - $WYSI.spg > $WYSI.sec.1
+    sort -n -t : -u $WYSI.sec $WYSI.pag | sort | comm -1 -3 - $WYSI.spg > $WYSI.pag.1
+    mv $WYSI.pag.1 $WYSI.pag
+    mv $WYSI.sec.1 $WYSI.sec
+}
+marks () {
+    grep -n -e "^$SECTION" $NAME.tex | \
+    sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/' \
+      > $WYSI.sec
+    initex \&$NAME '\WysitexInput{'"$NAME"'}'
+    intersect
+    ( echo "(setq whizzytex-marks '("; \
+      ( join -t @  $WYSI.pag $WYSI.sec | \
+        sed -e 's/^[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/("\\\1\3"."\\WhizzyTeX\2")/' -e 's/\\/\\\\/'); \
+      echo "))" \
+    ) >> $WYSI.tmp
+    cat $WYSI.tmp
+
+}
+batchmarks () {
+    grep -n -e "^$SECTION" $NAME.tex | \
+    sed -e 's/^\([0-9]*\):'"$SECTION"'/\1:\2@/' -e 's/"/\\"/g' \
+        -e 's/\\/\\\\/g' \
+      > $WYSI.sec
+    if initex \&$NAME '\WysitexInput{'"$NAME"'}' 
+    then
+      cp $NAME.dvi $NAME.dview
+      if $1
+      then
+         intersect
+         ( echo "(setq whizzy-marks '("; \
+           ( join -t @  $WYSI.pag $WYSI.sec | \
+             sed -e 's/^[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/("\\\\\1\3"."\\\\WhizzyTeX\2")/' \
+           ); \
+           echo "))" \
+         ) > $WYSI.tmp
+         mv $WYSI.tmp $WYSI.pos
+      fi
+      if [ -f $NAME.toc ]; then cp $NAME.toc $WYSI.toc; fi
+      if grep 'LaTeX Warning: Citation' $NAME.log
+      then
+         bibtex $NAME; 
+         if [ -f $NAME.bbl ]; then cp $NAME.bbl $WYSI.bbl; fi
+         true
+      fi
+    else 
+       rm -f $WYSI.pag; false
+    fi
+    
+}
+
+
+############################################################################
+# wdiff
+
+wordify () { 
+    tr '\n' '' | 
+    sed -e 's/[ ][ ]*//g' | \
+    tr '' '\n' 
+}
+
+wdiff () { 
+  FST=$1
+  SND=$2
+  DIF=$WYSI.dif
+  diff $FST $SND > $DIF
+  if [ $(grep -v -e '^[-><]' $DIF | wc -l) -eq 1 ] && \
+     [ $(wc -l < $DIF) -lt 3 ] && \
+       grep -e '^[1-9][0-9,]*[ac]' $DIF > $DIF.lin
+  then
+    sed $DIF -n -e '/^< /s/^< //p' > $FST.lin
+    sed $DIF -n -e '/^> /s/^> //p' > $SND.lin
+
+    wordify < $FST.lin > $FST.wrd
+    wordify < $SND.lin > $SND.wrd
+
+    diff $FST.wrd $SND.wrd > $DIF.wrd
+
+    if [ $(grep -v -e '^[-><]' $DIF.wrd | wc -l) -eq 1 ] && \
+         grep -e '^[1-9][0-9,]*[ac]' $DIF.wrd > /dev/null
+    then
+       (
+        echo '<Error in Line'
+        cat $DIF.lin
+        echo Word
+        grep -e '^[0-9]' $DIF.wrd
+        echo ':'
+        sed $DIF.wrd -n -e 's/^> \(.*\)$/\1/p'; 
+        echo '>'
+       ) | tr '\n' ' '
+       echo     
+    else
+      false
+    fi
+  else 
+    false
+  fi
+}
+
+############################################################################
+
+
+case $DO in
+  kill) suicide && exit 0 || exit 1;;
+  wakeup) wakeup && exit 0 || exit 1;;
+  format) format && exit 0 || exit 1;;
+  marks) marks && exit 0 || exit 1;;
+  loop) 
+      # To ensure that only one deamon is running on the spool file.
+      if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
+      then
+        echo 'Remove running process first'
+        exit 1
+      else
+        echo $$ > $LOCK
+      fi
+   ;;
+esac
+
+if [ -f $NAME.fmt -a $NAME.tex -ot $NAME.fmt ]
+then 
+  :
+else
+  echo -n '<Initial formating '
+  if format >$LOG 2>$ERR && [ -f $NAME.fmt ]
+  then
+     echo 'succeeded>'
+  else
+     echo 'failed>'
+     echo '<*** Fatal error: could not build initial format ***>'
+     [ -f $ERR ] && cat $ERR
+     log
+     echo '<Exiting>'
+     suicide
+  fi
+fi
+
+# Initial file
+
+echo '\begin{document}[Initial empty page]\end{document}' > $WYSI.nil
+
+# Texing...
+
+echo $VIEWCOMMAND 1>&2
+
+ANTIDATE=$(date +%m%d%H%M.%S)
+case $VIEW in
+  ps)
+    preview () {
+        dvips -o $WYSI._ps $WYSI.dvi 2>/dev/null && \
+        { if [ $WYSI._ps -nt $WYSI.ps ]; then true; \
+             else touch -t $ANTIDATE $WYSI._ps; fi; \
+          mv $WYSI._ps $WYSI.ps; }
+        }
+    view () {
+       $VIEWCOMMAND $WYSI.ps &
+       }
+    SIG=$SIGPS
+    ;;   
+  dvi)
+    preview () { mv $WYSI.dvi $WYSI.dview; }
+    view () {
+      $VIEWCOMMAND $WYSI.dview &
+      }
+    SIG=$SIGDVI
+    PSBUG=0
+    ;;   
+esac
+
+newfiles () {
+  mv $(find $HERE/$WYSI -type f -print || suicide) $HERE/  2>/dev/null
+}
+
+defaultmake () { mv $SLICE $WYSI.tex 2>/dev/null; true; }
+
+preprocess () {
+  if $MAKE $WYSI.tex >$LOG 2>$ERR && [ -f $WYSI.tex ]
+  then 
+     true
+  else
+     echo '<Preprocessing failed>'
+     [ -f $ERR ] && cat $ERR
+     log
+     false
+  fi
+}
+
+process () {
+  rm -f $WYSI.aux
+  echo -n '<Recompiling '
+  if { initex $FORMAT $WYSI && preview; } > $LOG
+  then
+     echo 'compilation succeeded>'
+     ln -f $WYSI.tex $WYSI.xet
+  else
+     echo 'recompilation failed>'
+     if [ -f $WYSI.xet ] && wdiff  $WYSI.xet $WYSI.tex 
+     then 
+        :
+     else
+        log
+        echo 'l.'$[ $(wc -l < $WYSI.tex) - 1 ]' '
+     fi
+     echo '<Continuing>'
+     false
+  fi
+}
+
+# debugging information
+
+if $DEBUG; then 
+errlog "NAME=$NAME"
+errlog "WYSI=$WYSI"
+errlog "DOMARKS=$DOMARKS"
+fi
+
+# Initial run
+
+# to make sure the dvi file exists 
+initex $FORMAT $WYSI.nil > $LOG && preview || log
+
+# To give it a chance to see citations and other global information.
+
+if [ -f $NAME.bbl ]; then cp $NAME.bbl $WYSI.bbl; fi
+if [ -f $NAME.toc ]; then cp $NAME.toc $WYSI.toc; fi
+
+# process $WYSI.tex is present. Will override $WYSI.dvi if it succeeds
+
+mkdir $WYSI 2>/dev/null
+
+if newfiles; then preprocess && process; fi
+
+# lauch the previewer
+if view 2>$ERR
+then 
+   ID=$!
+   echo $ID > $WYSI.id
+   sleep 1
+   if kill -CONT $ID
+   then 
+      : 
+   else
+      echo '<Fatal error: viewing process terminated prematurely>' 
+      suicide
+   fi
+else 
+   echo '<Fatal error: viewing process failed>'
+   cat $ERR
+   suicide
+fi
+
+whole () {
+#     if head $WYSI.tex | grep '%DOMARKS'
+#     then DOMARKS=true
+#     else DOMARKS=false
+#     fi
+#  if $DOMARKS && [ ! -f $WYSI.pag ]
+#  then 
+   echo '<Recompiling whole document>'
+   if batchmarks $1 </dev/null >$LOG.pag
+   then
+      echo '<Whole document updated>'
+      if $1; then echo '<Pages and sections updated>'; fi
+   else
+      echo '<Whole document recompilation failed>'
+   fi
+#  fi
+}
+whole $DOMARKS
+
+# The loop watching changes
+
+PSDATE=0
+while true
+do
+  REFORMATED=false
+  if [ $NAME.fmt -ot $NAME.tex ]
+  then
+      echo '<Reformating>'
+      touch -r $NAME.tex $NAME.fmt
+      mv -f $NAME.fmt $WYSI.fmt
+      if format > $LOG
+      then
+          echo '<Reformating succeeded>'
+          REFORMATED=true
+          whole $DOMARKS
+#            if $DOMARKS 
+#            then
+#               echo '<Recomputing pages and sections>'
+#               if batchmarks </dev/null >$LOG.pag
+#               then
+#                  echo '<Pages and sections updated>'
+#               else
+#                  echo '<Pages and sections are ignored>'
+#               fi
+#            fi
+      else
+          mv -f $WYSI.fmt $NAME.fmt
+          echo '<Reformatting failed>'
+          log
+          echo '<Contuning with the old format>'
+      fi
+  fi
+  if newfiles && preprocess || $REFORMATED
+  then
+      if process
+      then 
+         kill -$SIG $ID \
+          || (echo '<Fatal error: could not refresh! Exiting>'; \
+              suicide; exit 2)
+      else
+         echo '<Continuing>'
+      fi
+  else
+      if $STOP; then kill -STOP $$; else usleep $WYSIPAUSE; fi
+      kill -CONT $ID || (suicide; exit 2)
+  fi
+done
+
+exit 0
