@@ -1,0 +1,98 @@
+ORIGIN=1.00
+VERSION=$(ORIGIN)
+
+# Url of sources
+URL=http://pauillac.inria.fr/whizzytex
+
+# Command to retreive new versions
+WGET=wget --cache off --timestamping
+
+# Short-cut variables
+WHIZZY=whizzytex
+ODIR=$(WHIZZY)-$(ORIGIN)
+VDIR=$(WHIZZY)-$(VERSION)
+OTAR=$(ODIR).tgz
+VTAR=$(VDIR).tgz
+OFILE=$(ODIR)/VERSION
+VFILE=$(WHIZZY).version
+OTAG=$(ODIR)/.VERSION_$(ORIGIN)
+VTAG=$(VDIR)/.VERSION_$(VERSION)
+
+# Command to recursively call itself
+MANAGER=whizzytex/Manager
+REMAKE=$(MAKE) -f $(MANAGER)
+
+
+help: link
+	@echo 'Usage: '
+	@echo '  $(REMAKE) upgrade install clean'
+	@echo '  $(REMAKE) VERSION=<version> download ' 
+	@echo '  $(REMAKE) VERSION=<version> dowgrade ' 
+
+.PHONY: link
+link:
+	@if ! test -e whizzytex; then \
+	  echo 'Creating the link whizzytex to current version $(ODIR)'; \
+	  ln -s $(ODIR) $(WHIZZY); \
+	elif ! test -L whizzytex; then echo \
+	  'whizzytex exists but is not a symbolic link to current version'; \
+	  false; \
+	elif ! test -f $(MANAGER); then \
+	  echo 'Strangely, $(MANAGER) does not exists'; false; \
+	fi
+
+.PHONY: $(VFILE)
+$(VFILE):
+	$(WGET) $(URL)/$@
+
+$(VTAR): 
+	$(WGET) $(URL)/$(VTAR)
+
+$(VTAG): $(VTAR) 
+	cd whizzytex; make clean
+	gunzip -c $(VTAR) | tar -xvf -
+	touch -r $(VTAR) $(VTAG)
+	@if ! test -f $(VDIR)/Makefile.config; then \
+	if test "`head -1 $(VDIR)/Makefile.config.in`" \
+	      = "`head -1 $(WHIZZY)/Makefile.config.in`"; \
+	then cp $(WHIZZY)/Makefile.config $(VDIR); \
+	else \
+	  echo '*Configuration has changed.'; \
+	  if diff $(VDIR)/Makefile.config $(WHIZZY)/Makefile.config.in; \
+	  then echo 'Using new default configuration.'; \
+	  else \
+	    cp $(WHIZZY)/Makefile.config $(VDIR)/Makefile.config; \
+	    echo 'Copied old configuration to Makefile.config;'; \
+	    echo 'You need to check Makefile.config or reconfigure;'; \
+	  fi; \
+	fi; fi 
+	rm -f $(WHIZZY)
+	ln -s $(VDIR) $(WHIZZY)
+
+show-versions: $(VFILE) $(OFILE) 
+	@echo "Running version `cat $(OFILE)` ---`stat $(OFILE)|grep Modify:`"
+	@echo "Current version `cat $(VFILE)` ---`stat $(VFILE)|grep Modify:`"
+	
+upgrade: link $(VFILE)
+	$(REMAKE) VERSION=`cat $(VFILE)` ORIGIN=`cat $(OFILE)` \
+	   download downgrade 
+
+download: 
+	$(WGET) $(URL)/$(VTAR)
+
+downgrade: $(VTAG) build
+
+build:
+	cd whizzytex; make all
+
+install:
+	cd whizzytex; make install
+
+clean:
+	cd whizzytex; make clean
+
+.PHONY: help whizzytex-version show-versions
+.PHONY: upgrade download update download unpack version repack 
+.PHONY: build install clean
+
+
