@@ -1,9 +1,43 @@
-Time-stamp: <2002-03-04 01:05:32 remy>
+NOT COMMITTED YET:
+===================
 
-RECENT CHANGES:
+Emacs-mode:
 
-Emacs-mode
+Shell-script: 
 
+ * renamed filename.wiz into filename.waux (not deleted on exit).
+ * rename .dview extension into .wdvi and filename.wdvi is deleted on exit.
+ * renamed auxiliary filename.fmt into _whizzy_filename.fmt (deleted on exit).
+
+LaTeX macros:
+
+ * renamed filename.wiz into filename.waux
+
+Installation/Documentation:
+
+SINCE LAST RELEASE:
+===================
+
+Emacs-mode:
+
+Shell-script: 
+
+ * Fix a typo in read of commands (duplex reformat were not understood)
+
+LaTeX macros:
+
+Installation/Documentation:
+
+ * Reorganized Web page, added FAQ.html
+
+
+OLDER CHANGES:
+==============
+
+Emacs-mode:
+
+ - Version 1.00
+ * fixed whizzy-read-mode-from-file 
  - Version 1.00-beta
  * Added whizzy-write-configuration to dump file configuration
  * Fixed key bindings in menu
@@ -17,18 +51,23 @@ Emacs-mode
 
 Shell-script: 
 
+ - Version 1.00
  - Version 1.00-beta
  - Version 1.00-alpha
  * Cleaned up and rewritten for version 1.00-alpha
 
 LaTeX macros:
 
+ - Version 1.00
  - Version 1.00-beta
  - Version 1.00-alpha
  * Cleaned up and rewritten for version 1.00-alpha
 
-Installation:
+Installation/Documentation:
 
+ - Version 1.00
+ * Moved URL  to http://pauillac.inria.fr/whizzytex
+ * Manager check for compatility of Makefile.config of previous version
  - Version 1.00-beta
  * Improved the manual.tex documentation. 
  * Makefile.config can default to a copy of Makefile.config.in
@@ -40,6 +79,5 @@ Installation:
  - Version 1.00-alpha
  * Makefile for version 1.00-alpha
 
-
-OLDER CHANGES:
+Last-modified: <2002-03-09 12:07:21 remy>
 

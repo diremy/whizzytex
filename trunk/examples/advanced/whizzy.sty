@@ -19,7 +19,7 @@
    \fi \@do}%
  \latex@proof}
  \expandafter \let \expandafter \latex@endproof \csname endproof\endcsname
- \def \whizzy@putproof {\@wiz
+ \def \whizzy@putproof {\whizzy@aux
  {\string \putproof
      {\ThmName\the\whizzy@thm}{\ThmLabel}{\the\inputlineno}}}
  \def \endproof {\whizzy@putproof \latex@endproof}

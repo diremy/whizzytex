@@ -1,6 +1,7 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
-VERSION=1.00
+RELEASE=1.00
+VERSION=1.00i
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 
@@ -12,8 +13,11 @@ TARFILES = $(patsubst %,src/%,$(SRCFILES)) \
 	    Makefile.config.in byte-compile.el configure configure.el \
             Makefile Manager doc examples 
        
-EXPORTS = index.html $(NAME).tgz  manual.dvi doc/manual.html \
-           CHANGES COPYING GPL INSTALL VERSION FAQ
+EXPORTS = index.html animation.html \
+	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
+	   $(NAME).tgz  manual.dvi doc/manual.html \
+           CHANGES COPYING GPL INSTALL VERSION FAQ.html FAQ
+
 PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
 
 whatelse: 
@@ -27,15 +31,35 @@ doc/manual.dvi: doc/manual.tex VERSION
 manual.dvi: doc/manual.dvi
 	cp $< $@
 
+FAQ: FAQ.html
+	lynx -dump $< > $@
+
+FAQ.html: FAQ.tex
+	hevea -o $@ -exec xxdate.exe $<
+
+index.html: index.htm makefile
+	sed -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' $< > $@
+
+animation.html: index.html
+	sed -e 's/009.gif/.gif/g' \
+	    -e 's/animation.html/index.html/g' $< > $@
+
+emacs.gif: anim/animation.tex anim/animation.sty anim/Makefile
+	cd anim; make $@
+	cp anim/$*{,009}.gif .
+
+activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
+	cd anim; make $@
+	cp anim/$*{,009}.gif .
+
+
+
 doc/manual.html: doc/manual.tex manual.dvi
 	hevea -o $@ $<
 
 
 VERSION: makefile
 	test `grep '^ORIGIN=' Manager` = 'ORIGIN=$(VERSION)'
-	test "`grep '^version is' index.html | \
-	  sed  -e 's/.*="whizzytex-\(.*\)">whizzytex-\(.*\)<.a>/\1,\2/' \
-	       `" = '$(VERSION).tgz,$(VERSION).tgz'
 	echo $(VERSION) > $@
 
 FILES: $(TARFILES) makefile
@@ -78,9 +102,14 @@ tardir/whizzytex.elc: tardir/whizzytex.el
 	if grep -e '\*\*' log; then rm -f $@; false; \
 	else rm log; fi
 
-export: $(EXPORTS) 
+export: $(EXPORTS) xxxport
 	rcp $(EXPORTS) $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
+	mv $(NAME).tgz archive
+
+xxxport: 
+	make NAME=whizzytex-xxx whizzytex-xxx.tgz
+	rcp whizzytex-xxx.tgz $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean
@@ -97,6 +126,6 @@ superclean: clean
 .in.out:
 	./configure < $<
 
-.SUFFIXES: .tgz .in .out
+.SUFFIXES: .tgz .in .out .htm .tex .html .gif
 
 include Makefile
