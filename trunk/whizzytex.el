@@ -24,7 +24,7 @@
 (defun whizzy-sit-for (seconds &optional milliseconds display)
   (sit-for seconds milliseconds display))
 
-(if (not (boundp 'running-xemacs)) (defvar running-xemacs))
+(if (boundp 'running-xemacs) nil (defvar running-xemacs nil))
 (cond
  (running-xemacs
   (require 'overlay)
