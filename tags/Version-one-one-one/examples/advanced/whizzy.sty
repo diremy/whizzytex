@@ -1,0 +1,37 @@
+\@ifundefined {WhizzyTeX}{}
+{\let \latex@proof \proof
+ \let \latex@enddocument \enddocument
+% \def \enddocument {\inputproofs{Solutions to
+% exercises}\latex@enddocument}
+\newcount \whizzy@thm
+\def \ThmName {???}%
+\def \ThmLabel {*}%
+\def \proof 
+ {\@ifundefined {whizzy@linelimit}{}%
+  {\let \@do \relax
+   \global \advance \whizzy@thm by 1
+   \expandafter \let \expandafter \@aux
+         \csname EndExoLine\ThmName\the\whizzy@thm\ThmLabel\endcsname
+   \ifx \@aux \relax \else 
+       \ifnum \the\inputlineno<\whizzy@line
+          \ifnum \whizzy@line<\@aux \let \@do \@answer@laterfalse 
+       \fi\fi
+   \fi \@do}%
+ \latex@proof}
+ \expandafter \let \expandafter \latex@endproof \csname endproof\endcsname
+ \def \whizzy@putproof {\whizzy@aux
+ {\string \putproof
+     {\ThmName\the\whizzy@thm}{\ThmLabel}{\the\inputlineno}}}
+ \def \endproof {\whizzy@putproof \latex@endproof}
+ \expandafter \let \expandafter \Endnowproof 
+         \csname endnow-proof\endcsname
+ \expandafter \def \csname endnow-proof\endcsname
+     {{\whizzy@putproof}\Endnowproof}
+ \def \putproof#1#2#3{\expandafter \let \expandafter \@tmp
+       \csname EndExoLine#1#2\endcsname  \ifx \@tmp \relax 
+        \expandafter \gdef \csname EndExoLine#1#2\endcsname {#3}%
+       \fi}
+\let \latex@mpr@and \mpr@and
+\def \mpr@and {\latex@mpr@and \whizzy@writelineno}
+}
+

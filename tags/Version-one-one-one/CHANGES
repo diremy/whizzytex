@@ -1,0 +1,162 @@
+NOT COMMITTED YET (OR EXPERIMENTAL):
+====================================
+
+Emacs-mode:
+
+Shell-script: 
+
+LaTeX macros:
+
+Installation/Documentation:
+
+SINCE LAST RELEASE:
+===================
+
+Emacs-mode:
+
+ - Version 1.1.1
+ * warn and pop-up interaction window when fails during initialization
+ * added debug variable in emacs and menu entry to toggle it
+ * move to the first slice in not already in a slice when mode is turn on
+ * fixed (partially?) the bug with the cursor moving abruptly to the end of
+   buffer, when input was too fast.
+ * added a timer to make the slice always consistent after 2s. 
+ * replaceed sit-for by a timer to pop-up the interaction buffer after 2s. 
+ * added BIBTEX switching support, to allow use of jbibtex.
+ * added per-file hooks
+ * fixed/changed parsing of options
+ * added parsing of the option -dvicopy
+ * recognizes advi driven Next-Slice and Previous-Slice moves 
+   (by default, right and left clicks in Upper Left corner of the advi windown)
+
+Shell-script: 
+
+ - Version 1.1.1
+ * warn when fails during initialization
+ * keep log files when turn off in debug mode
+ * added system and per-user CONFIGFILE support.
+ * added BIBTEX switching support, to allow use of jbibtex.
+ * support -display option for whizzytex.
+ * added the option -dvicopy to postprocess the dvi
+
+LaTeX macros:
+
+ - Version 1.1.1
+ * load advi.sty in advi mode
+
+Installation/Documentation:
+
+ - Version 1.1.1
+ * adjusted the manual for initialization
+ * add system and per-user CONFIGFILE support.
+ * add BIBTEX switching support, to allow use of jbibtex.
+
+OLDER CHANGES:
+==============
+
+Emacs-mode:
+
+ - Version 1.1
+ * \begin{document} and \end{document} should be preceded by space or newline 
+ * WhizzyEdit with multiple files. 
+ * Now loop detection when searching for a master-file...
+ * TeX-master only used when file is a slave (don't trust auctex).
+ * Turn mode off and on around revert-buffer.
+ * Turning mode off in the process buffer now (correctly) acts on the master. 
+ * searches for master file in latex log files in the current directory.
+ * searches for master file in buffers running whizzytex. 
+ * join between section and latex counters done in emacs instead of bash
+ * macro files can be whizzytex (action is to reformat on save-buffer)
+ * now leave write-region-annotate-functions global 
+   (should become compatible with new version of x-symbol package).
+ * added whizzy-edit to edit (move and resize) tex objects from advi.
+ * added detexification so that whizzy-goto-line works in latin mode. 
+ * whizzy-goto-line takes surounded words into accoun for better precision
+ * renamed -fmt into -format and added -fmt for format extension
+ * changed whizzy-setup-manager to give priority to buffer information
+ * added a pessimistic version of whizzy-show-point and menu entries
+ * made it work with all file extensions but those internally used
+ * added slower slice saving option for x-symbol compatibility.
+ * fixed whizzy-suppend
+ * added whole (document error) in line-mode string.
+ * complete rewrite of whizzy-show-position 
+ * fixed write-file-config.
+ * added -initex and -latex to set INITEX and LATEX
+ * fixed overlays of errors.
+ * temptative fix of whizzy-write-slice to work with X-symbols mode.
+ * added whizzy-key-bindings with two default values for latex or auctex
+ - Version 1.00
+ * fixed whizzy-read-mode-from-file 
+ - Version 1.00-beta
+ * Added whizzy-write-configuration to dump file configuration
+ * Fixed key bindings in menu
+ * Rewrote reading of file configuration.
+ * Added whizzy-load-factor to adjust slicing speed.
+ * Improved the online documentation (it is now pretty detailed)
+ * Récupération d'erreur lorsque le buffer principal est effacé ses esclaves.
+ * Corrected setup of multi-file documents
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
+
+Shell-script: 
+
+ - Version 1.1
+ * Replace suicide by cleanquit whenever possible.
+ * removed join between section and latex counters (now done in emacs).
+ * now start with /bin/sh and calls bash (seach in PATH).
+ * renamed FMT into FORMAT and added FMT for format extension.
+ * change newslice detection (does not watch other file but the slice)
+ * alternative when grep does not recognize -B
+ * made it work with all file extensions but those internally used
+ * refresh the duplex window if any when full document has been recompiled
+ * added checkconfig script
+ * added BASH configuration 
+ * added INITEX, LATEX, and LATEXFMT variables to enable platex
+ * renamed filename.wiz into filename.waux (not deleted on exit).
+ * rename .dview extension into .wdvi and filename.wdvi is deleted on exit.
+ * renamed auxiliary filename.fmt into _whizzy_filename.fmt (deleted on exit).
+ * Fix a typo in read of commands (duplex reformat were not understood)
+ - Version 1.00
+ - Version 1.00-beta
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
+
+LaTeX macros:
+
+ - Version 1.1
+ * added \SourceFile{<NAME>} macro to be used in processed files.
+ * made it work with all file extensions but those internally used
+ * fixed a bug in use of \everydisplay
+ * renamed filename.wiz into filename.waux
+ - Version 1.00
+ - Version 1.00-beta
+ - Version 1.00-alpha
+ * Cleaned up and rewritten for version 1.00-alpha
+
+Installation/Documentation:
+
+ - Version 1.1
+ * Clean up the documentation.
+ * Replace -KILL by -TERM in checkconfig.
+ * renamed manual.info in whizzytex.info
+ * Added examples/edit/{main.tex,whizzedit.sty}
+ * Change of Manager makefile to call ./configure when changed
+ * Rewrote ./configure to work in batch and take command line arguments
+ * Reorganized Web page, added FAQ.html
+ - Version 1.00
+ * Moved URL  to http://pauillac.inria.fr/whizzytex
+ * Manager check for compatility of Makefile.config of previous version
+ - Version 1.00-beta
+ * Improved the manual.tex documentation. 
+ * Makefile.config can default to a copy of Makefile.config.in
+ * Improved Makefile and configuration script
+ * Changer version upgrading (probably incompatible, do this one by hand)
+ * Version xxx tar in whizzytex-xxx now untars as whizzytex-xxx/<sources>
+ * Makefile for upgrading to new versions. 
+ * configuration script that attempts at finding a location for emacs files. 
+ - Version 1.00-alpha
+ * Makefile for version 1.00-alpha
+
+Last-modified: <2002-03-09 12:07:21 remy>
+
+

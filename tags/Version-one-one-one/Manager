@@ -1,0 +1,109 @@
+ORIGIN=1.1.1
+VERSION=$(ORIGIN)
+
+# Url of sources
+URL=http://pauillac.inria.fr/whizzytex
+
+# Command to retreive new versions
+WGET=wget --cache off --timestamping
+
+# Short-cut variables
+WHIZZY=whizzytex
+ODIR=$(WHIZZY)-$(ORIGIN)
+VDIR=$(WHIZZY)-$(VERSION)
+OTAR=$(ODIR).tgz
+VTAR=$(VDIR).tgz
+OFILE=$(ODIR)/VERSION
+VFILE=$(WHIZZY).version
+OTAG=$(ODIR)/.VERSION_$(ORIGIN)
+VTAG=$(VDIR)/.VERSION_$(VERSION)
+
+# Command to recursively call itself
+MANAGER=whizzytex/Manager
+REMAKE=$(MAKE) -f $(MANAGER)
+
+
+help: link
+	@echo 'Usage: '; echo
+	@echo '  $(REMAKE) upgrade    # to build the most recent version'
+	@echo '  $(REMAKE) xxx        # to build the experimental version'
+	@echo '  $(REMAKE) download   # to retreive version <version>'
+	@echo '  $(REMAKE) downgrade  # to rebuild  version <version>'
+	@echo; echo 'Then, most likely as superuser: '; echo
+	@echo '  umask 022  '          
+	@echo '  $(REMAKE) uninstall  # if a previously version was installed'
+	@echo '  $(REMAKE) install '
+	@echo; echo 'Finally: '; echo
+	@echo '  $(REMAKE) clean'
+
+.PHONY: link
+link:
+	@if ! test -e whizzytex; then \
+	  echo 'Creating the link whizzytex to current version $(ODIR)'; \
+	  ln -s $(ODIR) $(WHIZZY); \
+	elif ! test -L whizzytex; then echo \
+	  'whizzytex exists but is not a symbolic link to current version'; \
+	  false; \
+	elif ! test -f $(MANAGER); then \
+	  echo 'Strangely, $(MANAGER) does not exists'; false; \
+	fi
+
+.PHONY: $(VFILE)
+$(VFILE):
+	$(WGET) $(URL)/$@
+
+$(VTAR): 
+	$(WGET) $(URL)/$(VTAR)
+$(VTAG): $(VTAR) 
+	cd whizzytex; make clean
+	gunzip -c $(VTAR) | tar -xvf -
+	touch -r $(VTAR) $(VTAG)
+	if test ! -f $(VDIR)/Makefile.config \
+	        -o $(WHIZZY)/Makefile -ef $(VDIR)/Makefile && \
+	   test "`head -1 $(WHIZZY)/Makefile.config`" \
+	     != "`head -1 $(VDIR)/Makefile.config.in`"; \
+	then \
+	  echo 'WARNING: Configuration has changed. Running ./configure...'; \
+	  cd $(VDIR); ./configure; \
+	elif test ! $(WHIZZY)/Makefile.config -ef $(VDIR)/Makefile.config; \
+	then \
+	    echo 'Copying old configuration to Makefile.config;'; \
+	    echo 'You need to check Makefile.config or reconfigure;'; \
+	    cp $(WHIZZY)/Makefile.config $(VDIR)/Makefile.config; \
+	fi
+	rm -f $(WHIZZY)
+	ln -s $(VDIR) $(WHIZZY)
+
+show-versions: $(VFILE) $(OFILE) 
+	@echo "Running version `cat $(OFILE)` ---`stat $(OFILE)|grep Modify:`"
+	@echo "Current version `cat $(VFILE)` ---`stat $(VFILE)|grep Modify:`"
+	
+upgrade: link $(VFILE)
+	$(REMAKE) VERSION=`cat $(VFILE)` ORIGIN=`cat $(OFILE)` \
+	   download downgrade 
+
+download: 
+	$(WGET) $(URL)/$(VTAR)
+
+downgrade: $(VTAG) build
+
+build:
+	cd whizzytex; make all
+
+install:
+	cd whizzytex; make install
+
+uninstall:
+	cd whizzytex; make uninstall
+
+clean:
+	cd whizzytex; make clean
+
+xxx:
+	$(REMAKE) VERSION=xxx download downgrade
+
+.PHONY: help whizzytex-version show-versions
+.PHONY: upgrade download update download unpack version repack 
+.PHONY: build install clean
+
+

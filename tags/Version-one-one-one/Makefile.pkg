@@ -1,0 +1,82 @@
+ORIGIN=1.00-alpha
+VERSION=$(ORIGIN)
+FORCE=false
+
+# Url of sources
+URL=http://cristal.inria.fr/~remy/whizzytex
+
+# Command to retreive new versions
+WGET=wget --cache off --timestamping
+
+# Short-cut variables
+WHIZZY=whizzytex
+TMP=$(WHIZZY).tmp
+OTAR=$(WHIZZY)-$(ORIGIN).tgz
+VTAR=$(WHIZZY)-$(VERSION).tgz
+OFILE=$(WHIZZY)/VERSION
+VFILE=VERSION
+VTAG=$(WHIZZY)/.VERSION_$(VERSION)
+OTAG=$(WHIZZY)/.VERSION_$(ORIGIN)
+
+help:
+	@echo 'Usage: '
+	@echo '    whizzytex-manager upgrade install clean '
+	@echo '    whizzytex-manager VERSION=<version> download ' 
+	@echo '    whizzytex-manager VERSION=<version> unpack ' 
+
+upgrade: update unpack build
+
+update: 
+	$(WGET) $(URL)/VERSION 
+	$(MAKE) VERSION=`cat $(VFILE)` ORIGIN=`cat $(OFILE)` download
+
+download:
+	$(WGET) $(URL)/$(VTAR)
+
+version: 
+	$(MAKE) VERSION=`cat $(VFILE)` ORIGIN=`cat $(OFILE)` \
+	   repack-if-needed unpack
+
+unpack: $(VTAG)
+$(VTAG): $(VTAR) 
+	gunzip -c $(VTAR) | tar -xvf -
+
+repack: $(OTAG) no-override 
+	@echo 'Repacking $(ORIGIN)...'
+	tar -cf $(TMP) `cat $(OFILE)` 
+	gzip -c $(TMP) > $(OTAR)
+	rm -f  $(TMP)
+
+build:
+	cd whizzytex; make all
+
+install:
+	cd whizzytex; make install
+
+clean:
+	cd whizzytex; make clean
+	rm -f $(TMP)
+
+.PHONY: help upgrade update download unpack version repack 
+.PHONY: build install clean
+
+# Inteaction with the user
+
+.PHONY: repack-if-needed if-consistent no-override
+
+# Normally called with ORIGIN=OFILE and VERION=VFILE
+repack-if-needed:
+	if test ! -f $(OTAR); then \
+	 echo -n "Save original archive? (y/n) [y] "; \
+	 if $(FORCE); then YORN=y; else read YORN; fi;  \
+	 if test "$$YORN" != n; then $(MAKE) repack; fi; \
+	fi
+
+no-override:
+	if test -f $(OTAR) || $(FORCE); then \
+	 echo "*** Refusing to override $(OTAR). Remove it, manually! "; \
+	 exit 1; fi
+
+# From parent dir, run make -f whizzytex/Makefile.pkg whizzytex-manager
+whizzytex-manager:
+	install -m 0753 whizzytex/$@ .
