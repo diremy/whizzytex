@@ -1,44 +1,80 @@
-#!/bin/sh
+#!/bin/bash
 
-if emacs -batch 2>/dev/null
-then EMACS=emacs
-  if xemacs -batch 2>/dev/null
-  then 
-    echo 'You have both emacs and xemacs install.'
-    echo 'Choose one for the installation'
-    echo
-    echo -n 'EMACS=' 
-    read EMACS
-  else EMACS=xemacs
-  fi
-else
-  if xemacs -batch 2>/dev/null
-  then EMACS=xemacs
-  else
-   echo 'Neither emacs nor xemacs seem to be installed';   exit 2
-  fi
-fi
+PS3="choice ==> "
 
-echo $EMACS
-case $EMACS in
-  emacs)
-    set xxx `($EMACS -batch -eval "(mapcar 'print load-path)") \
-               2>/dev/null | sed -n -e '/\/site-lisp\/*"/s/"//gp'`;
-    ;;
-  xemacs)
-    set xxx `($EMACS -batch -eval "(mapcar 'print load-path)") \
-               2>/dev/null | sed -n -e '/\/xemacs-packages\/lisp\/*"/s/"//gp'`
+if test -z "$EMACS"; then EMACS=emacs; fi
+if test -z "$XEMACS"; then XEMACS=xemacs; fi
+
+unset EDITORS
+if $EMACS -batch 2>/dev/null; then EDITORS="$EDITORS $EMACS"; fi
+if $XEMACS -batch 2>/dev/null; then EDITORS="$EDITORS $XEMACS"; fi
+set xxx $EDITORS
+shift
+case $# in
+  0) 
+    echo "Neither $EMACS nor $XEMACS seemed to be installed."
+    echo "Please, install them first or"
+    echo "Edit EMACS or XEMACS variables in Makefile.config.in"
+    exit 2;;
+  1);;
+  2) 
+    echo "Both $EMACS and $XEMACS are installed."
+    echo 'Do you wish to install whizzytex for... '
+    PS3="choice ==> "
+    select ANSWER in $EDITORS both
+    do
+      echo "you selected $ANSWER"
+      case /$ANSWER/ in
+       //) ;;
+       /both/) break;;
+       /$EMACS/) EDITORS=$EMACS; unset XEMACS; break;;
+       /$XEMACS/) EDITORS=$XEMACS; unset EMACS; break;;
+      esac
+    done
+    echo "you selected EDITORS=$EDITORS"
     ;;
 esac
+echo $EDITORS
 
-if test "$2" != "" && test -d "$2" 
-then 
-   EMACSDIR="$2"
-else
-   echo 'Cannot determine EMACSDIR (Emacs site-lisp directory)'; 
-   echo -n 'EMACSDIR='; 
-   read EMACSDIR
-fi
+if test ! -z "$USER"; then INIT="-u $USER"; fi
+
+for EXEC in $EDITORS
+do 
+  case `$EXEC -batch -eval "(princ emacs-version)" 2>/dev/null` in
+   *XEmacs*) X=X;;
+   *) X='';;
+  esac
+  echo "Determining ${X}EMACSDIR for $EXEC"
+  set xxx \
+    `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" 2>/dev/null`
+  shift
+  case $# in
+   0) 
+      echo "Cannot determine ${X}EMACSDIR ---site-lisp directory for $EXEC "
+      echo "Please enter full path name"
+      echo -n "${X}EMACSDIR ==> "
+      read DIR
+      ;;
+   1)
+      DIR=$1
+      ;;
+   *)
+      echo "Several $DIR are possible for $EXEC"
+      echo 'Please select one'
+      select DIR in $*
+      do
+        case /$DIR/ in
+         //) ;;
+         *) break ;;
+        esac
+      done;;
+  esac
+  if test -d "$DIR"; 
+  then declare ${X}EMACSDIR=$DIR
+  else echo "$DIR is not a directory"; exit 2; 
+  fi
+done
+
 if test -d /usr/local/lib
 then 
    LIBDIR=/usr/local/lib/whizzytex
@@ -50,14 +86,19 @@ else
 fi
 
 sed \
+ -e "s%@EDITORS@%$EDITORS%" \
  -e "s%@EMACS@%$EMACS%" \
+ -e "s%@XEMACS@%$XEMACS%" \
  -e "s%@EMACSDIR@%$EMACSDIR%" \
+ -e "s%@XEMACSDIR@%$XEMACSDIR%" \
  -e "s%@LIBDIR@%$LIBDIR%" \
-  < Makefile.config.in > Makefile.config; 
+  < Makefile.config.in > Makefile.config
 
-echo
+echo " EDITORS = $EDITORS "
 echo " EMACS = $EMACS "
+echo " XEMACS = $XEMACS "
 echo " EMACSDIR = $EMACSDIR "
+echo " XEMACSDIR = $XEMACSDIR "
 echo " LIBDIR = $LIBDIR "
 echo
 echo 'See Makefile.config for details'

@@ -8,10 +8,12 @@ SRCFILES=$(patsubst %,$(HOME)/%,$(LOCALFILES))
 
 FILES= whizzytex whizzytex.sty whizzytex.el
 TARFILES = $(FILES) LGPL COPYING INSTALL VERSION \
-            Makefile configure Makefile.config.in byte-compile.el \
+            Makefile configure configure.el \
+	    Makefile.config.in byte-compile.el \
             doc examples 
        
-EXPORTS = index.html $(NAME).tgz  manual.dvi manual.html CHANGES COPYING 
+EXPORTS = index.html $(NAME).tgz  manual.dvi manual.html \
+           CHANGES COPYING LGPL INSTALL VERSION DATE
 PAUILLAC=pauillac:public_html/whizzytex/
 
 What:
@@ -19,14 +21,15 @@ What:
 
 All: diff $(EXPORTS) whizzytex.elc
 
-VERSION: makefile
-	echo $(VERSION) > $@
 
 manual.dvi: doc/manual.tex
 	latex $<
 
 manual.html: doc/manual.tex manual.dvi
 	hevea -o $@ $<
+
+DATE: $(NAME).tgz VERSION
+	echo `cat VERSION`:`date` > DATE
 
 $(NAME).tgz: $(TARFILES) makefile
 	make clean

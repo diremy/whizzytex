@@ -124,6 +124,7 @@ LOCK=.$WHIZZY.tex
 SLICE=$WHIZZY.new
 INPUT=$HERE/$WHIZZY/input
 OUTPUT=$HERE/$WHIZZY/output
+SECTIONS=$OUTPUT/sections
 TMP=$HERE/$WHIZZY/tmp
 LOG=$TMP/log
 ERR=$TMP/err
@@ -221,7 +222,7 @@ postmark () {
     intersect
     ( join -t @  $TMP/pag $TMP/sec.1 | \
       sed -e 's/^\([^:]*\):[0-9]*:\([^@]*\)@\([^@]*\)@\(.*\)$/\1:("\\\2\4"."\\WhizzySlice\3")/' -e 's/\\/\\\\/g' ) > $TMP/tmp
-    ( echo "(setq whizzytex-marks '("; 
+    ( echo "(setq tmp '("; 
       for file in $SOURCES
       do
         if [ -f $file ]
@@ -232,13 +233,13 @@ postmark () {
         fi
       done
       echo '))'
-    ) > $OUTPUT/sections
+    ) > $SECTIONS
 }
 marks () {
     premark
     runtex $FORMAT '\WhizzytexInput{'"$NAME"'}' > /dev/null
     postmark
-    cat $OUTPUT/sections
+    cat $SECTIONS
 }
 
 batchmarks () {
@@ -515,6 +516,7 @@ do
   elif newfiles && preprocess || $PROCESS
   then process && checkviewer
   else
+     echo -n '.'
      read $READOPTION
      case /$REPLY/ in
        /duplex/) duplex ;;

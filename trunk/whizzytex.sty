@@ -219,9 +219,6 @@
       \expandafter \WhizzySlice \@do\relax}}
 \@ifundefined {c@chapter}{}{\let \WhizzySlice \Whizzy@chapter}
 
-\newcommand {\WhizzySlide}[2][]
-   {\let \overlay \whizzy@@overlay
-    \whizzy@line{#2}\def \whizzy@layer{#1}}
 
 % What does this do??? only if not fulldocument 
 
@@ -311,7 +308,7 @@
 \def \WhizzyMaster #1{%
   \def \whizzy@local {#1}%
   \par \whizzy@master@banner \par\bigskip
-  \AtEndDocument {\whizzy@master@end}\Whizzy@file
+  \AtEndDocument {\whizzy@master@end}%\Whizzy@file
 }
 
 %%% Not necessary, but will make .idx file at every global run, and
@@ -327,13 +324,18 @@
 
 %% Patch for overlays, still in use?
 
-\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay {1}\fi}
+\newcommand {\WhizzySlide}[2][]
+   {\let \overlay \whizzy@@overlay
+    \def \whizzy@line{#2}\def \whizzy@layer{#1}}
+
+\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay 1\fi}
 \g@addto@macro \whizzy@beforedumphook
-  {\@ifundefined {overlay}{}%{\let \whizzy@fulldocumenthook \relax}
+  {\@ifundefined {overlay}{}%
       {\let \whizzy@overlay \overlay
-       \let \overlay \whizzy@id
-       \g@addto@macro \whizzy@fulldocumenthook
-           {\let \overlay \whizzy@overlay}}}
+%        \let \overlay \whizzy@@overlay
+%        \g@addto@macro \whizzy@fulldocumenthook
+%            {\let \overlay \whizzy@overlay}%
+       }}
 
 
 %% To show where the cursor is, we pick caracter code ^^A
@@ -423,12 +425,13 @@
 \let \whizzy@starthere \whizzy@empty
 \def \whizzy@outputline #1#2{}
 
+
 % Do not read after \fi
 \expandafter \endinput 
 
 \fi
 
-%% These are advi special tricks
+%% These use advi special tricks
 
 % \jobname should be the current file, instead. It is stored somewhere?
 \def \whizzy@outputline #1#2{%
