@@ -6,7 +6,7 @@
 
 <H1 align=left><font color=blue>WhizzyTeX</font></H1>
 
-<h1 align=right>
+<!--h1 align=right>
 <i>
 <font color=blue>Wh</font>at
 <font color=blue>i</font>
@@ -14,26 +14,26 @@
 i<font color=blue>z</font> what 
 <font color=blue>y</font>ou
 <font color=blue>TeX</font></i>
-</h1>
+</h1-->
 
-<h2 align=center>
-An emacs minor mode for incrementally previewing LaTeX
-files.
-</h2>
+<h3 align=right>
+An <font color=blue>Emacs</font>  minor mode for<br>
+<font color=blue>incremental viewing of <br>
+LaTeX documents</font>. 
+</h3>
 
-<p>
-<font color=blue size="+1">WhizzyTeX</font>
-provides a minor mode for emacs or xemacs, 
-a (bash) shell-script deamon and some LaTeX macro definitions, 
-and requires either ghostscript-based or dvi-based previewers. 
+<p> <font color=blue size="+1">WhizzyTeX</font> provides a minor mode for
+Emacs or XEmacs, a (bash) shell-script daemon and some LaTeX macros.  It
+works under Unix with <tt>gv</tt> and <tt>xdvi</tt> viewers, but the
+<a href="http://pauillac.inria.fr/advi/">Active-DVI</a> viewer will provided
+much better visual effects and will offer more functionalities. 
 </strong>
 
 
 <h4>Versions</h4>
 
-The current version is <a href="whizzytex-1.00-alpha.tgz">whizzytex-1.00-alpha.tgz</a>
-<br>
-You can also use this <a href="whizzytex.old.tgz">older version</a>.
+The current 
+version is <a href="whizzytex-1.00.tgz">whizzytex-1.00.tgz</a>
 
 
 <h4><a href="manual.html">Documentation</a></h4>
@@ -43,30 +43,32 @@ Installation and manual are available in
 <a href="manual.dvi">DVI</a> formats. 
 <br>
 Most of the documentation is also available as online Emacs help. 
+<br>
+See also the <a href="FAQ">FAQ</a>.
 
 <h4>Disclaimer</h4>
 
 WhizzyTeX is still under development and may contain dangerous bugs.
-We recommend you to save copies of the file (and of the whole directory you
+You may wish to save copies of the file (and of the whole directory you
 are working in) before WhizzyTeX-ing.
 
 
-<h4>Previewers</h4>
+<h4>Viewers</h4>
 
-One of the problem that you will encounter with WhizzyTeX, especially in
+One of the problems that you will encounter with WhizzyTeX, especially 
 if you have a relatively old slow machine is that the previewer flashes
 whenever refreshing the page. 
 <strong>xdvi</strong> is much faster but does not
 render colors and messes up with most inlined-Postscript specials. 
 Conversely, <strong>gv</strong> is much slower, but more compliant. 
-Unfortunately, both flashes when the page is refreshed. 
+Unfortunately, both flash when the page is refreshed. 
 Thus, we recommend the use of <strong><code>advi</code></strong>
 (Active-DVI) -see below.
 
 <p>
 <em> 
-Alternatively, there is a patched of <code>gv</code> (version 3.5.8) written
-by <a href="http://para.inria.fr/~lefessan">Fabrice Le Fessant</a> that
+Alternatively, there is a patched version of <code>gv</code> (version 3.5.8)
+written by <a href="http://para.inria.fr/~lefessan">Fabrice Le Fessant</a> that
 inhibits flashing by drawing pages in a pixmap and flushing the page all at
 once.  Here are the <a href="gv-3.5.8-patched.tgz">patched version</a> (and
 its <a href="gv-3.5.8.tgz">original</a>). To remove flashing, 
@@ -74,16 +76,17 @@ its <a href="gv-3.5.8.tgz">original</a>). To remove flashing,
 </em>
 
 
-<h4>Active-DVI <font color=red>(hightly recommended)</font></h4>
+<h4><a href="http://pauillac.inria.fr/advi/">Active-DVI</a>
+    <font color=red>(hightly recommended)</font></h4>
 
-This is a previewer based on Mldvi, written <a
+This is a previewer initially based on Mldvi, written <a
 href="http://pauillac.inria.fr/~miquel">Alexandre Miquel</a> and extended
 with many other features (correct handling of colors, of most
 inlined-Postscript specials, hyperrefs, pauses, replays, etc.), and in
 particular, with the ability to draw in the background and flush a page all
 at once, so as to avoid any flashing effect. 
 
-More other, advi offers can point back to source files, as long as the dvi
+Moreover, advi offers can point back to source files, as long as the dvi
 has been (automatically) instrumented with source file and line information
 (as specials).  See the Active-DVI <a
 href="http://pauillac.inria.fr/advi/">distribution</a>.
@@ -92,7 +95,7 @@ href="http://pauillac.inria.fr/advi/">distribution</a>.
 Good options for use with WhizzyTeX are:
 
 <pre>
-    advi -nowatch -html Start-Document OTHER-OPTIONS FILENAME
+    advi -html Start-Document OTHER-OPTIONS FILENAME
 </pre>
 
 

@@ -8,22 +8,34 @@ gunzip whizzytex-1.0.tgz
 tar -xf whizztex-1.0.tar
 ls -1 whizzytex
 
-   Then, the installation can be automatic, or manual.
+   Then,  the  installation  can be automatic (default or customized), or
+   manual.
 
 1.1  Automatic installation
 ---------------------------
 
-   By  default, librairies will be installed in /usr/local/lib/whizzytex/
-   and in Emacs site-lisp library. 
+   
+   By   default,   all   files   will   be  installed  in  the  directory
+   /usr/local/lib/whizzytex/    and   emacs-lisp   code   will   not   be
+   byte-compiled. Then, just type:
+   
+        make all
 
-./configure  
+   This  will  create  a  Makefile.config  file (only if nonexistent) and
+   prepared configured version of the files.
+   To   customize  the  installation,  to  can  either  edit  and  modify
+   Makefile.config manually, or run
+   
+        make config
 
-   produces Makefile.config, which you can edit and modify. 
+   This  will  prompt  the  user  for  choices  and  override the default
+   Makefile.config  (which  you can again edit to adjust choices). At the
+   end of customization, run make all again.
+   Finally, type
 
-   To produced configured copies of the source and install them, type
+        make install
 
-make all
-make install
+   to install files to their destination.
 
 
 1.2  Manual installation
@@ -48,7 +60,7 @@ make install
        The   variable   whizzytex-command-name  defined  in  whizzytex.el
        contains  its  full  path  (or  just  its name if visible from the
        executable path).
-       Default value is /usr/local/lib/whizzytex/whizzytex
+       Default value is /usr/local/lib/whizzytex/bin/whizzytex
 
    whizzytex.sty
 
@@ -57,58 +69,30 @@ make install
        WhizzyTeX.
        Variable  variable  PACKAGE defined in whizzytex the full path (or
        just the name if the path is visible from LaTeX.
-       Default value is /usr/local/lib/whizzytex/whizzytex.sty
+       Default value is /usr/local/lib/whizzytex/latex/whizzytex.sty
        
 
 1.3 Automatic upgrading
 -----------------------
 
-  1.3  Automatic upgrading
 
-      For  convenience,  the distribution also offers a facility to download
-      and upgrade to new versions. This requires wget installed.
-      To benefit from this service you must first execute (once for all)   
+   For  convenience,  the distribution also offers a facility to download
+   and upgrade new versions of WhizzyTeX (this requires wget installed).
+   All  operations  should  be  performed in the WhizzyTeX top directory,
+   i.e.  where you untar whizzytex for the firt time. We assume that have
+   a  link  from whizzytex to the current version (which will be maintain
+   uptodate by the manager) or user whizzytex-x.xx/Manager instead
+   
+        make -f whizzytex/Manager upgrade 
+        make -f whizzytex/Manager install
 
-   make install.pkg
-
-      This  will  install create a link Makefile in your parent directory to
-      the file whizzytex/Makefile.pkg. This assumes that you have not rename
-      the   parent   directory   after  installation,  which  should  remain
-      whizzytex.
-      If  you  wish to edit this file, you should copy it instead of
-      creating a  link,  since upadtes may update (hence override) the file
-      whizzytex/Makefile.pkg itself.
-
-      Then, from the parent directory, you can type
-
-   make update
-   make unpack
-   make build
-   make install
-
-      Respectively,  to  check  for newer version and download if nevessary,
-      unpack  the newest version, build the current version, and install the
-      current version. 
-
-      You can also use
-
-   make upgrade
-
-        as a show-cut for "make update unpack build"
-
-   make VERSION=xxx restore
-
-        to restore (unpack only) version xxx
-
-   make save-version
-
-        To  pack  current  version in case, you lost its original tar file,
-        which  is recommended before an updare, in case you want to restore 
-        the old version later.
-
-      The  upgrading  may ask questions to the users. To be fully automatic,
-      you   can  also  pass  the  option  FORCE=true,  which  will  let  the
-      installation make (hopefully reasonable) choices in your place.
+   The  command  upgrade  will  successively download the newest version,
+   unpack it, copy the configuration of the current version to the newest
+   version,  and  bring  the newest version uptodate. The command install
+   will install files of the newest version.
+   To recover and old version, you may also use the command:
+   
+        make VERSION=<version> download downgrade install
 
 
 2.  Using WhizzyTeX
@@ -116,32 +100,42 @@ make install
 
   2.1  Quick start
   
-   WhizzyTeX  runs  as  a minor mode of emacs to be launched on a LaTeX
-   emacs  buffer.  One  the  library  whizzytex.el  has  been loaded (you
-   propbably  want  to  declare  it  autoload in your Emacs startup file)
-   simply type
-                             
-ESC-X whizzytex-mode                  
+   You  should  first  load  the library whizzytex.el or, better, make it
+   autoload  by including the following declaration in your Emacs startup
+   file (probably is ~/.emacs).
+
+        (autoload 'whizzytex-mode
+            "/usr/local/bin/whizzytex/lisp/whizzytex.el"
+            "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+
+   (where /usr/local/bin/whizzytex/lisp/whizzytex.el is the exact location
+   of \lst"whizzytex.el", according to your installation), or simply,
+
+        (autoload 'whizzytex-mode "whizzytex"
+            "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+
+   if  you  have  install  whizzytex.el  in  your  (X)Emacs load-path, or
+   adjusted this one accordingly.
+
+   WhizzyTeX  runs  as  a minor mode of emacs to be launched on a LAT[E]X
+   emacs buffer. To start it, type:
+
+
+        ESC x whizzytex-mode
 
    By  default,  this  should add new bindings so that you can later turn
-   mode on and off with key strokes C-C C-W. 
-
+   mode  on  and  off  with key strokes C-c C-w. This will also add a new
+   menu Whizzy in the menu bar call ``the'' menu below.
    When  whizzytex-mode is started for the first time on a new buffer, it
-   may  prompt  for  confirmation  of  default  settings,  which  you may
-   confirm,  change  interactively,  or  change  permanenty  by inserting
-   comments in the source file (see manual for details).
-
-   Once  in  whizzytex-mode,  just  type in as usual. WhizzyTeX should do
-   everything  automatically,  refresshing  the presentation as you type.
-
-   Additionally,  it  should  put  a  gray overlay outside of the current
-   slice  (the  region  of  your  buffer that is under focus). Whenever a
-   Latex  error  occors,  it will also attempt to localize the error in
-   the source buffer and mark it with a yellow overlay.
-
-   Furthermore,  when  an  error is persistent for several slices or some
-   amount  of  time,  it will pop up its interaction-buffer with a log of
-   the error (this option can be turn on or off from the Whizzy menu).
+   attempts  to configure buffer local variables automatically by examing
+   the content of file, and using default values of global bindings.
+   You  may  customize  default  settings globally by running appropriate
+   hooks  or locally by inserting appropriate comments in the source file
+   ---see the manual below.
+   You  may  also  change  the settings interactivelly using the menu, or
+   tell  whizzytex-mode  to  prompt  the  user for local customization by
+   passing  prefix  argument 4 (using, for instance, key sequence C-u C-c
+   C-w).
    
 
-See the documentation for more information
+See the documentation for more complete information. 

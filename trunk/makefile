@@ -1,88 +1,102 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
-VERSION=1.00-alpha
+VERSION=1.00
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 
-LOCALFILES= bin/whizzytex  lib/tex/whizzytex.sty lib/emacs/whizzytex.el
-SRCFILES=$(patsubst %,$(HOME)/%,$(LOCALFILES))
 
-FILES= whizzytex whizzytex.sty whizzytex.el
-TARFILES = $(FILES) GPL COPYING INSTALL VERSION \
+SRCFILES=whizzytex whizzytex.el start.el whizzytex.sty
+
+TARFILES = $(patsubst %,src/%,$(SRCFILES)) \
+	    GPL COPYING INSTALL VERSION CHANGES\
 	    Makefile.config.in byte-compile.el configure configure.el \
-            Makefile Makefile.pkg doc examples 
+            Makefile Manager doc examples 
        
 EXPORTS = index.html $(NAME).tgz  manual.dvi doc/manual.html \
-           CHANGES COPYING GPL INSTALL VERSION 
-PAUILLAC=pauillac:public_html/whizzytex/
+           CHANGES COPYING GPL INSTALL VERSION FAQ
+PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
 
 whatelse: 
 	@echo 'make what ? [pack export]'
 
-pack: check $(EXPORTS) whizzytex.elc
+pack: check $(EXPORTS) tardir/whizzytex.elc
 
+doc/manual.dvi: doc/manual.tex VERSION 
+	cd doc; make manual.dvi
 
-manual.dvi: doc/manual.tex
-	latex $<
+manual.dvi: doc/manual.dvi
+	cp $< $@
 
 doc/manual.html: doc/manual.tex manual.dvi
 	hevea -o $@ $<
 
 
 VERSION: makefile
-	test `grep '^ORIGIN=' Makefile.pkg` = 'ORIGIN=$(VERSION)'
-	test "`grep '^The current version is' index.html | \
+	test `grep '^ORIGIN=' Manager` = 'ORIGIN=$(VERSION)'
+	test "`grep '^version is' index.html | \
 	  sed  -e 's/.*="whizzytex-\(.*\)">whizzytex-\(.*\)<.a>/\1,\2/' \
 	       `" = '$(VERSION).tgz,$(VERSION).tgz'
-	echo $(VERSION) > VERSION
+	echo $(VERSION) > $@
 
 FILES: $(TARFILES) makefile
 	make clean
-	(echo whizzytex/FILES; echo whizzytex/$(TAG); \
-	 cd ..; tar zcvf /dev/null $(patsubst %,whizzytex/%,$(TARFILES)) \
-	) | grep -v CVS | grep -v '/$$' > $@
+	(echo FILES; echo $(TAG); tar zcvf /dev/null $(TARFILES)) \
+	  | grep -v CVS | grep -v '/$$' > $@
 
-$(NAME).tgz: FILES
+$(NAME).tgz: FILES makefile
+	mkdir $(NAME)
 	touch VERSION $(TAG)
-	cd ..; tar zcvf whizzytex/$@ `cat whizzytex/FILES`
+	tar cf - `cat FILES`| (cd $(NAME) && tar xf -)
+	tar zcvf $@ $(NAME)
+	rm -r $(NAME)
 
-check: diff
+check: whizzytex.elc
 	@echo ' --- Checking examples'
 	cd examples; make >/dev/null
+	@echo ' --- src/whizzytex.el'
+	grep -e '^\((defvar whizzy-command-name "\)[^"]*\(".*\)$$' \
+	   src/whizzytex.el
+	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*")\) *$$' \
+	   src/whizzytex.el
+	@echo ' --- src/whizzytex'
+	grep -e '^PACKAGE=[/a-z.][/a-z.]*$$' src/whizzytex
+	grep -e '^DVIPS=[a-z][a-z]*$$' src/whizzytex
 
-diff:
-	for i in $(LOCALFILES); \
-	do diff -q `basename $$i` $(HOME)/$$i || exit 1; done
+tardir:
+	mkdir -p tardir
 
-retrieve:
-	for i in $(LOCALFILES); \
-	do [ $(HOME)/$$i -nt `basename $$i` ] && cp -i $(HOME)/$$i .; done
+tardir/whizzytex.el: src/whizzytex.el tardir
+	cp $< $@
 
-whizzytex.el: $(HOME)/lib/gnu-emacs/whizzytex.el
-	cp $(HOME)/lib/gnu-emacs/whizzytex.el .
+tardir/whizzytex.elc: tardir/whizzytex.el 
+	cd tardir; emacs --batch -q -l ../byte-compile.el 2> log && \
+	cat log && \
+	if grep -e '\*\*' log; then rm -f $@; cat log; false; \
+	else rm log; fi
+	cd tardir; xemacs -batch -q -l ../byte-compile.el 2>log && \
+	cat log && \
+	if grep -e '\*\*' log; then rm -f $@; false; \
+	else rm log; fi
 
-whizzytex.elc: whizzytex.el
-	emacs --batch -q -l byte-compile.el 2>$*.log && \
-	if grep -e '\*\*' $*.log; then rm -f $@; cat $*.log; false; \
-	else rm $*.log; fi
-	xemacs -batch -q -l byte-compile.el 2>$*.log && \
-	if grep -e '\*\*' $*.log; then rm -f $@; cat $*.log; false; \
-	else rm $*.log; fi
-
-export: $(EXPORTS) whizzytex.elc
+export: $(EXPORTS) 
 	rcp $(EXPORTS) $(PAUILLAC)
+	rcp VERSION $(PAUILLAC)/whizzytex.version
 
 smallclean:
 	cd doc; $(MAKE) clean
 	cd examples; $(MAKE) superclean
 
 clean:: smallclean
-	rm -rf doc/{*~,.#*,#*#} manual.{aux,log}
+	rm -rf doc/{*~,.#*,#*#} manual.{aux,log} doc/_whizzy_manual*
+	rm -rf tardir
 
 superclean: clean
 	rm -f doc/ocaml.html $(TAG) $(NAME).tgz manual.dvi \
 	rm -f *~ .#* #*# FILES 
 
-.SUFFIXES: .tgz
+.in.out:
+	./configure < $<
+
+.SUFFIXES: .tgz .in .out
 
 include Makefile

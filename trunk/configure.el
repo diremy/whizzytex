@@ -26,7 +26,9 @@
     (or
      (member one all)
      (null one)
-     (setq all (cons one all))
+     (if (file-directory-p (cdr one))
+         (setq all (cons one all))
+       (message one))
      )
     (setq dirs (cdr dirs))
     )

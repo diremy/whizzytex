@@ -1,23 +1,43 @@
-Time-stamp: <2002-02-26 15:57:40 remy>
+Time-stamp: <2002-03-04 01:05:32 remy>
 
 RECENT CHANGES:
 
 Emacs-mode
 
+ - Version 1.00-beta
+ * Added whizzy-write-configuration to dump file configuration
+ * Fixed key bindings in menu
+ * Rewrote reading of file configuration.
+ * Added whizzy-load-factor to adjust slicing speed.
+ * Improved the online documentation (it is now pretty detailed)
+ * Récupération d'erreur lorsque le buffer principal est effacé ses esclaves.
+ * Corrected setup of multi-file documents
+ - Version 1.00-alpha
  * Cleaned up and rewritten for version 1.00-alpha
 
 Shell-script: 
 
+ - Version 1.00-beta
+ - Version 1.00-alpha
  * Cleaned up and rewritten for version 1.00-alpha
 
 LaTeX macros:
 
+ - Version 1.00-beta
+ - Version 1.00-alpha
  * Cleaned up and rewritten for version 1.00-alpha
 
 Installation:
 
+ - Version 1.00-beta
+ * Improved the manual.tex documentation. 
+ * Makefile.config can default to a copy of Makefile.config.in
+ * Improved Makefile and configuration script
+ * Changer version upgrading (probably incompatible, do this one by hand)
+ * Version xxx tar in whizzytex-xxx now untars as whizzytex-xxx/<sources>
  * Makefile for upgrading to new versions. 
  * configuration script that attempts at finding a location for emacs files. 
+ - Version 1.00-alpha
  * Makefile for version 1.00-alpha
 
 
