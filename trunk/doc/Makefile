@@ -1,3 +1,7 @@
+HEVEA = hevea 
+HVAOPT = -fix -nosymb
+# HVAOPT = -charset iso-8859-1 -fix -nosymb
+
 all: manual.dvi manual.html whizzytex.info
 
 
@@ -6,10 +10,10 @@ manual.dvi: manual.tex version.tex
 	if grep 'LaTeX Warning: Label(s)' $*.log; then latex $<; fi
 
 manual.html: manual.tex manual.dvi
-	hevea -fix -nosymb -o $@ $<
+	$(HEVEA) $(HVAOPT) -o $@ $<
 
 whizzytex.info: manual.tex
-	hevea -fix -nosymb -info -o $@ $<
+	$(HEVEA) $(HVAOPT) -o $@ $<
 
 clean:
 	rm -f {whizzytex,manual}.{aux,log,dvi,dview,wiz,fmt}

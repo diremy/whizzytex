@@ -3,16 +3,30 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * added -display option 
+
 Shell-script: 
+
+ * added -display option 
 
 LaTeX macros:
 
+ * \WhizzyInsideEnvironment to change the behavior when the cursor is inside.
+
 Installation/Documentation:
+
+ * Few small fixes/changes.
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
+
+ - Version 1.1.2
+ * whizzy-master is ignored when set to the buffer itself.
+ * Revert buffer keeps whizzytex alive (cleaning on failure must be FIXED.)
+ * Added prefix-arg 16 to start whizzutex in debug mode. 
+ * Removed the use of view-mode as a local-variable!!!
 
  - Version 1.1.1
  * warn and pop-up interaction window when fails during initialization

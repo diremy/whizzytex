@@ -3,7 +3,7 @@
 %  Copyright (C) 2001, 2002 Didier Rémy
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.1.1
+%  Version        : 1.1.2
 %  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 %  Web Site       : http://pauillac.inria.fr/whizzytex
 % 
@@ -23,7 +23,6 @@
 %  File whizztex.sty (LaTeX macros)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 \makeatletter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
@@ -33,6 +32,8 @@
 \let \errorstopmode \relax
 \let \scrollmode \relax
 \let \batchmode \relax
+
+\def \whizzy@version {1.1.2}
 
 %% General purpose
 
@@ -66,12 +67,15 @@
 %% This will only be run is the document is complete (not a slice)
 %% We put a few here
 
+\newif \ifwhizzy@latexmode
+\whizzy@latexmodefalse
 \def \whizzy@fulldocumenthook {}
 \def \whizzy@resume
   {\endgroup 
    \message {[WhizzyTeX is resuming in LaTeX mode]}%
+   \whizzy@latexmodetrue
    \whizzy@fulldocumenthook
-   \whizzy@auxfalse \relax
+   \relax
    \let \documentclass \latex@documentclass
    \begin{document}}
 
@@ -89,14 +93,17 @@
 %% Patch for loading aux files. 
 
 \def \whizzy@newl@bel #1#2#3{\global \@namedef {#1@#2}{#3}}
+\def \whizzy@loadauxhook {}
 \def \whizzy@loadaux 
  {\begingroup
     \@floatplacement \@dblfloatplacement \makeatletter \let \@writefile
      \@gobbletwo \global \let \@multiplelabels \relax 
+     \whizzy@loadauxhook
      \@input {\jobname .aux}%
      \global \let \whizzy@multiplelabels \@multiplelabels
      \global \let \@newl@bel \whizzy@newl@bel
-     \AtBeginDocument {\global \let  \@multiplelabels \whizzy@multiplelabels}%
+     \AtBeginDocument {\global \let  \@multiplelabels
+     \whizzy@multiplelabels}%
   \endgroup}
 
 %% Some stuff must be done after all packages and macros but before
@@ -125,7 +132,7 @@
    \dump}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Section 1: Robust stuff hooks on the core engine
+%%%% Section 2: Robust stuff hooks on the core engine
 
 %% put a hook everypagehook to be run at everypage, 
 %% but extendable it has been placed
@@ -139,9 +146,10 @@
 %% How to print whizzy nice boxes
 \let \whizzy@fbox \fbox
 
+\def \WhizzyCursorColor{yellow}
 \g@addto@macro \whizzy@beforeauxhook
    {\@ifundefined {Whizzysafe}
-       {\usepackage{color}\def \whizzy@fbox {\colorbox {yellow}}}
+       {\usepackage{color}\def \whizzy@fbox {\colorbox {\WhizzyCursorColor}}}
        {\let \whizzy@fbox \fbox \whizzy@tricksfalse}}
 
 %% Macros for dumping sections in \whizzy@pag  (\jobname.pag)
@@ -150,20 +158,22 @@
 %% To print a nice blank or a test page
 \def \WhizzyTeX {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
 \def \WhizzyEmptyPage
-{\par\noindent
-\ifwhizzy@advi \else \let \whizzy@fbox \fbox\fi
-\whizzy@fbox {\hsize=0.8\hsize\relax
-\vbox {\huge \bigskip \centering \bf Welcome to \WhizzyTeX!\\[1em]
+{%\@ifundefined{slide}{}{\slide}%
+\par\noindent \ifwhizzy@advi \else \let \whizzy@fbox \fbox\fi
+\whizzy@fbox {\hsize=0.9\hsize\relax
+\vbox {\huge \bigskip \centering \bf Welcome to \WhizzyTeX!\\[0.5em]
+\large {\rm (version \whizzy@version)} \\[1em] 
 \Large This is an empty slice \\[1em] 
 \LARGE Move forward or backward \\
 in the source document \\
-to slice!
-\par \bigskip}}}
+to slice!\par \bigskip}}%
+%\@ifundefined{slide}{}{\endslide}%
+}
 
-\def \WhizzytexInput #1{
-\message {[WhizzyTeX is dumping positions in _whizzy_#1.pag]}
+\def \WhizzytexInput #1{%
+\message {[WhizzyTeX is dumping positions in _whizzy_#1.pag]}%
 \newwrite \whizzy@pag
-\immediate \openout \whizzy@pag _whizzy_#1.pag
+\immediate \openout \whizzy@pag _whizzy_#1.pag\relax
 \whizzy@putmarks
 \WhizzyStart
 \latex@iinput {#1\WhizzyExt}%
@@ -180,7 +190,8 @@ to slice!
 \def \whizzy@makelineno 
    {\whizzy@count \inputlineno 
     \advance \whizzy@count by \whizzy@linediff\relax}
-\def \whizzy@setlinediff #1{\global \xdef \whizzy@linediff {#1}}
+\def \whizzy@setlinediff #1{\global \xdef \whizzy@linediff {#1}%
+   \message{^^J##line+=\whizzy@linediff^^J}}
 \def \whizzy@addtolineno 
    {\advance \whizzy@count by \whizzy@linediff
     \whizzy@setlinediff {\the \whizzy@count}}
@@ -217,9 +228,11 @@ to slice!
 }
 \def \whizzy@putmarks {%
   \@ifundefined{c@chapter}{}{\whizzy@markon {chapter}{chapter}}%
-  \whizzy@markon {section}{section}%
-  \whizzy@markon {subsection}{subsection}%
-  \whizzy@markon {subsubsection}{subsubsection}%
+  \@ifundefined{c@section}{}{%
+    \whizzy@markon {section}{section}%
+    \whizzy@markon {subsection}{subsection}%
+    \whizzy@markon {subsubsection}{subsubsection}%
+  }
   %\whizzy@markafter {@outputpage}{page}%
 }
 \def \whizzy@mark #1{%
@@ -229,10 +242,10 @@ to slice!
      {\whizzy@curfile \@ifundefined {filename@ext}{.tex}{}}%
    \whizzy@makelineno
    \immediate \write \whizzy@pag
-   {\whizzy@Curfile:\the\whizzy@count:#1@\thepage.%
+   {\whizzy@Curfile:\the\whizzy@count:#1@\the\c@page.%
     \@ifundefined{c@chapter}{}{\the\c@chapter.}%
-    \the\c@section.\the\c@subsection.%
-    \ifwhizzy@appendix 1\else 0\fi.}%
+    \@ifundefined{c@section}{}{\the\c@section.\the\c@subsection.%
+    \ifwhizzy@appendix 1\else 0\fi}.}%
   \endgroup
 }
 
@@ -324,8 +337,9 @@ to slice!
       {\whizzy@setnorm{#3}%
        \immediate \write \@mainaux 
            {\string \gdef \string \whizzy @\whizzy@curfile @%
-               {\thepage.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
-                \the\c@section.\the\c@subsection.}}%
+               {\the\c@page.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
+                \@ifundefined{c@section}{}%
+                    {\the\c@section.\the\c@subsection.}}}%
            % could be removed if unsafe
           \whizzy@outputline {1}{\whizzy@curfile}%
       }{}%
@@ -342,7 +356,8 @@ to slice!
   {\edef \whizzy@master {\jobname \WhizzyExt}}{}
 
 \def \whizzy@fill 
-  {\leavevmode \leaders \hrule height 0.15em \hfill \kern \z@}
+  {%\if \vmode\leavevmode\fi
+   \leaders \hrule height 0.15em \hfill \kern \z@}
 \def \whizzy@banner #1{%
   \whizzy@outputline {0}{\whizzy@local}%
   \whizzy@setfile {\whizzy@master}%
@@ -375,10 +390,10 @@ to slice!
  {\g@addto@macro \whizzy@fulldocumenthook {\latex@makeindex}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Second section: optional, less robust stuff, could be turned off
+%% Second 3: optional, less robust stuff, could be turned off
 %% May make a slice not compiling
 
-%% Patch for overlays, still in use?
+%% Patch for overlays, still in use? see advi trick
 
 \newcommand {\WhizzySlide}[2][]
    {\let \overlay \whizzy@@overlay
@@ -415,10 +430,11 @@ to slice!
 \def \whizzy@A
    {\let \whizzy@do \whizzy@markbegin
     \ifinner \ifmmode \else \let \whizzy@do \whizzy@empty\fi \fi \whizzy@do}
+\let \whizzy@AAA \whizzy@A
 \def \whizzy@activeA {\catcode `\^^A \active}
 \begingroup
 \whizzy@activeA
-\gdef \whizzy@defA {\def ^^A{\whizzy@A}}
+\gdef \whizzy@defA {\def ^^A{\whizzy@AAA}}
 \endgroup
 \def \whizzy@markend 
    {\bgroup
@@ -445,28 +461,32 @@ to slice!
 %% whizzy aux information for whizzy extentions, should be set here
 %% so that several extension can share the same 
 
-\newif \ifwhizzy@aux \whizzy@auxtrue
 \AtBeginDocument 
- {\ifwhizzy@aux \@input {\jobname .waux}\fi 
+ {\ifwhizzy@latexmode \else \@input {\jobname .waux}\fi 
   \newwrite \whizzy@out \immediate \openout \whizzy@out \jobname.waux
   \def \whizzy@aux #1{\immediate \write \whizzy@out {#1}}%
  }
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Fourth section: independent cool, robust stuff
+%%%% Section 4: independent cool, robust stuff
 
 % Do not remenber why this... \whizzy@active should be better
 %\AtBeginDocument {\catcode `\^^A \active}
 
+\let \whizzy@tt \texttt
 \long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
 \newcommand{\Meaning}
-  {\par  \medskip \hrule \smallskip \begingroup 
-       \hsize 0.75\hsize
-       \vbox \bgroup \texttt \bgroup \makeatletter \@Meaning}
+  {\par \medskip \hrule \smallskip \begingroup \hsize 0.75\hsize
+       \vbox \bgroup \whizzy@tt \bgroup \makeatletter \@Meaning}
+
+% \long \def \@Meaning #1{\string #1=\meaning #1\egroup}
+% \newcommand{\Meaning}
+%   {\par  \medskip \hrule \smallskip
+%        \vbox \bgroup \hsize 0.75\hsize \tt \makeatletter \@Meaning}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Last section: advi stuff
+%%%% Section 5: advi stuff
 
 %%% Macros for dumping lines number, putting cursor, etc. 
 
@@ -483,7 +503,10 @@ to slice!
 \let \WhizzyLinePoint \whizzy@ignore
 \let \whizzy@start@here \whizzy@empty
 \def \whizzy@outputline #1#2{}
-
+\let \WhizzyEnvlimit \whizzy@outputline
+\let \WhizzyEnvlimit \whizzy@outputline
+\newcommand \whizzy@ignore@oii[3][]{}
+\def \WhizzyInsideEnvironment{\whizzy@ignore@oii}
 
 % Do not read after \fi
 \expandafter \endinput 
@@ -586,16 +609,23 @@ to slice!
 
 \def \WhizzyLine #1{% 
   \def \whizzy@line{#1}%
-  \bgroup \count0 #1\advance\count0 by -20
+  \bgroup \count0 #1\advance\count0 by -20\relax
   \global \edef \whizzy@linelimit {\the \count0}\egroup%
   \let \whizzy@checkline \whizzy@@checkline
   \whizzy@par
-  \expandafter \everydisplay \expandafter {\the \everydisplay \whizzy@display}
+  \expandafter \everydisplay
+         \expandafter {\the \everydisplay \whizzy@display}%
   \let \whizzy@display \whizzy@@display
   \let \begin \whizzy@@begin%
 }
 \def \WhizzyLinePoint
    {\global \let \whizzy@starthere \relax\WhizzyLine}
+
+%%% ^^A should only act when visible: this should move point to the first
+%%% page where ^^A is visible. 
+\AtBeginDocument
+  {\@ifundefined{overlay}{}
+      {\def \whizzy@AAA{\ifnum \c@overlay=0\whizzy@A\fi}}}
 
 %%% Hack because \whizzy@lineno@display generates $$\hbox{}\halign
 %%% which is not correct. The \hbox cannot be removed.
@@ -612,7 +642,41 @@ to slice!
 %%% Should I do that -- load advi.sty if not loaded? 
 %%% Provides floating table of contents
 
-\usepackage{advi}
+\IfFileExists{advi.sty}{\usepackage{advi}}{}%
+
+%%% overlays
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 6: Could be in packages.
+
+\def \WhizzyEnvlimit #1#2{\expandafter \def \csname wiz@#1@#2\endcsname}
+\newcount \whizzy@envno
+\def \whizzy@envlimit@waux {\whizzy@makelineno \whizzy@aux {\string 
+      \WhizzyEnvlimit {\@currenvir}{\thewhizzy@envno}{\the \whizzy@count}}}
+\def \whizzy@relet #1#2{\expandafter 
+    \let \csname #1\expandafter \endcsname \csname #2\endcsname}
+\def \whizzy@envselect #1#2#3#4{\@temptokena {#2}\@temptokena
+    \expandafter {\the \expandafter
+    \@temptokena \expandafter \whizzy@envinout
+       \expandafter {\csname #3\expandafter \endcsname \expandafter}%
+       \expandafter {\csname #4\endcsname}}%
+  \expandafter \edef \csname #1\endcsname {\the \@temptokena}}
+
+\def \WhizzyInsideEnvironment #1{%
+  \whizzy@relet {out@#1}{#1}\whizzy@relet {endout@#1}{end#1}%
+  \whizzy@envselect{#1}{%
+    \global \advance \whizzy@envno by \@ne 
+    \edef \thewhizzy@envno{\the\whizzy@envno}%
+    \let \whizzy@envinout \@secondoftwo
+    \expandafter \let \expandafter \@aux
+       \csname wiz@#1@\the\whizzy@envno\endcsname
+    \ifx \@aux \relax \else
+      \whizzy@makelineno
+      \ifnum \whizzy@line<\the\whizzy@count \else
+        \ifnum \whizzy@line<\@aux \let \whizzy@envinout \@firstoftwo
+    \fi \fi \fi}{in@#1}{out@#1}%
+  \whizzy@envselect{end#1}{\whizzy@envlimit@waux}{endin@#1}{endout@#1}%
+  \newenvironment{in@#1}}
 
 \makeatother
 \endinput

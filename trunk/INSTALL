@@ -8,12 +8,12 @@
    extensively  tested on other platforms. However, LAT[E]X and Emacs are
    quite  portable  and  possible  compatibility  problem  with  the bash
    shell-script should be minor and easily fixable.
-   Get  the source whizzytex-1.1.tgz from the [3]distribution, uncompress
-   and untar it in some working directory, as follows:
+   Get   the   source   whizzytex-1.1.2.tgz   from  the  [3]distribution,
+   uncompress and untar it in some working directory, as follows:
 
-        gunzip whizzytex-1.1.tgz
-        tar -xvf whizztex-1.1.tar
-        cd whizzytex-1.1
+        gunzip whizzytex-1.1.2.tgz
+        tar -xvf whizztex-1.1.2.tar
+        cd whizzytex-1.1.2
 
    Then,  the  installation  can be automatic (default or customized), or
    manual.
@@ -104,20 +104,30 @@
         INITEX = iniptex
         LATEX = platex
         LATEXFMT = platex
+        BIBTEX = jbibtex
 
    This would be produced directly with the configuration line:
 
-        ./configure -initex iniptex -latex platex -latexfmt latex
+        ./configure  -initex  iniptex -latex platex -latexfmt latex -bibtex
+        jbibtex
 
    If  you  wish  to  run WhizzyTeX with several configurations, you must
    still  choose  a  default configuration, but you will still be able to
    call  WhizzyTeX  with  another  configuration  from Emacs (see Section
    [6]3.1.2 below).
-   Similarly,  you  must at least choose one default previewer type among
-   advi,  xdvi,  and  ps,  and  at  most  one  default previewer for each
-   previewer  type  you  chose.  You will still be able to call WhizzyTeX
-   with other previewers from Emacs, via Emacs configuration (see Section
-   [7]3.1.1).
+   It is possible to customize the set up on a per-user basis by creating
+   a file ~/.whizzytexrc containing, for example, the following lines:
+
+        INITEX = iniptex
+        LATEX = platex
+        FORMAT = platex
+        BIBTEX = jbibtex
+
+   During  the  configuration,  you  must  at  least  choose  one default
+   previewer  type  among  advi,  xdvi,  and  ps, and at most one default
+   previewer for each previewer type you chose. You will still be able to
+   call   WhizzyTeX   with   other   previewers  from  Emacs,  via  Emacs
+   configuration (see Section [7]3.1.1).
 
   1.3  Manual installation
   ---------------------------
@@ -165,10 +175,10 @@
    the directory from were you made the installation. We assume that have
    created a link to the current version subdirectory:
 
-        ln -s whizzytex-1.1 whizzytex
+        ln -s whizzytex-1.1.2 whizzytex
 
    (the  manager  will  then  update  this  link  when  version changes).
-   Alternatively,  you  can also use the full name whizzytex-1.1 in place
+   Alternatively, you can also use the full name whizzytex-1.1.2 in place
    of whizzytex below. The main commands are:
 
         make -f whizzytex/Manager upgrade
@@ -198,20 +208,21 @@
    If the command is understood, skip this section. Otherwise, you should
    first  load  the library whizzytex.el or, better, declare it autoload.
    To  do  this  permanently,  include  the following declaration in your
-   Emacs startup file (probably is ~/.emacs).
+   Emacs  startup  file  (which  probably  is  ~/.emacs  if you are using
+   Emacs):
 
         (autoload 'whizzytex-mode
-            "/usr/local/share/whizzytex/lisp/whizzytex.el"
+            "whizzytex"
             "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
 
-   (where   /usr/local/share/whizzytex/lisp/whizzytex.el   is  the  exact
-   location  of  whizzytex.el,  which  depends on your installation: type
-   make  where  to  see  where Emacs Lisp was installed.) If whizzytex.el
-   happens to be in your (X)Emacs load-path, or if you have adjusted this
-   variable appropriately, you can simply write:
-
-        (autoload 'whizzytex-mode "whizzytex"
-            "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+   This  asumes  that  whizzytex.el  has  been installed in your (X)Emacs
+   load-path.   Otherwise,   you   may   either   adjust   the  load-path
+   appropriately,  or  replace  whizzytex  by  the  full path to the file
+   whizzytex.el,  which  depends on your installation and can be obtained
+   by typing make where in the installation root directory. For instance,
+   if  you  are  using  Emacs,  the  default location for whizzytex.el is
+   /usr/local/share/whizzytex/lisp/whizzytex.el (but it will be different
+   if you are using XEmacs or a customized installation).
 
   2.2  Quick start
   ---------------------------

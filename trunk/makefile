@@ -1,7 +1,7 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.1
-VERSION=1.1.1
+VERSION=1.1.2
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -23,7 +23,7 @@ TARDIRS = doc examples
 TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
 
-XXXPORTS = CHANGES FAQ.html manual.dvi doc/manual.html FAQ 
+XXXPORTS = CHANGES index.html FAQ.html manual.dvi doc/manual.html FAQ 
 
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
@@ -35,7 +35,7 @@ EXPORTS = index.html animation.html older.html Announce \
 whatelse: 
 	@echo 'make what ? [faq pack xxxport Export ]'
 
-pack: FILES $(EXPORTS) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
+pack: FILES $(EXPORTS) $(PACKDIR) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
 
 doc/version.tex: RELEASE VERSION
 	(echo '\def\release{'`cat RELEASE`'}' ; \
@@ -106,7 +106,7 @@ $(NAME).tgz: FILES makefile
 	tar zcvf $@ $(NAME)
 	rm -r $(NAME)
 
-$(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES)
+$(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- Checking examples'
 	cd examples; make >/dev/null
 	@echo ' --- src/whizzytex.el'
@@ -114,13 +114,23 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES)
 	   src/whizzytex.el
 	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*")\) *$$' \
 	   src/whizzytex.el
+	test X`sed -n -e \
+	        's/^(defconst whizzytex-version "\([^"]*\)") *$$/\1/p' \
+	  src/whizzytex.el` = X'$(VERSION)'	   
 	@echo ' --- src/whizzytex'
+	test X`sed -n -e 's/^VERSION="\([^"]*\)" *$$/\1/p' \
+	  src/whizzytex` = X'$(VERSION)'	   
 	grep -e '^PACKAGE=[/a-z.][/a-z.]*$$' src/whizzytex
 	grep -e '^DVIPS=[a-z][a-z]*$$' src/whizzytex
+	@echo ' --- src/whizzytex.sty'
+	test X`sed -n -e \
+	    's/^\\\\def *\\\\whizzy@version *{\([^}]*\)} *$$/\1/p' \
+	  src/whizzytex.sty` = X'$(VERSION)'	   
 	touch $@
 
 $(PACKDIR)/.exists:
 	mkdir -p $(PACKDIR)
+	rm -f $(PACKDIR)/checked
 	touch $@
 
 $(PACKDIR)/whizzytex.el: src/whizzytex.el $(PACKDIR) 

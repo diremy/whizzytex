@@ -3,7 +3,7 @@ include Makefile.config
 # REMOTE INSTALLATION
 # The prefix to add in front of all files during installation. 
 
-INSTALLPREFIX=
+DESTDIR=
 
 
 SRC=src
@@ -29,7 +29,7 @@ config:
 	bash ./configure
 
 config.ok: Makefile.config 
-	bash ./checkconfig
+	bash ./checkconfig config.ok
 
 config.force: 
 	touch config.ok
@@ -95,52 +95,53 @@ endif
 .PHONY: install
 install: all
 ifdef EMACSDIR
-	mkdir -p $(EMACSDIR)
-	$(INSTALLR) $(TMP)/whizzytex.el $(EMACSDIR)
-	echo $(EMACSDIR)/whizzytex.el >> Manager.installed
+	rm -f Manager.installed
+	mkdir -p $(DESTDIR)$(EMACSDIR)
+	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(EMACSDIR)
+	echo $(DESTDIR)$(EMACSDIR)/whizzytex.el >> Manager.installed
 	rm -f $(EMACSDIR)/whizzytex.elc
 ifdef EMACS
-	cp $(TMP)/$(EMACS)/whizzytex.elc $(EMACSDIR)
-	echo $(EMACSDIR)/whizzytex.elc >> Manager.installed
+	$(INSTALLR) $(TMP)/$(EMACS)/whizzytex.elc $(DESTDIR)$(EMACSDIR)
+	echo $(DESTDIR)$(EMACSDIR)/whizzytex.elc >> Manager.installed
 endif
 endif
 ifdef XEMACSDIR
-	mkdir -p $(XEMACSDIR)
-	$(INSTALLR) $(TMP)/whizzytex.el $(XEMACSDIR)
-	echo $(XEMACSDIR)/whizzytex.el >> Manager.installed
+	mkdir -p $(DESTDIR)$(XEMACSDIR)
+	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(XEMACSDIR)
+	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.el >> Manager.installed
 	rm -f $(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
-	cp $(TMP)/$(XEMACS)/whizzytex.elc $(XEMACSDIR)
-	echo $(XEMACSDIR)/whizzytex.elc >> Manager.installed
+	cp $(TMP)/$(XEMACS)/whizzytex.elc $(DESTDIR)$(XEMACSDIR)
+	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.elc >> Manager.installed
 endif
 endif
-	mkdir -p $(BINDIR)
-	$(INSTALLX) $(TMP)/whizzytex $(BINDIR)
-	echo $(BINDIR)/whizzytex >> Manager.installed
-	mkdir -p $(LATEXDIR) 
-	$(INSTALLR) $(SRC)/whizzytex.sty $(LATEXDIR)
-	echo $(LATEXDIR)/whizzytex.sty >> Manager.installed
-	mkdir -p $(DOCDIR) 
-	$(INSTALLR) doc/manual.html COPYING GPL INSTALL $(DOCDIR)
+	mkdir -p $(DESTDIR)$(BINDIR)
+	$(INSTALLX) $(TMP)/whizzytex $(DESTDIR)$(BINDIR)
+	echo $(DESTDIR)$(BINDIR)/whizzytex >> Manager.installed
+	mkdir -p $(DESTDIR)$(LATEXDIR) 
+	$(INSTALLR) $(SRC)/whizzytex.sty $(DESTDIR)$(LATEXDIR)
+	echo $(DESTDIR)$(LATEXDIR)/whizzytex.sty >> Manager.installed
+	mkdir -p $(DESTDIR)$(DOCDIR) 
+	$(INSTALLR) doc/manual.html COPYING GPL INSTALL $(DESTDIR)$(DOCDIR)
 	for i in manual.html COPYING GPL INSTALL; \
 	 do echo $(DOCDIR)/$$i; done >> Manager.installed
 
 where:
 ifdef EMACSDIR
-	@echo 'Emacs Lisp in EMACSDIR=$(EMACSDIR)'
+	@echo 'Emacs Lisp in EMACSDIR=$(DESTDIR)$(EMACSDIR)'
 ifdef EMACS
-	@echo 'Byte-compiled Emacs Lisp in EMACSDIR=$(EMACSDIR)'
+	@echo 'Byte-compiled Emacs Lisp in EMACSDIR=$(DESTDIR)$(EMACSDIR)'
 endif
 endif
 ifdef XEMACSDIR
 	@echo 'XEmacs Lisp in XEMACSDIR=$(XEMACSDIR)'
 ifdef XEMACS
-	@echo 'Byte-compiled XEmacs Lisp  in XEMACSDIR=$(XEMACSDIR)'
+	@echo 'Byte-compiled XEmacs Lisp  in XEMACSDIR=$(DESTDIR)$(XEMACSDIR)'
 endif
 endif
-	@echo 'Script  in BINDIR=$(BINDIR)'
-	@echo 'Latex macros  in LATEXDIR=$(LATEXDIR)'
-	@echo 'Documentation  in DOCDIR=$(DOCDIR)'
+	@echo 'Script  in BINDIR=$(DESTDIR)$(BINDIR)'
+	@echo 'Latex macros  in LATEXDIR=$(DESTDIR)$(LATEXDIR)'
+	@echo 'Documentation  in DOCDIR=$(DESTDIR)$(DOCDIR)'
 
 .PHONY: uninstall
 uninstall: Manager.installed

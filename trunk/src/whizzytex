@@ -4,7 +4,7 @@
 #  Copyright (C) 2001, 2002 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.1.1
+#  Version        : 1.1.2
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -25,6 +25,8 @@
 #############################################################################
 
 ### Configuration (manual or automatic)
+
+VERSION="1.1.2"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -75,7 +77,9 @@ case $# in
  0) echo 'Usage: whizzytex [ OPTIONS ] FILENAME'; exit 1;;
 esac
 
-COMMAND="$0 $@"
+COMMAND="$0"
+for i in "$@"; do COMMAND="$COMMAND"'
+'"$i"; done
 TOUCH=false
 MKSLICE=defaultmkslice
 MKFILE=defaultmkfile
@@ -88,6 +92,7 @@ DO=normal
 DOMARKS=false
 MAKEINDEX=makeindex
 DOINDEX=true
+DVI=dvi
 VIEW=wdvi
 VIEWCOMMAND=advi
 NEWFILES=newfile
@@ -95,7 +100,7 @@ DUPLEX=false
 ADVI=0
 
 # Load config files
-for CONFIG in $CONFIGFILE {$HOME,.}/.whizzytexrc
+for CONFIG in "$CONFIGFILE" {"$HOME",.}/.whizzytexrc
 do
   if [ -f "$CONFIG" ]
   then
@@ -150,6 +155,9 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
+   -display)
+       export DISPLAY="$2"
+       shift;;
    -*)
        echo 'Unrecognized argument '"$1"'
 
@@ -174,6 +182,7 @@ where <option> is
     -advi <advi-like previewer command> 
     -dvi <dvi-like previewer command> 
     -ps <Postscript previewer command> 
+    -display <X display> 
   ' 1>&2
        exit 1;;
    *) break;;
@@ -234,12 +243,13 @@ log () {
   false
 }
 
+GREPB=false
 texlog () { 
   if [ -f $OUTPUT/$1 ] 
   then
     if $GREPB; then
     grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES
-    else sed -n '/^!/,$p' $OUTPUT/$1 | head -$TEXERRORAROUND 
+    else sed -n -e '/^#/p' -e '/^!/,$p' $OUTPUT/$1 | head -$TEXERRORAROUND 
     fi
   fi
   false; 
@@ -287,7 +297,8 @@ cleankill () {
 
 wakeup () { [ -f $LOCK ] && kill -CONT $(cat $LOCK); }
 runinitex () { ( ulimit -t $LIMIT; $INITEX "$@" ); }
-runlatex  () { ( ulimit -t $LIMIT; $LATEX  "$@" ); }
+runlatex  () { ( ulimit -t $[ 3 * $LIMIT ] ; $LATEX  "$@" ); }
+runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 
 
 # Making format
@@ -308,7 +319,7 @@ makebibtex () {
 batchmarks () {
     if runlatex $WFORMAT '\WhizzytexInput{'"$NAME"'}' 1>$OUTPUT/latex
     then
-      $DVICOPY $NAME.dvi $NAME.$VIEW
+      $DVICOPY $NAME.$DVI $NAME.$VIEW 2>$OUTPUT/dvicopy
       [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
       if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAME.log
       then
@@ -398,7 +409,7 @@ esac
 
 # These directories are normally created by Emacs
 mkdir $WHIZZYDIR $INPUT $OUTPUT $TMP 2>/dev/null
-echo $COMMAND > $OUTPUT/command
+echo "$COMMAND"  > $OUTPUT/command
 
 if [ -f $NAME.$FMT ] && [ $NAME$EXT -ot $NAME.$FMT ]
 then 
@@ -454,14 +465,14 @@ ANTIDATE=$(date +%m%d%H%M.%S)
 case $VIEW in
   ps)
     preview () {
-        $DVIPS -o $WHIZZY.pst $WHIZZY.dvi 2>/dev/null && \
+        $DVIPS -o $WHIZZY.pst $WHIZZY.$DVI 2>/dev/null && \
         { [ ! $WHIZZY.pst -nt $WHIZZY.ps ] && touch -t $ANTIDATE $WHIZZY.pst
           mv $WHIZZY.pst $WHIZZY.ps ; }
     }
     SIG=$SIGPS
     ;;   
   wdvi)
-    preview () { $DVICOPY $WHIZZY.dvi $WHIZZY.$VIEW; }
+    preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
     SIG=$SIGDVI
     ;;   
 esac
@@ -480,7 +491,7 @@ preprocess () {
      true
   else
      echo '<Preprocessing failed>'
-     [ -f $ERR ] && cat $ERR
+     [ -f $ERR ] && cat $ERR && cat $ERR >> $OUTPUT/mkslice
      log mkslice
      false
   fi
@@ -489,9 +500,11 @@ preprocess () {
 PROCESS=false
 process () {
   PROCESS=false
+#  This line was added for some reason that I forgot...
+#  Maybe for not reloading subfiles?
   rm -f $WHIZZY.aux
   echo '<Recompiling>'
-  if { runlatex $WFORMAT $WHIZZY$EXT && preview; } 1>$OUTPUT/slice
+  if { runslice $WFORMAT $WHIZZY$EXT && preview; } 1>$OUTPUT/slice
   then
      echo "<Compilation succeeded>"
      ln -f $WHIZZY$EXT $WHIZZY.last
@@ -502,7 +515,7 @@ process () {
        :
      else
        texlog slice
-       [ -f $WHIZZY.last ] && echo 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' '
+       [ -f $WHIZZY.last ] && echo 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' ' 
      fi
      echo '<Continuing>'
      false
@@ -513,9 +526,9 @@ process () {
 # Initial run
 
 # We ensure that the dvi file exists 
-if runlatex $WFORMAT ${WHIZZY}_nil$EXT > $OUTPUT/nil
+if runslice $WFORMAT ${WHIZZY}_nil$EXT > $OUTPUT/nil
 then
-  mv ${WHIZZY}_nil.dvi $WHIZZY.dvi
+  mv ${WHIZZY}_nil.$DVI $WHIZZY.$DVI
   preview || fatal 'Cannot preview initial page'
 else
   cat $OUTPUT/nil
@@ -528,7 +541,7 @@ fi
 [ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
 [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
 
-# process $WHIZZY$EXT is present. Will override $WHIZZY.dvi if it succeeds
+# process $WHIZZY$EXT is present. Will override $WHIZZY.$DVI if it succeeds
 
 if $NEWFILES; then preprocess && process; fi
 
@@ -537,7 +550,7 @@ if $NEWFILES; then preprocess && process; fi
 
 rm -f $TMP/ID
 {
-  $VIEWCOMMAND $WHIZZY.$VIEW 2>$ERR &
+  $VIEWCOMMAND $WHIZZY.$VIEW 2>$OUTPUT/view &
   echo $! >> $TMP/pids
   ID=$!
   echo $ID > $TMP/ID
@@ -560,6 +573,7 @@ whole () {
       echo '<Whole document recompilation failed>'
    fi
 }
+# So as to start immediately...
 whole $DOMARKS
 
 ## Reformating
@@ -572,6 +586,8 @@ reformat () {
       mv -f $NAME.$FMT $WHIZZY.$FMT
       echo '<Reformatting succeeded>'
       PROCESS=true
+      # do the slice with new format (quick)
+      # process
       whole $DOMARKS
   else
       echo '<Reformatting failed>'
@@ -591,6 +607,7 @@ duplex () {
   echo $! > $TMP/DID
   echo $! >> $TMP/pids
 }
+
 if $DUPLEX; then duplex; fi
 
 ## wait for viewer, this is here, so luckily one does not need to wait

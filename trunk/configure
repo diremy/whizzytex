@@ -254,7 +254,8 @@ findcommand () {
    /*) 
      test -x $com && found=$com;;
    *)
-     for i in /bin/$com /usr/bin/$com /usr/local/bin/$com $(which $com)
+     for i in $(type -path -all $com) \
+              /bin/$com /usr/bin/$com /usr/local/bin/$com
      do if test -x $i; then found=$i; break; fi;  done
      ;;
   esac
@@ -262,13 +263,13 @@ findcommand () {
   then echo $found
   else 
     if $2; then error "command $com not found"; fi
-    exit 1
+    false
   fi
 }
 
 message "Checking bash command"
 
-if test -n "bash" 
+if test -n "$bash" 
 then
   bash=$(findcommand "$bash" true)
   if test -z "$bash"; then error "bash not found"; fi
@@ -280,12 +281,17 @@ output  BASH "$bash"
 
 message "Checking Emacs configuration"
 
-emacsnotfound () {
-  if $elc
-  then warning "$1 not found"
-  else error "$1 not found"
+if $elc
+then
+  if test -n "$emacs"; then findcommand "$emacs" false || emacs=''; fi
+  if test -n "$xemacs"; then findcommand "$xemacs" false || xemacs=''; fi
+  if test -z "$emacs$xemacs"; then
+     error " 
+     Cannot compile to bytecode: Neither Emacs nor XEmacs have been found. 
+     Remove -elc option or adjust -emacs or -xemacs
+   "
   fi
-}
+fi
 
 if test -n $USER; then user="-u $USER"; else user=''; fi
 case "$emacsdir" in
@@ -297,7 +303,7 @@ case "$emacsdir" in
      emacsdir=$($emacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
                 2>/dev/null | sed -n -e s/FOUND://p | head -1)
    else 
-     emacsnotfound $emacs
+     warning "$emacs not found"
      emacs=''
    fi
    ;;
@@ -319,7 +325,7 @@ case "$emacsdir" in
        esac
      done
    else
-      emacsnotfound $emacs
+      warning "$emacs not found"
       emacs=''
    fi
    ;;
@@ -338,7 +344,7 @@ case "$xemacsdir" in
      xemacsdir=$($xemacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
                 2>/dev/null | sed -n -e s/FOUND://p | head -1)
    else 
-     emacsnotfound $xemacs
+     warning "$xemacs not found"
      xemacs=''
    fi
    ;;
@@ -352,7 +358,7 @@ case "$xemacsdir" in
      echo "--- Please, select one value for $xemacs byte-compiled lisp"
      select tmp in "$@"
      do 
-       echo "You selectd $tmp"
+       echo "You selected $tmp"
        case "$tmp" in
          "") ;;
          "exit") exit 1;;
@@ -364,7 +370,7 @@ case "$xemacsdir" in
        esac
      done
    else
-      emacsnotfound $xemacs
+      warning "$xemacs not found"
       xemacs=''
    fi
    ;;
@@ -376,9 +382,10 @@ if $elc
 then
   if test -n "$emacs" && test -n "$xemacs" && test "$emacsdir" = "$xemacsdir"
   then
-     warning "
-     $emacs and $xemacs byte-code directorys $emacs are equal 
-     Undoing Emacs and XEmacs configuration
+     error "
+     Cannot compile to bytecode: $emacs and $xemacs byte-code directories 
+     are equal (and equal to $emacsdir).
+     You must use -emacsdir or -xemacsdir to specify different directorries.
    "
      emacs=''
      xemacs=''
@@ -477,6 +484,9 @@ if findcommand "$gv" false >/dev/null
  else
    gv=''; dvips=''
 fi
+case "$advi" in false) advi='';; esac
+case "$xdvi" in false) xdvi='';; esac
+case "$gv" in false) gv=''; esac
 output ADVI "$advi"
 output XDVI "$xdvi"
 output GV "$gv"
