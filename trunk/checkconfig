@@ -81,13 +81,13 @@ END
 # initex
 message "Running INITEX=$INITEX "
 
-if $INITEX '&'$FORMAT 'dummy' > initex.log && [ -f dummy.fmt ] 
+if $INITEX '&'$FORMAT 'dummy' > initex.log && [ -f dummy.$FMT ] 
 then echo ok
 else 
   error "
   Command failed:
 
-      $INITEX '&$FORMAT' dummy > initex.log"' && [ -f dummy.fmt ]'"
+      $INITEX '&$FORMAT' dummy > initex.log"' && [ -f dummy.$FMT ]'"
 
   $INITEX seems to have problems building format $FORMAT for $LATEX
   It could be a problem with $INITEX, or $FORMAT.fmt may not exist.

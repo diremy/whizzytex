@@ -40,6 +40,12 @@ EXPORTS = index.html animation.html older.html Announce \
 	   COPYING GPL INSTALL VERSION RELEASE \
 	   $(XXXPORTS) $(NAME).tgz
 
+archive:
+	mkdir $@
+
+whizzytex:
+	mkdir $@
+
 whatelse: 
 	@echo 'make what ? [faq pack xxxport Export ]'
 

@@ -35,6 +35,12 @@
 
 \def \whizzy@version {1.2.0}
 
+%% The best to remove problem with hyperref.
+%% Because hyperref does not behave well when precompiled in a format
+
+\providecommand*{\Hy@defaultdriver}{hypertex}%
+
+
 %% General purpose
 
 \def \whizzy@empty {}
@@ -345,6 +351,7 @@ to slice!\par \bigskip}}%
 \def \whizzy@input #1#2#3{%
    \IfFileExists{#3}
       {\whizzy@setnorm{#3}%
+       %% To be fix: \whizzy@curfile may be have an extension
        \immediate \write \@mainaux 
            {\string \gdef \string \whizzy @\whizzy@curfile @%
                {\the\c@page.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
