@@ -1,0 +1,8 @@
+#!/bin/sh -x
+
+to=$1
+base=`basename $1 .tex`
+from=$base.new
+
+gpic -t < $from > $to
+

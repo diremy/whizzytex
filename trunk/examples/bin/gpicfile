@@ -1,0 +1,23 @@
+#!/bin/sh
+
+souceinfo () {
+sed \
+ -e '1s/^/\\SourceFile'{$1}/ \
+ -e '/^.PE/ {
+i\
+.PE\
+\\Setlineno
+=
+d
+}' $1
+}
+
+from=$1
+
+case $from in
+  *.tex) ;;
+  *.ltx) 
+     to=`basename $from .ltx`.tex
+     sourceinfo $from | gpic -t > $to 
+     ;;
+esac
