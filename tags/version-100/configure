@@ -1,0 +1,236 @@
+#!/bin/bash
+
+
+PS3="Your choice ==> "
+
+yorn () {
+  echo -n "$1 (y/n) [n] "
+  read ANSWER
+  if test "$ANSWER" = 'y'; then true; else false; fi
+}
+nory () {
+  echo -n "$1 (y/n) [y] "
+  read ANSWER
+  if test "$ANSWER" = 'n'; then false; else true; fi
+}
+
+test -f Makefile.config && \
+  ! yorn "--- Override existing Makefile.config?" \
+  && exit 1
+
+if test -n "$LIBDIR" 
+then 
+  if test -d $LIBDIR; then :
+  else echo "nonexistent LIBDIR=$LIBDIR"; fi
+elif test -d /usr/local/lib
+then LIBDIR=/usr/local/lib/whizzytex
+elif test -d /usr/local/lib
+then LIBDIR=/usr/lib/whizzytex
+else
+  echo '*** Cannot determine library directory'
+  echo '    Give LIBDIR=path explicitly to ./configure'
+fi
+
+if test -z "$EMACS"; then EMACS=emacs; else BOTH=true; fi
+if test -z "$XEMACS"; then XEMACS=xemacs; else BOTH=true; fi
+Emacs=$EMACS
+XEmacs=$XEMACS
+
+
+unset EDITORS
+if $EMACS -batch 2>/dev/null
+  then EDITORS="$EDITORS $EMACS"
+  else unset EMACS
+fi
+if $XEMACS -batch 2>/dev/null
+  then EDITORS="$EDITORS $XEMACS"
+  else unset XEMACS
+fi
+
+set xxx $EDITORS
+shift
+
+
+MANY=false
+BYTECOMP=false
+case $# in
+  0)
+    echo '*** Warning: 
+  Neither Emacs [defaulting to $Emacs] nor XEmacs [defaulting to $XEmacs] 
+  seem to be installed. 
+
+  If you wish to byte-compile emacs-lisp code, please use
+
+    EMACS=<Emacs name> ./configure 
+    XEMACS=<XEmacs name> ./configure 
+    EMACS=<Emacs name> XEMACS=<XEmacs name> ./configure 
+
+continuing...
+'
+  ;;
+  1);;
+  *) MANY=true;;
+esac
+
+if test -n "$USER"; then INIT="-u $USER"; fi
+for EXEC in $EDITORS
+do 
+  case `$EXEC -batch -eval "(princ emacs-version)" 2>/dev/null` in
+   *XEmacs*) X=X; DIR=$XEMACSDIR;;
+   *) X=''; DIR=$EMACSDIR;;
+  esac
+  if $MANY
+  then ELSEDIR="$LIBDIR/lisp $LIBDIR/$EXEC-lisp"
+  else ELSEDIR=$LIBDIR/lisp
+  fi
+  if test -z "$DIR"
+  then
+    echo "Found $EXEC installed."
+    set xxx \
+      `$EXEC -batch $INIT -l $(pwd)/configure.el -eval "(printall)" \
+        2>/dev/null` \
+       $ELSEDIR "none"
+    shift
+    case $# in
+     0) 
+        echo "Cannot determine ${X}EMACSDIR ---site-lisp directory for $EXEC "
+        echo "Please enter full path name"
+        echo -n "${X}EMACSDIR ==> "
+        read DIR
+        ;;
+     1)
+        DIR=$1
+        ;;
+     *)
+        echo "--- Please, select one value for ${X}EMACSDIR (for $EXEC)
+
+    none means do not install files for $EXEC"
+        if $MANY; then echo "
+    If you wish to install byte-compile code for both Emacs and XEmacs
+    choose different locations for EMACSDIR and XEMACSDIR. 
+    Otherwise, your may choose the same location."; echo; fi
+        select DIR in "$@"
+        do
+          echo "You selected $DIR" 
+          case /$DIR/ in
+           //) ;;
+           /none/) declare ${X}EMACS=''; unset DIR; break;;
+           *) break ;;
+          esac
+        done
+        ;;
+    esac
+  fi
+  declare ${X}EMACSDIR=$DIR
+done
+
+if test "/$EMACS/$XEMACS/$EMACSDIR/$XEMACSDIR/" = "/////"
+then 
+  echo "Using default library $LIBDIR/lisp for emacs-lisp"
+  EMACSDIR='$(LIBDIR)/lisp'
+fi
+
+if test -n "$EMACS" -a -n "$XEMACS" 
+then
+  if test "$EMACSDIR" = "$XEMACSDIR"
+  then
+    echo "*** Warning:
+
+  Will not byte-compile lisp for $EMACS and $XEMACS because both
+  EMACSDIR and XEMACSDIR  are identical and equal to
+
+    $EMACSDIR  
+
+  Will only install source lisp code. 
+  This is not a problem if this is what you meant.
+  Otherwise, start again and choose different directories.
+
+continuing...
+"
+    unset EMACS XEMACS XEMACSDIR
+  else 
+    if ! nory '--- Do you wish to byte-compile lisp code?'
+    then unset EMACS; unset XEMACS; fi
+  fi
+fi
+
+
+if test -z "$BINDIR"; then BINDIR='$(LIBDIR)/bin'; fi
+if test -z "$LATEXDIR"; then LATEXDIR='$(LIBDIR)/latex'; fi
+if test -z "$DOCDIR"; then DOCDIR='$(LIBDIR)/doc'; fi
+
+# Checking for advi, xdvi, dvips, gv
+if test -z "$ADVI"; then ADVI=advi; fi
+if test -z "$XDVI"; then XDVI=xdvi; fi
+if test -z "$GV"; then GV=gv; fi
+if test -z "$DVIPS"; then DVIPS=dvips; fi
+
+if type $ADVI; then advi=true; else advi=false; unset ADVI; fi
+if type $XDVI; then xdvi=true; else xdvi=false; unset XDVI; fi
+if type $GV; then gv=true; else gv=false; unset GV; fi
+if type $DVIPS; then dvips=true; else dvips=false; fi
+
+if $advi || $xdvi || $gv
+then
+  echo "Viewers found: $ADVI $XDVI $GV"
+  if ! $advi
+  then echo "*** Warning: 
+
+  $ADVI does not seem to be installed. (You may wish to install it.)
+"
+  fi
+else
+  echo "*** Warning:
+
+  Could not find any viewer.
+  (None of $ADVI $XDVI $GV seem to be installed).
+"
+  if ! yorn "Do you wish to continue?"; then exit 1; fi
+fi
+
+if ! $dvips
+then 
+  echo "*** Warning: 
+
+  DVI-Postscript converter (defaulting to '$DVIPS')  does not seem to be
+  installed.  Will assume that it is dvips.
+"
+  DVIPS=dvips
+fi
+  
+
+
+sed \
+ -e "s%^\(LIBDIR *=\).*%\1 $LIBDIR%" \
+ -e "s%^\(EMACS *=\).*%\1 $EMACS%" \
+ -e "s%^\(XEMACS *=\).*%\1 $XEMACS%" \
+ -e "s%^\(EMACSDIR *=\).*%\1 $EMACSDIR%" \
+ -e "s%^\(XEMACSDIR *=\).*%\1 $XEMACSDIR%" \
+ -e "s%^\(BINDIR *=\).*%\1 $BINDIR%" \
+ -e "s%^\(LATEXDIR *=\).*%\1 $LATEXDIR%" \
+ -e "s%^\(DOCDIR *=\).*%\1 $DOCDIR%" \
+ -e "s%^\(ADVI *=\).*%\1 $ADVI%" \
+ -e "s%^\(XDVI *=\).*%\1 $XDVI%" \
+ -e "s%^\(GV *=\).*%\1 $GV%" \
+ -e "s%^\(DVIPS *=\).*%\1 $DVIPS%" \
+  < Makefile.config.in > Makefile.config
+
+echo
+echo Summary:
+echo 
+echo " LIBDIR = $LIBDIR "
+echo " EMACS = $EMACS "
+echo " EMACSDIR = $EMACSDIR "
+echo " XEMACS = $XEMACS "
+echo " XEMACSDIR = $XEMACSDIR "
+echo " BINDIR = $BINDIR "
+echo " LATEXDIR = $LATEXDIR "
+echo " DOCDIR = $DOCDIR "
+echo
+echo " ADVI = $ADVI "
+echo " XDVI = $XDVI "
+echo " GV = $GV "
+echo " DVIPS = $DVIPS "
+echo
+echo 'See Makefile.config for details'
+echo
