@@ -10,9 +10,8 @@
 
 %%% Some macros
 \usepackage {fullpage}
-\usepackage {advi}
-\usepackage {edit}
 \usepackage {advi-annot}
+\usepackage {wedit}
 \usepackage {../../doc/manual}
 
 \usepackage {color}
@@ -63,21 +62,21 @@ instrument some of the latex commands.
 
 \noindent
 \psset{boxsep=0pt,framesep=0pt}
-\editcirclenode{x=6.4465,y=6.7011,w=8.9197}
+\weditcirclenode{x=6.4465,y=6.7011,w=7.6882}
   [boxsep=0pt,framesep=0pt,fillstyle=solid,fillcolor=cyan]{A}%
   {Left \\adjusted\\ circle}%
-\editcirclenode*{x=24.6966,y=7.6779,w=2.6665}
+\weditcirclenode*{x=24.4620,y=7.7952,w=2.4906}
    [boxsep=0pt,framesep=0pt,fillstyle=solid,fillcolor=cyan]%
    {A}{Centered\\ circle}%
 
-\newcommand{\editovalnode}[1]{\@ifnextchar [{\editovalnode@i{#1}}
-{\editovalnode@ii{#1}{}}}
-\def \editovalnode@i#1[#2]{\editovalnode@ii{#1}{#2}}
-\def \editovalnode@ii#1#2#3#4%
- {\adviedit{comm=\editovalnode,#1}%
-  {\hskip -\adviw\ovalnode[#2]{#3}{\hspace{2\adviw}}\hskip -\adviw
-   \hbox to 0em{\hss \begin{tabular}{c}#4\end{tabular}\hss}%
-  }}%
+%% \newcommand{\weditovalnode}[1]{\@ifnextchar [{\weditovalnode@i{#1}}
+%% {\weditovalnode@ii{#1}{}}}
+%% \def \weditovalnode@i#1[#2]{\weditovalnode@ii{#1}{#2}}
+%% \def \weditovalnode@ii#1#2#3#4%
+%%  {\adviedit{comm=\weditovalnode,#1}%
+%%   {\hskip -\adviw\ovalnode[#2]{#3}{\hspace{2\adviw}}\hskip -\adviw
+%%    \hbox to 0em{\hss \begin{tabular}{c}#4\end{tabular}\hss}%
+%%   }}%
 \adviedit{x=16.9091,y=-2.9009,w=4.0624}
   {\hsize \adviw\vbox{aa kj lkj lkjkl ljk jjklj klj  
 \adviedit{x=7.6260,y=4.1626,w=4.7126}
@@ -99,7 +98,7 @@ su yy iaysuy lkj ljl jk jlk jkl jj}}%
 %% hspace
 \adviedit{w=21.3128}{\hspace \adviw}AAA
 
-\adviedit{x=24.1928,y=-4.2045,w=7.5512}
+\adviedit{x=22.2576,y=-4.2045,w=10.7179}
  {\ovalnode{A}
    {\parbox{0.69\adviw}{aa aa  a a aaa hkj npkj a aaa hkj kj kj hkj k j}}}
 
@@ -174,7 +173,7 @@ Be careful, A Camel may hide another one\ldots.
 \setedit{unit=0.2\adviw}%
 %%To place and resize each Caml independently, using the same unit.
 \adviedit{x=3.8210,y=-1.0322,w=-0.5217,h=0.8348}{\caml}%
-\adviedit{x=7.1857,y=-1.1273,w=-1.4251,h=0.9039}{\caml}%
+\adviedit{x=7.1190,y=-1.3109,w=-1.1080,h=1.0374}{\caml}%
 \adviedit{x=1.1410,y=-0.9226,w=1.1661,h}{\caml}%e
 \adviedit{x=0.1042,y=-1.4842,w=1.4992,h=1.3165}{\caml}%
 \adviedit{x=1.4824,y=-1.4802,w=1.5068,h=1.3165}{\caml}%
@@ -197,11 +196,12 @@ Chossing a color:
 }
 
 \vspace{8em}
+\Meaning \whizzy@thelineno
 
 \qquad 
-\editbubble{w=10.5823,h=1.7234}
-{\editbubble{w=3.4823,h=2.3381}
-            {\editbubble{w=-0.4397,h=1.5079}{anchor}{first}}
+\weditbubble{w=10.5823,h=1.7234}
+{\weditbubble{w=3.4823,h=2.3381}
+            {\weditbubble{w=-0.4397,h=1.5079}{anchor}{first}}
             {second}}
           {third}
 
