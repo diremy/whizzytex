@@ -547,7 +547,7 @@ reformat () {
   else
       echo '<Reformatting failed>'
       log format
-      echo '<Contuning with the old format>'
+      echo '<Continuing with the old format>'
   fi
 }
 

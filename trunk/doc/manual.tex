@@ -124,6 +124,10 @@ By default, the configuration is non interactive.  However, you may call it
 with option \lst"-helpme" to have the script do more guessing for your and
 prompt for choices if needed.
 
+Note that by default, the emacs-lisp code whizzytex.el is not
+byte-compiled. You need to pass the option \lst"-elc" to \lst"configure" 
+in order to do that.
+
 \paragraph {Checking {\tt Makefile.config}}
 
 A misconfiguration of your installation, or ---much more subttle--- a
@@ -989,6 +993,7 @@ will kill any old {\whizzy} process on startup.
 
 \section {Whizzy dream}
 
+
 When used together with Active-DVI, {\whizzy} could be made much mode
 powerful. In particular, it would be quite easy to to lift {\whizzy} from an
 incremental viewer to an assistant editor.
@@ -1007,6 +1012,20 @@ active objects, and processed in the next slice. Thanks to the short
 incremental loop, this would (almost) appear as if actions where executed by
 Active-DVI.
 
+\paragraph {Experimental}
+
+{\em
+
+This dream is becoming reality...
+
+Some edition such as repositioning and resizing of 
+{\tt boxes}, {\tt minipages} and {\tt glue} can already be 
+done in {\whizzy} provided you have a recent version of Active-DVI. 
+
+See the example {\tt example/edit/main.tex} and the package
+{\tt example/edit/whizzedit.sty}
+
+}
 
 
 \end{document}

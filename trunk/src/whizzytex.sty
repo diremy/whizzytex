@@ -408,10 +408,10 @@ to slice!
 % Do not remenber why this... \whizzy@active should be better
 %\AtBeginDocument {\catcode `\^^A \active}
 
-\long \def \@Meaning #1{\string #1=\meaning #1\egroup}
+\long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup}
 \newcommand{\Meaning}
   {\par  \medskip \hrule \smallskip \vbox \bgroup
-       \tt \hsize 0.7\hsize\makeatletter \@Meaning}
+       \texttt \bgroup \hsize 0.7\hsize\makeatletter \@Meaning}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Last section: advi stuff

@@ -955,7 +955,7 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
   (interactive)
   (whizzy-call "duplex"))
 
-(defun whizzy-observe-changes (&optional ignore-check)
+(defun whizzy-observe-changes (&optional ignore-check force)
   (if executing-kbd-macro  t
     (if (or (and whizzytex-mode (whizzy-get whizzy-running)) ignore-check)
         (let ((tick (buffer-modified-tick))
@@ -1203,14 +1203,16 @@ in you emacs startup file (usually ~/.emacs)."
     (whizzy-delete-slice-overlays)
     (whizzy-delete-error-overlay)
     (if whizzy-slave
-        (whizzy-set whizzy-slaves (cdr (whizzy-get whizzy-slaves)))
+        (whizzy-set whizzy-slaves
+                    (delete (current-buffer) (whizzy-get whizzy-slaves)))
       (whizzy-set whizzy-running nil)
       (whizzy-kill)
-      (while (consp (whizzy-get whizzy-slaves))
-        (let ((buf (car (whizzy-get whizzy-slaves))))
-          (if (buffer-live-p buf)
-              (save-excursion (set-buffer buf) (whizzy-mode-off))))
-      ))
+      (let ((buffers (whizzy-get whizzy-slaves)))
+        (while buffers
+          (if (buffer-live-p (car buffers))
+              (save-excursion (set-buffer (car buffers)) (whizzy-mode-off)))
+          (setq buffers (cdr buffers)))
+        (whizzy-set whizzy-slaves nil)))
     (setq whizzytex-mode nil)))
 
 
@@ -1975,8 +1977,15 @@ Toggle if ARG is ommitted."
            (string-match "latin\\|8859"
                           (symbol-name buffer-file-coding-system))
            (string-match "\\\\['`^\"c]\\|[!?]`" string))
-    (iso-translate-string string iso-tex2iso-trans-tab)
+      (iso-translate-string string iso-tex2iso-trans-tab)
     string))
+
+(defun whizzy-detex (string)
+  (let ((detex (whizzy-tex2iso-string string)))
+    (if (string-equal string detex)
+        (regexp-quote string)
+      (concat "\\(" (regexp-quote string) "\\|" (regexp-quote detex) "\\)")
+      )))
 
 (defun whizzy-goto-line (s)
   (if (string-match
@@ -2034,20 +2043,17 @@ Toggle if ARG is ommitted."
                  ))))
            ))
         (unless (or (not dest-buffer) (and (> line last) (/= last 0)))
-          (setq before (regexp-quote (whizzy-tex2iso-string before)))
-          (setq after (regexp-quote (whizzy-tex2iso-string after)))
-          (if left (setq left (regexp-quote (whizzy-tex2iso-string left))))
-          (if right (setq right (regexp-quote (whizzy-tex2iso-string right))))
-          (message "%s << %s || %s >> %s" left before after right)
+          (setq before (whizzy-detex before))
+          (setq after (whizzy-detex (whizzy-tex2iso-string after)))
+          (if left (setq left (whizzy-detex left)))
+          (if right (setq right (whizzy-detex right)))
           (let*
               ((here (point))
                (space "[\t ]*\n?[\t ]*")
-               (word (concat "[^A-Za-z0-9]\\("
-                             before "\\)\\(" after
-                             "\\)[^A-Za-z0-9]"))
-               (context (concat "\\("
-                                left space before "\\)\\(" after space right
-                                "\\)"))
+               (word
+                (concat "[^A-Za-z0-9]\\(" before "\\)" after "[^A-Za-z0-9]"))
+               (context
+                (concat "\\(" left space before "\\)" after space right))
                )
             (cond
              ((> last 0)
@@ -2092,10 +2098,11 @@ Toggle if ARG is ommitted."
                  (t error)))
                ((equal old 'fmt) (if (equal error 'fmt) 'whole old))
                ((equal old 'whole)
-                (if (equal error 'fmt) error
+                (if (equal error 'fmt) 'whole
                   (if (equal error 'whole) 'tex old)))
                ((equal old 'tex) (if (equal error 'tex) nil old))
                )))
+    ;; (message "error=%S clean=%S old=%S new=%S" error clean old new)
     (if (equal new old) nil
       (whizzy-set whizzy-slice-error new)
       (setq whizzy-error-string
@@ -2107,6 +2114,37 @@ Toggle if ARG is ommitted."
        (let ((buffer (whizzy-get whizzy-active-buffer)))
          (and (buffer-live-p buffer) (set-buffer buffer)))))
           
+(defun whizzy-edit-field (name val)
+  (save-excursion
+    (and val
+         (not (string-equal val "*"))
+         (looking-at
+          (concat "\\([xywh]=-?[0-9.]*,\\)*" name "=\\(-?[0-9.]*\\)[,}]"))
+         (progn
+           (goto-char (match-beginning 2))
+           (delete-region (point) (match-end 2))
+           (insert val)
+           t))
+    ))
+
+(defun whizzy-edit (command name line file type dx dy)
+  (let ((x) (y) (regexp) (modified))
+    (message "command=%S name=%S line=%S file=%S" command name line file)
+    (if (equal type 'moveto) (setq x "x" y "y")  (setq x "w" y "h"))
+    (setq regexp
+          (concat (regexp-quote command) " *\n? *{"
+                  (regexp-quote name) "} *\n? *{\\([^}]*\\)}"))
+    (save-excursion
+      ;; (whizzy-goto-file file)
+      (goto-line (string-to-int line))
+      (if (or (re-search-backward regexp (point-min) t)
+              (re-search-forward regexp (point-max) t))
+          (let ((begin  (match-beginning 1)))
+            (goto-char begin)
+            (setq modified (whizzy-edit-field x dx))
+            (if (or (whizzy-edit-field y dy) modified)
+              (whizzy-observe-changes))))
+        )))
         
 (defun whizzy-filter-output (s)
   (cond
@@ -2134,7 +2172,14 @@ Toggle if ARG is ommitted."
    ((string-match "^<Reformatting failed>" s)
     (whizzy-error 'fmt)
     (whizzy-auto-show 1))
+   ((string-match "^<Continuing with the old format>" s)
+    (if (equal (mark t) (point-max)) 
+      (if (re-search-forward "^<Continuing with the old format>"
+                          (point-max) t)
+      (set-mark (match-end 0))
+      )))
    ((string-match "^<Reformatting succeeded>" s)
+    (set-mark nil)
     (whizzy-error 'fmt t)
     )
    ((string-match "^<Whole document recompilation failed>" s)
@@ -2165,6 +2210,18 @@ Toggle if ARG is ommitted."
    ((string-match "\#line \\([0-9][0-9]*\\)" s)
     (whizzy-goto-line s)
     )
+   ((string-match
+  "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\" #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(move\\|resize\\)to \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
+    (if (whizzy-set-active-buffer)
+        (whizzy-edit
+         (match-string 1 s)
+         (match-string 2 s)
+         (match-string 3 s)
+         (match-string 4 s)
+         (if (string-equal (match-string 5 s) "move") 'moveto 'resizeto)
+         (match-string 6 s)
+         (match-string 7 s)
+         )))
    ((string-match "<Fatal error>" s)
     (if (whizzy-set-active-buffer)
         (progn
@@ -2556,7 +2613,7 @@ as well as a tool bar menu `whizzytex-mode-map'."
   (setq whizzy-point-visible nil)
   (setq whizzy-line nil)
 )
-  
+
 (provide 'whizzytex)
 
 ;;; whizzytex.el ends here

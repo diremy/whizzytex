@@ -93,6 +93,7 @@ install: all
 ifdef EMACSDIR
 	mkdir -p $(EMACSDIR)
 	cp $(TMP)/whizzytex.el $(EMACSDIR)
+	rm -f $(EMACSDIR)/whizzytex.elc
 ifdef EMACS
 	cp $(TMP)/$(EMACS)/whizzytex.elc $(EMACSDIR)
 endif
@@ -100,6 +101,7 @@ endif
 ifdef XEMACSDIR
 	mkdir -p $(XEMACSDIR)
 	cp $(TMP)/whizzytex.el $(XEMACSDIR)
+	rm -f $(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
 	cp $(TMP)/$(XEMACS)/whizzytex.elc $(XEMACSDIR)
 endif

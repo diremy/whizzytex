@@ -14,6 +14,7 @@ SINCE LAST RELEASE:
 
 Emacs-mode:
 
+ * added whizzy-edit to edit (move and resize) tex objects from advi.
  * added detexification so that whizzy-goto-line works in latin mode. 
  * whizzy-goto-line takes surounded words into accoun for better precision
  * renamed -fmt into -format and added -fmt for format extension
@@ -53,6 +54,7 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ * Added examples/edit/{main.tex,whizzedit.sty}
  * Change of Manager makefile to call ./configure when changed
  * Rewrote ./configure to work in batch and take command line arguments
  * Reorganized Web page, added FAQ.html

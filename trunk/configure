@@ -252,8 +252,8 @@ message "Checking Emacs configuration"
 
 emacsnotfound () {
   if $elc
-  then error "$1 not found"
-  else warning "$1 not found"
+  then warning "$1 not found"
+  else error "$1 not found"
   fi
 }
 
@@ -326,7 +326,11 @@ case "$xemacsdir" in
        case "$tmp" in
          "") ;;
          "exit") exit 1;;
-         *) xemacsdir="$tmp"; break 2 ;;
+         *) if test "$emacsdir" = "$tmp"
+            then warning \
+ "  You cannot choose the same byte-code directory for both $emacs and $xemacs"
+            else xemacsdir="$tmp"; break 2 
+            fi;;
        esac
      done
    else
