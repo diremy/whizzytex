@@ -1,0 +1,58 @@
+# Makefile.config: Version 6.
+
+PREFIX = /usr/local
+
+# Full path for Bash
+BASH = /bin/bash
+
+# Architecture independent files directory
+DATADIR = $(PREFIX)/share/whizzytex
+
+# Architecture dependent files directory
+LIBDIR = $(PREFIX)/lib/whizzytex
+
+# Executable files directory (does not need to be in the PATH)
+BINDIR = $(PREFIX)/bin
+
+# Name of the Emacs or XEmacs command. 
+# Fill only if you wish to install byte-compiled lisp code. 
+
+EMACS = 
+XEMACS = 
+
+# Where to install emacs-lisp code (need not be in (X)Emacs load-path)
+# Fill at most one line (either one). 
+# If EMACS or XEMACS are both defined then EMACSDIR and XEMACSDIR must differ
+
+EMACSDIR = $(LIBDIR)/emacs/
+XEMACSDIR = $(LIBDIR)/xemacs/
+
+# Where to install the LaTeX macros (need not be in the TEXINPUTS path)
+LATEXDIR = $(DATADIR)/latex
+
+# Where to install the documentation
+DOCDIR = $(PREFIX)/share/doc/whizzytex
+
+# LATEX implementation: all fields must be filed
+#######################
+
+INITEX = initex
+LATEX = latex
+FORMAT = latex
+FMT = fmt
+BIBTEX = bibtex
+
+# VIEWERS: at least one previewer should be defined
+#######################
+
+ADVI = advi
+MULTIPLE = true
+XDVI = xdvi
+GV = gv
+DVIPS = dvips
+
+# CONFIGFILE
+
+CONFIGFILE = /etc/whizzytex/whizzytex.conf
+
+#######################
