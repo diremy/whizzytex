@@ -5,7 +5,11 @@ Emacs-mode:
 
 Shell-script: 
 
+ * write in .waux and read in .raux to be stable in face of errors
+
 LaTeX macros:
+
+ * write in .waux and read in .raux to be stable in face of errors
 
 Installation/Documentation:
 

@@ -476,9 +476,12 @@ to slice!\par \bigskip}}%
 
 %% whizzy aux information for whizzy extentions, should be set here
 %% so that several extension can share the same 
+%% Write auxilliary infor in .waux  but read it in .raux 
+%% The script is supposed to move the former into the later 
+%% so as to be stable in presence of errors. 
 
 \AtBeginDocument 
- {\ifwhizzy@latexmode \else \@input {\jobname .waux}\fi 
+ {\ifwhizzy@latexmode \else \@input {\jobname .raux}\fi 
   \newwrite \whizzy@out \immediate \openout \whizzy@out \jobname.waux
   \def \whizzy@aux #1{\immediate \write \whizzy@out {#1}}%
  }

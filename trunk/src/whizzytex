@@ -94,6 +94,8 @@ MAKEINDEX=makeindex
 DOINDEX=true
 DVI=dvi
 VIEW=wdvi
+WAUX=waux
+RAUX=raux
 VIEWCOMMAND=advi
 NEWFILES=newfile
 MULTIPLE=true
@@ -285,12 +287,12 @@ clean () {
    [ -f "$TMP/pids" ] && kill -TERM $(cat "$TMP"/pids) 2>/dev/null
    if $INITPHASE 
    then 
-     for i in $WHIZZY.* "${WHIZZY}_nil".* $NAME.{$FMT,$VIEW,waux}
+     for i in $WHIZZY.* "${WHIZZY}_nil".* $NAME.{$FMT,$VIEW,$RAUX}
      do 
        if [ -f $i ]; then mv "$i" "$TMP"; fi
      done
    else
-     rm -f $WHIZZY.* "${WHIZZY}_nil".* $NAME.{$FMT,$VIEW,waux}
+     rm -f $WHIZZY.* "${WHIZZY}_nil".* $NAME.{$FMT,$VIEW,$WAUX,$RAUX}
      if $TRACE; then : ; else rm -rf $WHIZZYDIR; fi
    fi
    rm -f $LOCK
@@ -344,8 +346,6 @@ makebibtex () {
 batchmarks () {
     if runlatex $WFORMAT '\WhizzytexInput{'$NAME'}' 1>"$OUTPUT"/latex
     then
-      echo XXX
-      cp $NAME.dvi /tmp
       $DVICOPY $NAME.$DVI $NAME.$VIEW 2>"$OUTPUT"/dvicopy
       [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
       if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAME.log
@@ -357,6 +357,12 @@ batchmarks () {
          $MAKEINDEX $NAME.idx 1>"$OUTPUT"/makeindex 
          [ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
          true
+      fi
+      # move .raux into .waux so as to preserve the integrity of .raux 
+      # when the slice fails. 
+      if [ -f $NAME.$WAUX ]
+      then mv $NAME.$WAUX $NAME.$RAUX
+      else rm -f $NAME.$RAUX
       fi
     else 
        rm -f $WHIZZY.pag; false
@@ -552,6 +558,12 @@ process () {
   then
      echo "<Compilation succeeded>"
      ln -f $WHIZZY$EXT $WHIZZY.last
+     # We say whizzy auxilliary information to avoid yoyo in case of errors. 
+     if [ -f $WHIZZY.$WAUX ]
+     then mv $WHIZZY.$WAUX $WHIZZY.$RAUX
+     else rm -f $WHIZZY.$RAUX
+     fi
+     true
   else
      echo "<Recompilation failed>"
      if [ -f $WHIZZY.last ] && worddiff  $WHIZZY.last $WHIZZY$EXT
