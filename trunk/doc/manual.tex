@@ -1,34 +1,21 @@
 \documentclass[12pt]{article}
 
-\usepackage {fullpage}
-
-\usepackage {color}
-\usepackage {hyperref}
 \input {version}
-
-\let \lst \verb
-%HEVEA \def \space { }\let \hfil \relax \let \hfill\relax
-
-\def \whizzy {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
-\def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
-\def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
-\def \WhizzyEdit {Whizzy{\sc 
-\raise 0.2ex \hbox{E}\kern -0.2ex%
-\lower 0.0ex \hbox{d}\kern -0.2ex%
-\lower 0.2ex \hbox{i}\kern -0.5ex%
-\raise 0.2ex \hbox{T}}}%
-
-
-%% The following lines are to help HeVeA make  the HTML version of the manual
-
-%HEVEA \def \instruction #1{}
-%HEVEA\def \whizzy{{Whizzy{\TeX}}}
-%HEVEA\def \WhizzyEdit {{WhizzyEdit}}
-%HEVEA\renewcommand{\@bodyargs}{TEXT=black BGCOLOR=white}
-
 \usepackage {manual}
 
 \begin{document}
+\begin{rawhtml}
+<link rel="Top" href="index.html">
+<link rel="Up" href="#htoc">
+<link rel="Contents" href="#htoc">
+<link rel="Section" title="Installation" href="#install">
+<link rel="Section" title="Using WhizzyTeX" href="#using">
+<link rel="Section" title="Manual" href="#manual">
+<link rel="Section" title="Viewers" href="#viewers">
+<link rel="Section" title="Customizing" href="#custom">
+<link rel="Section" title="WhizzyEditing" href="#edit">
+<link rel="Section" title="Implementation" href="#impl">
+\end{rawhtml}
 \pagestyle {empty}
 \author {\rightline {Didier R{\'e}my}}
 \date {\hfill Version {\version}, \today}
@@ -66,20 +53,28 @@ An {\bfseries Emacs} minor-mode for\\
 
 \begin{abstract}
 \def \B{\textbf}
-{\whizzy}
+{\Whizzy}
 % \footnote {Standing for {\em {\B W}hat {\B i} {\B z}ee {\B i}z what
 % {\B y}ou {\expandafter \B \TeX}}}
 is an Emacs minor mode for incrementally
 viewing {\LaTeX} documents that you are editing.
 %
 It works under Unix with {\tt gv} and {\tt xdvi} viewers, but 
-the \href{http://pauillac.inria.fr/advi/}{Active-DVI} viewer will
+the \href{http://pauillac.inria.fr/advi/}{\ActiveDVI} viewer will
 provide much better visual effects and offer more functionalities.
+
+In addition, when used with {\ActiveDVI}, {\Whizzy} allows for mouse
+edition of dimensions and floats, which can be used to adjust spaces,
+move or resize objects visually. 
 \end{abstract}
 
+\newpage
+\tableofcontents
+
+
+%HEVEA\hypertarget{install}{}
 
 \section {Installation}
-
 {\whizzy} is designed for \lst"Unix" plateforms\footnote{It has 
 been reported to successfully work on Windows under Cygwin---See the 
 \href{FAQ.html}{FAQ}.}.
@@ -341,7 +336,8 @@ make VERSION=<version> download downgrade install
 \end{tt}
 \end{quote}
 
-\section{Using {\whizzy}}
+%HEVEA\hypertarget{using}{}
+\section{Using {\protect\whizzy}}
 \label{using}
 
 \subsection {Loading {\tt whizzytex.el}}
@@ -641,6 +637,7 @@ If whizzytex fails at lauch time, you may also use the option {\tt -trace}
 of file configuration (see Section~\ref {configuration.trace}).
 
 
+%HEVEA\hypertarget{manual}{}
 \section{Manual} 
 \label{manual}
 
@@ -694,8 +691,6 @@ keyword, only the first one is considered. The argument of a configuration
 line is the rest of the line stripped of its white space.
 
 The keywords are:
-\def \arg#1{$\langle\texttt {#1}\rangle$}
-\def \opt#1{[ #1 ]}
 \begin{description}
 \item[whizzy-master]\arg {master}
 \\
@@ -1007,9 +1002,9 @@ recompiled whenever the buffer itself is saved (manually).
 The recompilation of the whole document is off in slide mode.
 
 
+%HEVEA\hypertarget{viewers}{}
 \section{Viewers}
 
-\def \ActiveDVI {Active-DVI}
 
 \subsection {Viewing with \ActiveDVI}
 
@@ -1056,7 +1051,10 @@ signal and respond by reloading the file.
 This does not work because they is no simple way to tell
 \lst"acroread" to reload its file in batch. 
 
-\section{Customizing the document under \Whizzy}
+%HEVEA\hypertarget{custom}{}
+\section{Per document customization} %
+
+\subsection{Emacs customization}
 
 \whizzy attempts to make the slice appears as much as possible as in 
 the full document, so that all typesetting adjustments, including overfull
@@ -1073,7 +1071,7 @@ This can be achieved by defining macros in a file \lst"whizzy.sty" in the
 {\LaTeX} path that will be automatically loaded by 
 {\whizzy} at the end format building. This file can be be placed in your
 macro directory and be used for all documents (you may thus customize
-\Whizzy itself), or in the current directory
+{\Whizzy} itself), or in the current directory
 and be used for only some documents.
 
 You may also use the Emacs variable \lst"whizzy-customize" (that can be set
@@ -1084,8 +1082,367 @@ customization. Moreover, the customization may be easily changed in the
 middle of a session. For instance, I frequently set this variable to
 \lst"\large" to temporarily enlarge the text.
 
+\subsection{Shell customization}
+
+A per document customization is also possible by 
+including a \lst".whizzytexrc" configuration file in 
+the current directory. 
 
 
+%HEVEA\hypertarget{edit}{}
+\section {\WhizzyEdit ing}
+\begin{quote}
+\em
+This feature requires version \texttt{1.50+3} or more recent of
+{\ActiveDVI}. 
+\end{quote}
+
+When used together with Active-DVI, {\whizzy} can be made much mode
+powerful. In particular, it is not difficult to lift  {\whizzy} from an
+incremental viewer to an assistant editor.
+
+Active-DVI provides a notion of active boxes (specified with advi
+\lst"\special" annotations.  When {\ActiveDVI} is put in edition mode,
+active boxes are drawn on screen and can be move or resized with the mouse.
+When the mouse is released, the new size or position is printed
+on standard output together with the action to be taken and received by
+emacs watching the output.
+%
+Emacs has then enough information to adjust some dimensional parameters in
+the source buffer. Just after this edition, the new slice is processed and
+the new position is displayed.  Thanks to the short incremental loop, this
+almost appears as if actions where executed by Active-DVI itself.
+%
+This dream has now become real...
+
+However, \WhizzyEdit ing is not meant to break up the structual edition
+principle of {\TeX} and {\LaTeX}. Its incremental viewing is an assistance
+to source edition. Similarly, mouse editing should also be seen as an
+assistance to and not a replacement of strutural edition.  In particular,
+all editions are visible in the emacs source buffer, can be saved, manually
+changed or disable. Moreover, Whizzy-editing is not meant for document
+layout, but to the cases where some dimensions cannot be structurally
+computed and need manual tuning. 
+
+For instance, think of importing a picture and placing some bubble whose
+origin must be precisely be placed above the head of some character: you'd
+better do it with the mouse rather than by small measurements or random
+adjustements. Drawing a graph with a few nodes may now become more
+confortable with PStricks remaining within {\LaTeX} rather than using some
+external tool. Finally, Whizzy-editing is likely to be more useful when
+writting slides, where many visual gadgets may be used. For instance,
+adjusting bubbles with the mouse is likely to be more efficient than doing
+it by hand.
+
+
+\subsection{Enabling edition with the \texttt{\protect\string\adviedit} macro}
+
+{\ActiveDVI} provides one general editing command that can be used by
+{\Whizzy} for all mouse editing.  The syntax of this command is
+\begin{quote}
+\docdef \adviedit{[tag]}\docarg{options}\docarg{body}
+\end{quote}
+where \docid{options} is a comma separated list of bindings
+according to the \doctt{keyval} package. Each binding is either of the form
+\docid{var}=\docid{float} where 
+\docid{var} ranges other letters 
+\doctt{x}, \doctt{y}, \doctt{h}, \doctt{w}, \doctt{d} 
+in lowercase or uppercase, or \doctt{field}=\docid{dimension} where 
+\docid{field} ranges over \docid{unit} and \docid{min}.
+
+The \docid{field} respectively bindings specifies the unit, which default to
+\doctt{1em}, and the minimal dimension of boxes. Both fields are inherited,
+which enable inner edition to be scale altogether.  The \docid{var} bindings
+defines values for the corresponding variables. 
+The are not inherited. On the opposite, they are always reset to
+default values.  Lowercase letters mean that the corresponding variables
+are whizzy-editable, while uppercase letters treat them as constants. 
+The expression \doctt{body} should be horizontal box material: it is then
+placed in an \doctt{\string\hbox} at coordinates (\doctt{x}, \doctt{y})
+relatively to the current position.  
+Moreover, a virtual box of width \doctt w, height \doctt
+h, and depth d is draw at that position when editing is made active.
+The box can this float around the current point and has no dimension.
+However, a box with no coordinates specified is fixed and has the dimensions 
+of \doctt w, \doctt h, and \doctt d. When not specified, these fields takes
+the value of the box in which body is typeset. 
+All dimensions \doctt x, \doctt y, \doctt w, \doctt h, and \doctt d are
+bound to \doctt{advix}, \doctt{advix}, \doctt{adviy}, \doctt{adviw},
+\doctt{advih}, and \doctt{advid} macros during the evaluation of
+\docid{body}. 
+
+Whizzy-editable objects can be nested. All parameters are reset to default
+values, within the new object. Sometimes, emacs may be confused and take an
+object for another. In these rare cases, the two objects can use the 
+\docid{tag} argument to be distinguished. This argument does nothing but
+being passed to {\ActiveDVI} and sent back to Emacs to identified 
+the object exactly. 
+
+\subsection{Performing mouse edition under {\ActiveDVI} control} 
+
+\begin{quote}\em
+This section depends entirely on {\ActiveDVI}. Hence, it may depend on your
+version of {\ActiveDVI} or how you have parameterized it.  The appearance
+and description below is based on default bindings for version
+\texttt{1.50+3}.
+\end{quote}
+
+To actually \emph{edit} whizzy-editable objects, you need to toggle the
+\emph{edit} mode of {\ActiveDVI}. You can do this interactively by key stoke
+\lst"e" in the {\ActiveDVI} window. You may also start {\ActiveDVI} in
+\emph{edit} mode by passing the option \texttt{-edit}.
+
+When in edit mode, whizzy-editable objects are drawn as below:
+\begin{center}
+\begin{toimage}
+\psframebox[framesep=2em]{\adviedit
+{w=0.7571,unit=\hsize}{\parbox[t]{\adviw}{\setedit{unit=\adviw}\relax  
+This small page contains
+
+\hbox {\hbox to 0em
+{\hss\circlenode[linecolor=green,boxsep=0pt,framesep=0.4ex]{A}{}\hss}%
+\adviedit{x=0.2139,y=-0.1348,w=0.7020}
+{\pnode{P}\psframebox[linecolor=blue,framesep=0pt]{\setbox0=\hbox{\parbox[c]{\adviw}{This
+whizzy-editable parbox drawn in a blue rectangle. 
+The blue line in the middle of the rectangle marks the baseline of the box. 
+The green line attached to left hand-side of the baseline on the one hand
+is attached to the anchor of this object on the other hand, which is itself
+drawn as a small green circle. 
+}}\box0\pnode{Q}%
+\ncline[linecolor=green]{A}{P}%
+\ncline[linecolor=blue]{P}{Q}%
+}}}%
+and right
+
+below\ldots
+
+\setbox0=\hbox{\adviedit{d=0.2225}{\vtop{\vspace{\advid}}}}%
+\wd0=1ex\ht0=1ex
+\psframebox[linecolor=blue,framesep=0pt]
+{\pnode{P2}\hbox to 0em
+{\hss\circlenode[linecolor=green,boxsep=0pt,framesep=0.4ex]{A}{}\hss}%
+\box0\pnode{Q2}\ncline[linecolor=blue]{P2}{Q2}}%
+
+a whizzy-editable vertical space. 
+
+\hspace{1.5em}%
+Note that the anchor of the vertical space is exactly at the left-hand side
+of the base line because it is unmovable. In this case, the object takes its
+real dimensions.  In contrast, the parbox above, which has been moved,
+behaved as a empty box.  }}}
+\end{toimage}\imageflush
+\end{center}
+\par\noindent
+You may edit such objects in two ways: 
+\begin{itemize}
+\item \textbf{move} them, using the middle button.
+\item \textbf{resize} them, using the right button.
+\end{itemize}
+When pressing the button on the corresponding rectangle, the mouse shape
+should intuitively illustrate the action to be perfomed. 
+However, some actions may be inhibited. For instance, the
+\texttt{\string\parbox} can only be moved or resized in width and the
+vertical space can only be resized in depth but not be moved.  When an
+action (either \emph{move} or \emph{resize}) is disable in all directions,
+the cursor will not changed. When resizing is enabled both in \emph{height}
+and in \emph{depth}, the default action is \emph{height} and you must press
+the shift key to perform the \emph{depth} resizing.
+
+Finally, an edition can be aborted by pressing the \emph{meta} key (actually
+the one bound to \emph{modifier-1}) while release the mouse. 
+
+
+\subsection {Examples}
+Several examples can be found in file {\tt example/edit/main.tex} coming with
+{\ActiveDVI} distribution. Here are a couple of simple ones. 
+For example, 
+\begin{verbatim}
+        \adviedit{x=-2.8845,y=0.2717}{A}
+\end{verbatim}
+will simply place make the letter $A$ whizzy-movable. 
+The values of $x$ and $y$ when unspecified defaults to $0$. 
+Values for $W$, $H$ or $D$ when not given, will default to the
+value  of $\hbox{A}$. However, if $W$, $H$, or $D$ are zero (or too small)
+they will default to some small value.
+\begin{verbatim}
+        \adviedit{X=2,Y=3}{A}
+\end{verbatim}
+can simply be used instead of the latex $\string\put$ command.
+Spaces are also whizzy-adjustables: an horizontal space is just
+\begin{verbatim}
+        \adviedit{w}{\hspace{\adviw}}
+\end{verbatim}
+Note that the material is placed into a default \texttt{\string\hbox}. 
+Thus, for horinzontal spaces, one need and explicit \texttt{\string\vbox}:
+\begin{verbatim}
+        \adviedit{d}{\vtop {\vspace {\advid}}}
+\end{verbatim}
+Note that 
+\begin{verbatim}
+        \adviedit{h}{\vbox {\vspace {\advih}}}
+\end{verbatim}
+would do as well, but would usually be less intuitive, graphically.
+
+A paragraph of adjustable size: 
+\begin{verbatim}
+        \adviedit{w}{\parbox[c]{text material}}
+\end{verbatim}
+Whizzy-edition can also be used to resize images (as well as return them)
+\begin{verbatim}
+        \adviedit{w,h}{\includegraphics[width=\adviw,height=\advih]{caml.eps}}
+\end{verbatim}
+Note that while {\string\adviedit} must remain in the should, hence the
+whole line cannot be abbreviated into a macro, one can freely abbreviate its
+body, and it is quite easy to build a camel caravan: 
+\begin{verbatim}
+        \adviedit[A]{w,unit=\hsize}{%
+          \setedit{unit=0.2\adviw}%    
+          \def \camel{\includegraphics[width=\adviw,height=\advih]{caml.eps}}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{d}{\vtop{\vspace\advid}}% 
+          \hspace{\adviw}% 
+        }
+\end{verbatim}
+Be aware that a camel may hide another one! Indeed, at the beginning all
+camels are superposed. The first caml you pick is the one in front. 
+An interesting use of units is to let an inner editable command sets its
+unit according to the dimension of an outer command, as illustrated above.
+Here the outer object (tagged \texttt{A}) is used to control the origin
+and scale of the projection.  Then, each camel can be translated and
+resized, but relatively to this origin and this scale. Thus moving 
+of rescaling the outer object will treate the caravan as a whole.
+The last line allow expansion of the bounding box as needed. 
+The one before last sets the vertical ratio of the bounding box.
+The result can be seen in Figure~\ref {caravan}. 
+\begin{figure}
+\centerline{%
+\begin{toimage}
+\epsbygs
+\def \camel{\includegraphics[width=\adviw,height=\advih]{caml.eps}}
+%%To adjuste the scale...
+\adviedit{w=0.5633,unit=\hsize}{%
+\setedit{unit=0.2\adviw}%
+\adviedit{x=3.8029,y=-0.9056,w=-0.5217,h=0.8348}{\camel}%
+\adviedit{x=4.2886,y=-3.1835,w=-1.6228,h=2.1934}{\camel}%
+\adviedit{x=1.1410,y=-0.9226,w=1.1661,h}{\camel}%e
+\adviedit{x=0.1224,y=-1.5206,w=1.4992,h=1.3165}{\camel}%
+\adviedit{x=1.4281,y=-1.5888,w=1.5068,h=1.3165}{\camel}%
+\adviedit{x=0.5156,y=-3.1263,w=1.3621,h=1.6604}{\camel}%
+\adviedit{x=4.7780,y=-1.2986,w=-0.6045,h=0.6559}{\camel
+\adviedit{x=0.3666,y=0.5704,w=0.6741,h=0.8008}{\bubble
+        {}(\advicw,\advich){Joe}}}%
+\adviedit{d=3.1698}{\vtop{\vspace\advid}}%
+\hspace{\adviw}%
+}%
+\end{toimage}\imageflush
+}
+\caption{\label{caravan}A Whizzy-editable Camel Caravan}
+\end{figure}
+Below is another example with two circles:
+\begin{verbatim}
+        \adviedit[A]{w=4}
+          {\setedit{unit=\adviw}%
+           \psset{boxsep=0pt,framesep=0pt}%
+           \hbox to \adviw
+             {\circlenode{A}{\hspace {\adviw}}\hss
+              \adviedit[B]{w=0.5}{\circlenode{B}{\hspace{\adviw}}}}}
+\end{verbatim}
+Many {\LaTeX} commands such as \texttt{\string\hspace},
+\texttt{\string\parbox}, \emph{etc.} are parameterized by dimensions.
+However, some other commands, such as \texttt{\string\picture}, 
+\texttt{\string\pspicture} and  most PsTricks commands,
+\texttt{\string\bubble}, and \texttt{\string\adviedit} itself are
+parameterized by a coefficients (floats) and, separately, a dimension. 
+
+To whizzy-edit such coefficients, there are also commands
+\texttt{\string\advix},
+\texttt{\string\adviy},
+\texttt{\string\adviw},
+\texttt{\string\advih}, and 
+\texttt{\string\advid} that contain the float ratio of 
+the corresponding dimension with respect to
+\texttt{\string\adviunit}---whenever the dimension is itself defined.
+As an example, the position of bubble can whizzy-edited as follows:
+\begin{verbatim}
+        \adviedit{h=1.8902,w=1.5259,unit=\bubbleunit}
+          {\bubble{anchored text}(\advicw,\advich){bulle text}}
+\end{verbatim}
+
+\subsection{Writing whizzy-editable macros}
+
+Although the command \texttt{\string\whizzyedit} is quite general and
+powerful, the user may wish to write its own versions.  
+One must then be careful that the macro correctly passes its name to 
+{\ActiveDVI}. For instance, rebinding or partially evaluating the macro
+\texttt{\string \adviedit} does not work, since then the text-source macro
+will not be \texttt{\string \adviedit} anymore. See the latex
+\texttt{advi.sty} source package for envolved examples. 
+
+Below are just a couple of simple examples. 
+We can abbreviate the example of adjustable horizontal spaces defining the
+following macro: 
+\begin{verbatim}
+        \newcommand{\advihspace}[1]
+           {\adviedit{comm=\advihspace,#1}{\hspace{\adviw}}}
+\end{verbatim}
+The argument \lst"comm=\advihspace" set the name of the calling source text
+macro to \lst"\advihspace". Then, you may simply write: 
+\begin{verbatim}
+        \advihspace{w}
+\end{verbatim}
+instead of 
+\begin{verbatim}
+        \adviedit{w}{\hspace{\adviw}}
+\end{verbatim}
+The macro could additionally check that \lst"w" is indeed defined.
+
+Another example of specialization is to place bubbles: so as to be more
+intuitive, the orgin of the edition should start at the center rather then
+at the left of the anchor, which requires a small acrobatics with boxes and
+dimensions: 
+\begin{verbatim}
+        \newcommand{\editbubble}[3]
+           {\setbox0=\hbox{#2}\copy0\hbox to 0em {\kern-0.5\wd0\relax
+            \bbb@dima=\ht0\bbb@dimb=\dp0
+            \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+              {\adviedit{comm=\editbubble,unit=\bubbleunit,#1}
+                 {\bubble{\box0}(\advicw,\advich){#3}}}\hfilneg}}
+\end{verbatim}
+Then a nicely editable bublle can be obtained with
+\begin{verbatim}
+        \editbubble{w,h}
+          {\editbubble{w,h}
+            {\editbubble{w,h}{flowers}{First}}
+            {Second}}
+          {third}
+\end{verbatim}
+(See the result in Figure~\ref{flowers})
+\begin{figure}
+$$
+\begin{toimage}
+\makeatletter
+\newcommand{\editbubble}[3]
+           {\setbox0=\hbox{#2}\copy0\hbox to 0em {\kern-0.5\wd0\relax
+            \bbb@dima=\ht0\bbb@dimb=\dp0
+            \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+              {\adviedit{comm=\editbubble,unit=\bubbleunit,#1}
+                 {\bubble{\box0}(\advicw,\advich){#3}}}\hfilneg}}
+\makeatother
+\vbox{\vspace{2em}
+\hbox{\editbubble{w=2.4162,h=0.4335}
+{\editbubble{w=0.3121,h=1.1212}
+            {\editbubble{w=-1.7516,h=0.5145}{anchor}{first}}
+            {second}}
+          {third}
+}}
+\end{toimage}\imageflush
+$$
+\caption{\label{flowers}A bubble flower}
+\end{figure}
+
+%HEVEA\hypertarget{impl}{}
 \section{An overview of the implementation}
 
 In short, {\sc \whizzy} is selecting a small slice of the document that 
@@ -1191,42 +1548,31 @@ conditions between files and would not make sense.
 For that purpose, the daemon pid is saved in a file and {\whizzy}
 will kill any old {\whizzy} process on startup. 
 
-\section {\WhizzyEdit ing}
+\subsection {Whizzy edition}
 
+The macros \texttt{\string\adviedit} passes information
+to {\ActiveDVI} inside \texttt{edit} specials. This information is used to
+identify the source file command that requested some edition and is passed
+by from {\ActiveDVI} to emacs as command strings of the form: 
+\begin{quote}
+\begin{verbatim}
+<edit "\adviedit" ""[x=1.2001]" #56 @main.tex moveto 5.1529,-1.1708>
+\end{verbatim}
+\end{quote}
+This command emitted by {\ActiveDVI} in its standard output is thus received by
+emacs via {\Whizzy} in the process buffer associated to the current
+session. 
 
-When used together with Active-DVI, {\whizzy} could be made much mode
-powerful. In particular, it would be quite easy to to lift {\whizzy} from an
-incremental viewer to an assistant editor.
-
-Active-DVI could easily provide a notion of active boxes.
-These would be recognized by
-\lst"\special" annotations preceeding  boxes. 
-Active boxes would be autoraise on focus and could be moved or resized with
-the mouse. Rather than displaying actions on screen, which would be unaware
-of {\TeX} position stategies, actions should rather be reported in stdout,
-as is already done for positions. 
-
-Active-DVI actions could then easily be interepreted by {\whizzy} by
-adjusting or inserting the correct vertical or horizontal dimension around
-active objects, and processed in the next slice. Thanks to the short
-incremental loop, this would (almost) appear as if actions where executed by
-Active-DVI.
-
-\paragraph {Experimental (this may be changed in firture versions)}
-
-{\em
-
-This dream is becoming real...
-%
-Some mouse editing, such as repositioning and resizing of {\tt boxes}, {\tt
-minipages}, {\tt glue} and a few drawing commands can already be done in
-{\whizzy} ---provided you have a recent version of Active-DVI.
-
-See the example {\tt example/edit/main.tex} and the package
-{\tt example/edit/whizzedit.sty} in the distribution.
-
-}
-
+Emacs interprets such commands starting with the ``\verb"<edit "'' prefix 
+as whizzy edition commands. In the above example, the string
+\verb"\adviedit" is a latex commands that should be present the master
+buffer \verb"main.tex" at line \verb"56" and with x coordinate equal to
+\texttt{1.2001}. Its \texttt x and \texttt y coordinates should be 
+changed by \texttt 5.1529 and \texttt{-1.1708}.  Usually, the command can be
+precisely located by its line position in the buffer and one significant
+coordinates.  In case of conflict, a tag optional argument pass
+\texttt{\string\adviedit} will be passed to {\ActiveDVI} and then sent back
+to emacs (which is filled in the empty string above).
 
 
 \end{document}

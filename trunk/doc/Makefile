@@ -1,4 +1,4 @@
-HEVEA = hevea 
+HEVEA = hevea -exec xxdate.exe 
 HVAOPT = -fix -nosymb
 # HVAOPT = -charset iso-8859-1 -fix -nosymb
 
@@ -10,7 +10,8 @@ manual.dvi: manual.tex version.tex
 	if grep 'LaTeX Warning: Label(s)' $*.log; then latex $<; fi
 
 manual.html: manual.tex manual.dvi
-	$(HEVEA) $(HVAOPT) -o $@ $<
+	$(HEVEA) $(HVAOPT) -o $@ $< && \
+	imagen manual
 
 whizzytex.info: manual.tex
 	$(HEVEA) $(HVAOPT) -o $@ $<

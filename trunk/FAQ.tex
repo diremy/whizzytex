@@ -109,16 +109,18 @@ FORMAT=platex
 
 \section {Using {\WhizzyTeX} under Windows}
 
-{\WhizzyTeX} is designed for \lst"Unix" plateforms.  However, it has been
-reported to successfully work on Windows under Cygwin (1.5.5-1), using
-\texttt{Cygwin/Xfree 4.3} and \texttt{xdvi} from \texttt{tetex 2.0.2-13}.
+{\WhizzyTeX} is designed for \lst"Unix" plateforms.  However, Marciano
+Siniscalchi reported that it successfully worked on his Window plateform
+under Cygwin (1.5.5-1), using \texttt{Cygwin/Xfree 4.3} and \texttt{xdvi}
+from \texttt{tetex 2.0.2-13}.
 
 Two tricks are necessary:
 \begin{itemize}
 
 \item 
 Fix the \lst"xdvi" script by replacing \lst"xdvi.bin"
-by \lst"exec xdvi.bin" on the last line of the script. 
+by \lst"exec xdvi.bin" on the last line of the script
+(as in some Linux distribs).
 
 \item
 Fix the  \lst"whizzytex" script by replacing  the line

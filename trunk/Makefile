@@ -72,6 +72,7 @@ $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
 	sed -e '1s|^#!/bin/bash *$$|#!$(BASH)|' \
 	    -e 's|^PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
 	    -e 's|^GREPB=.*|GREPB=$(GREPB)|' \
+	    -e 's|^MULTIPLE=.*|MULTIPLE=$(MULTIPLE)|' \
 	    -e 's|^DVIPS=.*|DVIPS=$(DVIPS)|' \
 	    -e 's|^CONFIGFILE=.*|CONFIGFILE=$(CONFIGFILE)|' \
 	    -e 's|^INITEX=.*|INITEX=$(INITEX)|' \

@@ -1,7 +1,7 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.1
-VERSION=1.1.2
+VERSION=1.1.3
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -35,7 +35,7 @@ EXPORTS = index.html animation.html older.html Announce \
 whatelse: 
 	@echo 'make what ? [faq pack xxxport Export ]'
 
-pack: FILES $(EXPORTS) $(PACKDIR) $(PACKDIR)/checked $(PACKDIR)/whizzytex.elc 
+pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
 doc/version.tex: RELEASE VERSION
 	(echo '\def\release{'`cat RELEASE`'}' ; \
@@ -62,6 +62,7 @@ index.html: index.htm makefile
 	 -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' \
 	 -e 's|href="@|href="|g' \
 	 $< > $@
+	chmod -w index.html
 
 animation.html: index.html
 	sed -e 's/009.gif/.gif/g' \
@@ -128,7 +129,7 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	  src/whizzytex.sty` = X'$(VERSION)'	   
 	touch $@
 
-$(PACKDIR)/.exists:
+$(PACKDIR)/.exists: 
 	mkdir -p $(PACKDIR)
 	rm -f $(PACKDIR)/checked
 	touch $@
@@ -164,10 +165,12 @@ smallclean:
 
 clean:: smallclean
 	rm -rf doc/{*~,.#*,#*#} manual.{aux,log} doc/_whizzy_manual*
+	rm -f FAQ.{aux,log,haux,hlog,toc,htoc}
 	rm -rf $(PACKDIR)
 
 superclean:: clean
 	rm -f doc/ocaml.html $(TAG) $(NAME).tgz manual.dvi \
+	rm FAQ.html FAQ
 	rm -f *~ .#* #*# FILES 
 
 .in.out:

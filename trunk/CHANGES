@@ -3,24 +3,29 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
- * added -display option 
+ * added whizzy-auto-recompile function to set corresponding variable.
 
 Shell-script: 
 
- * added -display option 
+ * added AUTOCOMPILE and AUTORECOMPILE variables.
+ * removed obsolete DOMARKS.
 
 LaTeX macros:
 
- * \WhizzyInsideEnvironment to change the behavior when the cursor is inside.
-
 Installation/Documentation:
 
- * Few small fixes/changes.
+ * whizzy-edition: documentation and examples.
+
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
+
+ - version 1.1.3
+ * overlays are now variables and can now be customized.
+ * changed whizzy-edit API.
+ * added -display option.
 
  - Version 1.1.2
  * whizzy-master is ignored when set to the buffer itself.
@@ -29,7 +34,7 @@ Emacs-mode:
  * Removed the use of view-mode as a local-variable!!!
 
  - Version 1.1.1
- * warn and pop-up interaction window when fails during initialization
+ * warn and pop-up interaction window when fails during initialization.
  * added debug variable in emacs and menu entry to toggle it
  * move to the first slice in not already in a slice when mode is turn on
  * fixed (partially?) the bug with the cursor moving abruptly to the end of
@@ -45,6 +50,10 @@ Emacs-mode:
 
 Shell-script: 
 
+ - version 1.1.3
+ * added internal duplex mode if MULTIPLE files can be viewed altogether
+ * added -display option 
+
  - Version 1.1.1
  * warn when fails during initialization
  * keep log files when turn off in debug mode
@@ -55,11 +64,18 @@ Shell-script:
 
 LaTeX macros:
 
+ - version 1.1.3
+ * changed whizzy-edit interface
+ * \WhizzyInsideEnvironment to change the behavior when the cursor is inside.
+
  - Version 1.1.1
  * load advi.sty in advi mode
 
 Installation/Documentation:
 
+ - version 1.1.3
+ * MULTIPLE configuration variable and documentation
+ * Few small fixes/changes.
  - Version 1.1.1
  * adjusted the manual for initialization
  * add system and per-user CONFIGFILE support.
@@ -171,6 +187,5 @@ Installation/Documentation:
  - Version 1.00-alpha
  * Makefile for version 1.00-alpha
 
-Last-modified: <2002-03-09 12:07:21 remy>
-
+Last-modified: <2003-10-29 18:06:07 remy>
 

@@ -1,10 +1,10 @@
-#!/bin/bash 
+#!/bin/bash
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.1.2
+#  Version        : 1.1.3
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -26,7 +26,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.1.2"
+VERSION="1.1.3"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -46,6 +46,10 @@ LATEX=latex
 FORMAT=latex
 FMT=fmt
 BIBTEX=bibtex
+
+# Default flags
+AUTOCOMPILE=true
+AUTORECOMPILE=true
 
 # Default place for configuration files
 
@@ -89,13 +93,13 @@ defaultmkfile () { true; }
 
 
 DO=normal
-DOMARKS=false
 MAKEINDEX=makeindex
 DOINDEX=true
 DVI=dvi
 VIEW=wdvi
 VIEWCOMMAND=advi
 NEWFILES=newfile
+MULTIPLE=true
 DUPLEX=false
 ADVI=0
 
@@ -118,7 +122,6 @@ do
    -mkfile) MKFILE="$2"; shift;;
    -duplex) DUPLEX=true;;
    -trace) TRACE=true;; 
-   -marks) DOMARKS=true;;
    -makeindex) 
       case "$2" in
         false) DOINDEX=false;;
@@ -548,9 +551,24 @@ if $NEWFILES; then preprocess && process; fi
 # lauch the previewer(s) in background, storing its pid in $ID
 # and putting a handler on its termination. 
 
+
 rm -f $TMP/ID
+
+case $ADVI in
+  1) ;;
+  0) MULTIPLE=false;;
+esac
+if $MULTIPLE
+then
+   # we are going to launch $NAME.VIEW as a secondary file
+   [ -f $NAME.$VIEW ] || cp $WHIZZY.$VIEW $NAME.$VIEW
+   CLIENTVIEW=$NAME.$VIEW
+else
+   CLIENTVIEW=''
+fi
+
 {
-  $VIEWCOMMAND $WHIZZY.$VIEW 2>$OUTPUT/view &
+  $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW 2>$OUTPUT/view &
   echo $! >> $TMP/pids
   ID=$!
   echo $ID > $TMP/ID
@@ -563,7 +581,7 @@ checkviewer () {
 
 whole () {
    echo '<Recompiling whole document>'
-   if batchmarks $1 </dev/null >$LOG
+   if batchmarks </dev/null >$LOG
    then
       echo '<Whole document updated>'
       if $1; then echo '<Pages and sections updated>'; fi
@@ -574,7 +592,7 @@ whole () {
    fi
 }
 # So as to start immediately...
-whole $DOMARKS
+if $AUTOCOMPILE; then whole; fi
 
 ## Reformating
 
@@ -588,7 +606,7 @@ reformat () {
       PROCESS=true
       # do the slice with new format (quick)
       # process
-      whole $DOMARKS
+      if $AUTORECOMPILE; then whole; fi
   else
       echo '<Reformatting failed>'
       texlog format
@@ -661,6 +679,11 @@ do
      case "$COMMAND" in
        duplex) duplex ;;
        reformat) checkMKfile $REST; reformat ;;
+       autorecompile)
+         case $REST in
+           on) AUTORECOMPILE=true;;
+           off) AUTORECOMPILE=false;;
+         esac;;
        reslice) process && checkviewer ;;
        whole) checkMKfile $REST; whole $DOMAKS;;
        bibtex) makebibtex;;
@@ -677,7 +700,6 @@ do
         LATEX=$LATEX
         FORMAT=$FORMAT
         DUPLEX=$DUPLEX
-        DOMARKS=$DOMARKS
         VIEW=$VIEW
         VIEWCOMMAND=$VIEWCOMMAND
         ADVI=$ADVI
@@ -687,6 +709,8 @@ do
         NAME=$NAME
 
         TRACE=$TRACE
+        AUTOCOMPILE=$AUTOCOMPILE
+        AUTORECOMPILE=$AUTORECOMPILE
 ";;
        trace)
           case $REST in

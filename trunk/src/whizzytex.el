@@ -60,7 +60,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.1.2")
+(defconst whizzytex-version "1.1.3")
 
 ;;; Bindings
 (defvar whizzytex-mode-hook 'whizzy-default-bindings
@@ -219,20 +219,30 @@ not according to the value of this variable."
 (defvar whizzy-auto-raise t
   "*If true WhizzyTeX will raise the frame a WhizzyTeX buffer is visited.")
 
+(defconst whizzy-mode-regexp-prefix
+  "\n\\(%WHIZZY\\|\\\\begin{[A-Za-z]*}[ \n]*\\|\\)")
+
 (defvar whizzy-mode-regexp-alist
   (append
    (list (cons 'paragraph whizzy-paragraph-regexp))
+   (mapcar
+    '(lambda (a) (cons (car a) (concat whizzy-mode-regexp-prefix (cdr a))))
    '(
-     (letter .  "\\(^\\|%WHIZZY\\)\\\\begin{letter}")
-     (slide . "\\(^\\|%WHIZZY\\)\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
-     (subsubsection .  "\\(^\\|%WHIZZY\\)\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)\\b[^{]*{")
-     (subsection .  "\\(^\\|%WHIZZY\\)\\\\\\(subsection\\|section\\|chapter\\)\\b[^{]*{")
-     (section .  "\\(^\\|%WHIZZY\\)\\\\\\(section\\|chapter\\)\\b[^{]*{")
-     (chapter .  "\\(^\\|%WHIZZY\\)\\\\\\(chapter\\)\\b[^{]*{")
-     (document .  "\\(^\\|%WHIZZY\\)\\\\begin{document}\\(.*\n\\)+")
+     (letter .  "\\\\begin{letter}")
+     (slide . "\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
+     (subsubsection
+      .  "\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+     (subsection
+      .  "\\\\\\(\\(s\\(ubs\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
+     (section
+      .  "\\\\\\(section\\|chapter\\|part\\)\\b[^{]*{")
+     (chapter
+      .  "\\\\\\(chapter\\|part\\)\\b[^{]*{")
+     (document
+      . "\\\\begin{document}\\(.*\n\\)+")
      (none . nil)
      )
-   )
+   ))
   "*An alist defining slicing modes.
 
 Each element is a pair (<mode> .  regexp) that defines for the regexp that
@@ -256,7 +266,8 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
   (list
     (cons "^ *\\\\begin *{slide}" 'slide )
     (cons "^ *\\\\begin *{letter}" 'letter )
-    (cons "^ *\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)" 'section)
+    (cons "^ *\\\\\\(part\\)" 'chapter)
+    (cons "^ *\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\)ection\\)\\|chapter\\)" 'section)
    )
   "*Alist selecting modes from regexp.  Used to find mode automatically."
 )
@@ -398,7 +409,7 @@ file is its cdr. nil means that the file is a master file.")
 ;; and lines-to-counters (computed by latex). 
 
 (defvar whizzy-section-regexp
-  "^\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\)[^\n]*$"
+  "^\\\\\\(subsubsection\\|subsection\\|section\\|chapter\\|part\\)[^\n]*$"
   "*Regexp for sectionning command.
 Used to trace section and reset counters at the beginning of a slice.")
 
@@ -1274,6 +1285,13 @@ during initialization."
         (whizzy-call (if debug "trace on" "trace off"))
     (whizzytex-mode 16))))
 
+(defun whizzy-auto-recompile (arg)
+  "Set shell variable AUTORECOMPILE according to arg.
+   If arg numeric value is strictly positive, then reformating
+   will also launch recompilation. "
+  (interactive "p")
+  (whizzy-call "autorecompile" (if (> arg 0) "on" "off")))
+
 (defun whizzy-reslice ()
   "Recompile the slice."
   (interactive)
@@ -1406,7 +1424,11 @@ and used to set up some bindings. File dependent hook defined in
 `whizzy-hook-alist' that match the filename are evaluated.
 
 You can also set default values to WhizzyTeX user variables in your eamcs
-configuration file (usually ~/.emacs) to customize...
+configuration file (usually ~/.emacs) by inserting lines of the form: 
+
+        (setq-default VARIABLE VALUE)
+
+The following variables can be customized: 
 
  - Settings:
 
@@ -1422,13 +1444,17 @@ configuration file (usually ~/.emacs) to customize...
     `whizzy-hook-alist'
     `whizzytex-mode-hook'
 
- - Power:
+ - Limiting WhizzyTeX features (which may sometimes lead to LaTeX errors):
 
     `whizzy-line'
     `whizzy-point-visible'
     `whizzy-overlays'
 
- - Interaction:
+ - Controling recompilation (which may affect speed):
+
+    `whizzy-auto-recompile'
+
+ - User Interaction:
 
     `whizzy-save-buffers'
     `whizzy-auto-visit'
@@ -1436,7 +1462,7 @@ configuration file (usually ~/.emacs) to customize...
     `whizzy-auto-show-output'
     `whizzy-pop-up-windows'
 
- - Downgrade performance for compatibility with other packages
+ - Downgrade performance for compatibility with other packages:
 
     `whizzy-use-write-annotate'
 
@@ -1444,13 +1470,11 @@ configuration file (usually ~/.emacs) to customize...
 
     `whizzy-customize'
 
-You can override default values for any of these variables by including
-lines such as:
+ - Customizing faces: 
 
-    (setq-default whizzy-command-name
-                 \"/usr/local/lib/whizzytex/bin/whizzytex\")
-
-in you emacs startup file (usually ~/.emacs)."
+    `whizzy-slice-face'
+    `whizzy-error-face' 
+"
 
   (interactive "P")
   (and buffer-read-only
@@ -1595,14 +1619,10 @@ These can be defined with `whizzy-add-configuration'.
                   (if (whizzy-get whizzy-debug)
                       (if (y-or-n-p "Start WhizzyTeX in debug mode? ") nil
                         (whizzy-set whizzy-debug nil))))
-                (let ((args
-                       (append
-                        (if (equal (whizzy-get whizzy-slicing-mode) 'slide) nil
-                          (list "-marks"))
-                        (append (whizzy-get whizzy-view-mode)
-                                (if (whizzy-get whizzy-debug) '("-trace"))
-                                (list filename))
-                        )))
+                (let ((args (append (whizzy-get whizzy-view-mode)
+                                    (if (whizzy-get whizzy-debug) '("-trace"))
+                                    (list filename)
+                                    )))
                   (whizzy-start-process args))
                   (whizzy-set whizzy-running 0)
                   )))
@@ -2514,7 +2534,7 @@ Otherwise, output is kept as long as the window is visible
 ")
 
 (defun whizzy-delete-output (pos)
-  (if (and whizzy-delete-output 
+  (if (and whizzy-delete-output whizzy-status
            (window-live-p (whizzy-get whizzy-process-window)))
       (delete-region (point-min) pos)))
 
@@ -2612,16 +2632,20 @@ Otherwise, output is kept as long as the window is visible
 (defun whizzy-delete-error-overlay ()
   (if whizzy-error-overlay (delete-overlay  whizzy-error-overlay))
 )
-                        
-(make-face 'whizzy-error-face)
-(set-face-background 'whizzy-error-face "Khaki")
+
+(defvar whizzy-error-face 'whizzy-error-face
+  "*Face for error overlays
+This is a variable whose value should be a face.")
+(unless (facep whizzy-error-face)
+  (make-face 'whizzy-error-face)
+  (set-face-background 'whizzy-error-face "Khaki"))
 
 (defun whizzy-overlay-region (beg end)
   (if (and whizzy-overlays (< beg end) (< end (point-max)))
       (progn
         (if  (not whizzy-error-overlay)
           (setq whizzy-error-overlay (make-overlay 1 1)))
-        (overlay-put whizzy-error-overlay 'face 'whizzy-error-face)
+        (overlay-put whizzy-error-overlay 'face whizzy-error-face)
         (move-overlay whizzy-error-overlay beg end (current-buffer))
         )))
 
@@ -2685,7 +2709,7 @@ Toggle if ARG is ommitted."
           (if hide
               (if window-alive
                   (progn
-                    (whizzy-set whizzy-process-window nil)
+                    (if whizzy-status (whizzy-set whizzy-process-window nil))
                     (delete-window window)
                     (bury-buffer shell)))
             (if (equal buf (whizzy-get whizzy-active-buffer))
@@ -2705,7 +2729,7 @@ Toggle if ARG is ommitted."
                   (select-window (previous-window))
                   (enlarge-window resize)
                   ))
-            (whizzy-set whizzy-process-window window))
+            (if whizzy-status (whizzy-set whizzy-process-window window)))
           )
         )
     (let ((buf (whizzy-get whizzy-process-buffer)))
@@ -2970,24 +2994,39 @@ Log file name is obtain from suffix by removing leading character."
           
 (defun whizzy-edit-field (name val)
   (save-excursion
+    ;; (message "%S %S" name val)
     (and val
          (not (string-equal val "*"))
          (looking-at
-          (concat "\\([xywh]=-?[0-9.]*,\\)*" name "=\\(-?[0-9.]*\\)[,}]"))
+          (concat "\\([xywhdXYWHD]\\(=-?[0-9.]*\\)?,\\)*"
+                  name "\\(=-?[0-9.]*\\|\\)?[,}]"))
          (progn
-           (goto-char (match-beginning 2))
-           (delete-region (point) (match-end 2))
-           (insert val)
+           (goto-char (match-beginning 3))
+           (delete-region (point) (match-end 3))
+           (insert "=" val)
            t))
     ))
 
-(defun whizzy-edit (command name line file type dx dy)
+(defun whizzy-edit (command name first line  file type dx dy)
   (let ((x) (y) (regexp))
-    ;; (message "command=%S name=%S line=%S file=%S" command name line file)
+    ;; (message "command=%S name=%S[%S] line=%S file=%S"
+    ;;    command name first line file)
     (if (string-equal name "") nil
       (setq name (concat " *\n? *\\[" (regexp-quote name) "\\]")))
-    (if (equal type 'moveto) (setq x "x" y "y")  (setq x "w" y "h"))
-    (setq regexp (concat (regexp-quote command) name " *\n? *{\\([^}]*\\)}"))
+    (cond
+     ((equal type 'moveto) (setq x "x" y "y"))
+     ((equal type 'resizetop) (setq x "w" y "h"))
+     ((equal type 'resizebot) (setq x "w" y "d"))
+     (t (error "whizzy-edit")))
+    (if (string-match "^\\([xywhd]\\)=1$" first)
+      (setq first
+            (concat "\\(" (regexp-quote first) "\\|"
+                    (regexp-quote (match-string 1 first)) "\\)"))
+      (setq first (regexp-quote first)))
+    (setq regexp
+          (concat (regexp-quote command) name
+                  " *\n? *{\\([^}]*\\b" first "\\(,[^}]*\\)*\\)}"))
+    ;; (message "%S" regexp)
     (save-window-excursion
       (save-excursion
         (and (whizzy-goto-file file)
@@ -2999,6 +3038,7 @@ Log file name is obtain from suffix by removing leading character."
                    (modified  (buffer-modified-p))
                    (edited))
                (goto-char begin)
+               ;; (message "%S=%S %S=%S" x dx y dy)
                (setq edited (whizzy-edit-field x dx))
                (setq edited (or (whizzy-edit-field y dy) edited))
                (unless (not edited)
@@ -3091,8 +3131,9 @@ Log file name is obtain from suffix by removing leading character."
           (setq from (match-end 0))
           (whizzy-goto-line s)
           )
+
          ((string-match
-           "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\" #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(move\\|resize\\)to \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
+           "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\"\\[\\([^]]*\\)\\] #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(moveto\\|resizetop\\|resizebot\\) \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
           (setq from (match-end 0))
           (if (whizzy-set-active-buffer)
               (whizzy-edit
@@ -3100,9 +3141,13 @@ Log file name is obtain from suffix by removing leading character."
                (match-string 2 s)
                (match-string 3 s)
                (match-string 4 s)
-               (if (string-equal (match-string 5 s) "move") 'moveto 'resizeto)
-               (match-string 6 s)
+               (match-string 5 s)
+               (cond
+                ((string-equal (match-string 6 s) "resizetop") 'resizetop)
+                ((string-equal (match-string 6 s) "resizebot") 'resizebot)
+                (t 'moveto))
                (match-string 7 s)
+               (match-string 8 s)
                )))
          ((string-match "<Fatal error>" s from)
           (setq from (match-end 0))
@@ -3139,9 +3184,13 @@ Log file name is obtain from suffix by removing leading character."
         )
       )))
 
-(make-face 'whizzy-slice-face)
-(set-face-background 'whizzy-slice-face "LightGray")
-(set-face-foreground 'whizzy-slice-face "dim gray")
+(defvar whizzy-slice-face 'whizzy-slice-face
+  "*Face for mark out-of-slice part of the buffer.
+This is a variable whose value should be a face.")
+(unless (facep whizzy-slice-face)
+  (make-face 'whizzy-slice-face)
+  (set-face-background 'whizzy-slice-face "LightGray")
+  (set-face-foreground 'whizzy-slice-face "dim gray"))
 
 (defvar whizzy-slice-overlay nil)
 (make-variable-buffer-local 'whizzy-slice-overlay)
@@ -3150,8 +3199,8 @@ Log file name is obtain from suffix by removing leading character."
 (defun whizzy-create-slice-overlays ()
   (if (and whizzy-overlays (not whizzy-slice-overlay))
       (let ((beg (make-overlay 1 1)) (end (make-overlay 1 1)))
-        (overlay-put beg 'face 'whizzy-slice-face)
-        (overlay-put end 'face 'whizzy-slice-face)
+        (overlay-put beg 'face whizzy-slice-face)
+        (overlay-put end 'face whizzy-slice-face)
         (setq whizzy-slice-overlay (cons beg end)))))
 
 (defun whizzy-move-slice-overlays (&optional beg end)
@@ -3209,7 +3258,9 @@ Log file name is obtain from suffix by removing leading character."
                ))
              (here (point))
              (end
-              (or (re-search-forward end-regexp (point-max) t) (point-max)))
+              (or (and (re-search-forward end-regexp (point-max) t)
+                       (goto-char (match-beginning 0)))
+                  (point-max)))
              )
         (goto-char beg)
         (if (looking-at begin-document) (setq beg (match-end 0)))

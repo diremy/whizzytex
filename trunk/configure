@@ -41,6 +41,7 @@ advi=advi
 xdvi=xdvi
 gv=gv
 dvips=dvips
+multiple=true
 
 configfile='/etc/whizzytex/whizzytex.conf'
 
@@ -151,6 +152,10 @@ while : ; do
         ## Set the Advi-like previewer command name; false means do not use 
         ## advi-like previewer at all (default if  the command is not found)
         advi=$2; shift;;
+##
+  -multiple) ## true|<command>                  # multiple
+        ## Tell if advi-like previewer can view multiple files. 
+        multiple=$2; shift;;
 ##
   -xdvi) ## false|<command>                     # xdvi
         ## Idem but for xdvi-like previewer command name 
@@ -501,12 +506,30 @@ fi
 
 message "Other parameters"
 
+# tells wether grep accept option -B
 grep -B 2 GREPB configure 1>/dev/null 2>/dev/null
 case $? in
   0) grepb=true;;
   *) grepb=false;;
 esac
 output GREPB $grepb
+
+# tells whether "$ADVI" can view multiple files. 
+# check  in checkconfig
+# check if version > 1.50.2
+if [ -n "$advi" ]
+then
+  if 
+    (echo 1.50.3 ; 
+     $advi --version 2>&1 >/dev/null | \
+        sed -n -e 's/.*version \([0-9.+]*\) .*/\1/p') | sort -n -c 2>/dev/null
+  then :
+  else
+    echo "Advi version $VERSION does not allow multiple views..."
+    multiple=false
+  fi
+fi
+output MULTIPLE $multiple
 
 message "Building Makefile.config"
 
