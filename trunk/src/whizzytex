@@ -494,7 +494,7 @@ fi
 # To give it a chance to see citations and other global information.
 
 [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
-[ -f $NAME.ind ] && cp $NAME.bbl $WHIZZY.ind
+[ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
 [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
 
 # process $WHIZZY$EXT is present. Will override $WHIZZY.dvi if it succeeds

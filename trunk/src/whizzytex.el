@@ -88,7 +88,7 @@ default options.")
     ("-advi" "advi -html Start-Document") ("-dvi" "xdvi")
     ("-ps" "gv")
    )
-  "*Alist definin accepted previewers and default previewer commands.
+  "*Alist defining accepted previewers and default previewer commands.
 
 This alist should contained at least one element.
 The first element of the alist is used as the default previewer.
@@ -396,8 +396,10 @@ persistent, and hidden when the error disapears.")
       )
     ))
  
-
-(make-variable-buffer-local 'write-region-annotate-functions)
+; Neither works correctly, so better use the global value, 
+; and test for local-mode. 
+; (make-variable-buffer-local 'write-region-annotate-functions)
+; (make-local-hook 'write-region-annotate-functions)
 (defvar whizzy-write-at-begin-document nil)
 
 (defun whizzy-backward-comment ()
@@ -437,7 +439,8 @@ persistent, and hidden when the error disapears.")
 (defun whizzy-backward-command ()
   (let ((here (point)) begin)
     (whizzy-backward-space)
-    (re-search-backward "\\\\\\([^a-zA-Z]?\\|[a-zA-Z]*\\)\\="
+    (re-search-backward "\\\\\\([^a-z@A-Z]?\\|[a-z@A-Z]*\\)\\="
+                        ;; "\\\\\\([^a-zA-Z]?\\|[a-zA-Z]*\\)\\="
                         (- (point) 100) t)
     (setq begin (point))
     (skip-chars-backward "\\\\")
@@ -638,9 +641,7 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
       (if (or whizzy-write-annotate
               (not (functionp 'call-with-transparent-undo)))
           ;; we insert annotations on the fly
-          (let ((old write-region-annotate-functions)
-                ;; (coding coding-system-for-write)
-                )
+          (let ((old write-region-annotate-functions))
             (setq write-region-annotate-functions
                   (cons 'whizzy-write-region-annotate
                         write-region-annotate-functions))
@@ -673,38 +674,6 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
   (write-region from to (whizzy-get whizzy-slicename) nil 'ignore))
   (whizzy-wakeup))
 
-(defun whizzy-write-region-annotate (start end)
-  (let ((empty-lines (count-lines (point-min) start))
-        (full-lines (count-lines start (point)))
-        (word (and whizzy-point-visible
-                   (if (functionp whizzy-point-visible)
-                       (funcall whizzy-point-visible)
-                       (whizzy-show-point)))
-        ))
-    ;; (message "WWABD=%S word="%S"  whizzy-write-at-begin-document word)
-    (let ((line
-           (if whizzy-line              ; (not whizzy-point-visible)
-               (concat
-                "\\WhizzyLine{"
-                (int-to-string (+ empty-lines full-lines))
-                "}")))
-          )
-      (append
-       (list
-        (cons start
-              (concat
-               "\\begin{document}\\WhizzySkip"
-               whizzy-write-at-begin-document
-               (make-string empty-lines 10)
-               (if whizzy-slave
-                   (concat "\\WhizzyMaster{" whizzy-slave "}"))
-               "\\WhizzyStart" line)))
-       (cond ((numberp word) (list (cons word "")))
-             ((consp word) word))       
-       (list (cons end "\n\\end{document}\n")))
-      )
-    ))
-
 (defvar whizzytex-mode nil)
 (make-variable-buffer-local 'whizzytex-mode)
 (let ((mode (assq 'whizzytex-mode minor-mode-alist))
@@ -713,6 +682,40 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
     (setq  minor-mode-alist
           (cons (cons 'whizzytex-mode value) minor-mode-alist))))
 
+(defun whizzy-write-region-annotate (start end)
+  ;; check for whizzytex-mode since it appears in a global hook, even though
+  ;; it should be removed from the hook immediately
+  (if whizzytex-mode
+      (let ((empty-lines (count-lines (point-min) start))
+            (full-lines (count-lines start (point)))
+            (word (and whizzy-point-visible
+                       (if (functionp whizzy-point-visible)
+                           (funcall whizzy-point-visible)
+                         (whizzy-show-point)))
+                  ))
+        ;; (message "WWABD=%S word="%S"  whizzy-write-at-begin-document word)
+        (let ((line
+               (if whizzy-line          ; (not whizzy-point-visible)
+                   (concat
+                    "\\WhizzyLine{"
+                    (int-to-string (+ empty-lines full-lines))
+                    "}")))
+              )
+          (append
+           (list
+            (cons start
+                  (concat
+                   "\\begin{document}\\WhizzySkip"
+                   whizzy-write-at-begin-document
+                   (make-string empty-lines 10)
+                   (if whizzy-slave
+                       (concat "\\WhizzyMaster{" whizzy-slave "}"))
+                   "\\WhizzyStart" line)))
+           (cond ((numberp word) (list (cons word "")))
+                 ((consp word) word))       
+           (list (cons end "\n\\end{document}\n")))
+          )
+        )))
 
 (defun whizzy-call (command)
   (if (and whizzytex-mode (whizzy-get whizzy-running))
@@ -1539,8 +1542,9 @@ Positive (negative) values of ARG widen (narrow) slice by as ARG steps.
           (error "Fatal error: Inconsistent master"))
       ;; we must compute the relative basename of the slave
       (let* ((this-name
-              (file-name-sans-extension
-               (file-name-nondirectory (buffer-file-name this-buffer))))
+             ;; (file-name-sans-extension
+               (file-name-nondirectory (buffer-file-name this-buffer)))
+             ;;)
              (this-dir
               (file-name-directory (buffer-file-name this-buffer)))
              (master-dir
@@ -1767,6 +1771,15 @@ is displayed on line LINE of the window, or centered if LINE is nil."
 
 ;;; errors
 
+(defvar whizzy-delete-output t
+  "*If true, the ouput is deleted automatically. Otherwise, output is kept
+as long as the window is visible.")
+
+(defun whizzy-delete-output (pos)
+  (if (and whizzy-delete-output 
+           (window-live-p (whizzy-get whizzy-process-window)))
+      (delete-region (point-min) pos)))
+
 (defvar whizzy-latex-error-regexp
   "^\\(! Missing \\|! Undefined \\|! LaTeX Error:\\|Runaway argument?\\)")
 
@@ -1774,18 +1787,14 @@ is displayed on line LINE of the window, or centered if LINE is nil."
   (interactive "p")
   (let ((source-buffer (whizzy-get whizzy-active-buffer))
         (shell-buffer (whizzy-get whizzy-process-buffer))
-        (point-min
-         (or (and (window-live-p (whizzy-get whizzy-process-window))
-                  (mark t))
-             (point-min)))
         (error-begin) (error-end) (line-string) (shell-moveto)
         )
     (or (buffer-live-p source-buffer)
         (set source-buffer (current-buffer)))
     (set-buffer shell-buffer)
     (goto-char (point-max))
-    (re-search-backward "<Recompilation failed>" point-min 'move)
-    (delete-region point-min (max point-min (- (point) 14)))
+    (if (re-search-backward "<Recompilation failed>" (point-min) 'move)
+        (whizzy-delete-output (point)))
     (if (re-search-forward
          "^l\\.\\([1-9][0-9]*\\) \\([^\n]*\\)" (point-max) 'move)
         (progn
@@ -2129,7 +2138,7 @@ Toggle if ARG is ommitted."
 
 (defun whizzy-edit (command name line file type dx dy)
   (let ((x) (y) (regexp) (modified))
-    (message "command=%S name=%S line=%S file=%S" command name line file)
+    ;; (message "command=%S name=%S line=%S file=%S" command name line file)
     (if (equal type 'moveto) (setq x "x" y "y")  (setq x "w" y "h"))
     (setq regexp
           (concat (regexp-quote command) " *\n? *{"
@@ -2145,95 +2154,104 @@ Toggle if ARG is ommitted."
             (if (or (whizzy-edit-field y dy) modified)
               (whizzy-observe-changes))))
         )))
-        
+  
 (defun whizzy-filter-output (s)
-  (cond
-   ((not (whizzy-get whizzy-running)))
-   ((string-match "^<Compilation succeeded>" s)
-    (goto-char (point-max))
-    (let ((point-min
-           (or (and (window-live-p (whizzy-get whizzy-process-window))
-                    (mark t))
-               (point-min))))
-      (re-search-backward "<Recompilation failed>" point-min 'move)
-      (delete-region point-min (max point-min (- (point-max) 35))))
-    (if (whizzy-set-active-buffer)
-        (progn
-          (whizzy-delete-error-overlay)
-          (whizzy-auto-show 0)
-          (whizzy-error 'tex t)
-          (whizzy-set-time t)
-          )))
-   ((string-match "^<Continuing>" s)
-    (whizzy-check-errors)
-    (and (whizzy-set-active-buffer)
-         (whizzy-auto-show 1))
-    )
-   ((string-match "^<Reformatting failed>" s)
-    (whizzy-error 'fmt)
-    (whizzy-auto-show 1))
-   ((string-match "^<Continuing with the old format>" s)
-    (if (equal (mark t) (point-max)) 
-      (if (re-search-forward "^<Continuing with the old format>"
-                          (point-max) t)
-      (set-mark (match-end 0))
+  (let ((from 0) (l (length s)))
+    (while (and from (< from l) (whizzy-get whizzy-running))
+      (cond
+       ((string-match "^<Compilation succeeded>" s from)
+        (setq from (match-end 0))
+        (goto-char (point-max))
+        (whizzy-delete-output (- (point) l))
+        (if (whizzy-set-active-buffer)
+            (progn
+              (whizzy-delete-error-overlay)
+              (whizzy-auto-show 0)
+              (whizzy-error 'tex t)
+              (whizzy-set-time t)
+              )))
+       ;; those do not 
+       ((string-match "^<Continuing>" s from)
+        (setq from (match-end 0))
+        (whizzy-check-errors)
+        (and (whizzy-set-active-buffer) (whizzy-auto-show 1))
+        )
+       ((string-match "^<Reformatting failed>" s from)
+        (setq from (match-end 0))
+        (whizzy-error 'fmt)
+        (whizzy-auto-show 1))
+       ((string-match "^<Continuing with the old format>" s from)
+        (setq from (match-end 0))
+        )
+       ((string-match "^<Reformatting succeeded>" s from)
+        (setq from (match-end 0))
+        (whizzy-error 'fmt t)
+        )
+       ((string-match "^<Whole document recompilation failed>" s from)
+        (setq from (match-end 0))
+        (whizzy-error 'whole)
+        )
+       ((string-match "^<Whole document updated>" s from)
+        (setq from (match-end 0))
+        (whizzy-error 'whole t)
+        )
+       ((string-match "^<Pages and sections updated>" s from)
+        (setq from (match-end 0))
+        (whizzy-read-sections t))
+       ((string-match "^<Recompiling>" s from)
+        (setq from (match-end 0))
+        (whizzy-set whizzy-slice-fed nil)
+        (whizzy-set-time nil)
+        )
+       ((string-match "^<Recompilation failed>" s from)
+        (setq from (match-end 0))
+        (whizzy-error 'tex)
+        (whizzy-set-time t)
+        )
+       ((string-match "^<Error in Line \\([^\n]*\\) *>" s from)
+        (setq from (match-end 0))
+        (beginning-of-line)
+        (goto-char (point-max))
+        (previous-line 1)
+        (if (whizzy-set-active-buffer)
+            (progn
+              (whizzy-show-wdiff (match-string 1 s))
+              (whizzy-auto-show 1)))
+        )
+       ((string-match "\#line \\([0-9][0-9]*\\)" s from)
+        (setq from (match-end 0))
+        (whizzy-goto-line s)
+        )
+       ((string-match
+         "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\" #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(move\\|resize\\)to \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
+        (setq from (match-end 0))
+        (if (whizzy-set-active-buffer)
+            (whizzy-edit
+             (match-string 1 s)
+             (match-string 2 s)
+             (match-string 3 s)
+             (match-string 4 s)
+             (if (string-equal (match-string 5 s) "move") 'moveto 'resizeto)
+             (match-string 6 s)
+             (match-string 7 s)
+             )))
+       ((string-match "<Fatal error>" s)
+        (setq from (match-end 0))
+        (if (whizzy-set-active-buffer)
+            (progn
+              (whizzy-mode-off)
+              (whizzy-show-interaction t)))
+        (message "External Fatal error. WhizzyTeX Mode switched off. ")
+        )
+       ((string-match "<Quitting>" s)
+        (setq from (match-end 0))
+        (if (whizzy-set-active-buffer) (whizzy-mode-off))
+        (message "Mode switched off externally")
+        )
+       (t (setq from nil))
+       )
+      (if from (setq from (+ from 1)))
       )))
-   ((string-match "^<Reformatting succeeded>" s)
-    (set-mark nil)
-    (whizzy-error 'fmt t)
-    )
-   ((string-match "^<Whole document recompilation failed>" s)
-    (whizzy-error 'whole)
-    )
-   ((string-match "^<Whole document updated>" s)
-    (whizzy-error 'whole t)
-    )
-   ((string-match "^<Pages and sections updated>" s)
-    (whizzy-read-sections t))
-   ((string-match "^<Recompiling>" s)
-    (whizzy-set whizzy-slice-fed nil)
-    (whizzy-set-time nil)
-    )
-   ((string-match "^<Recompilation failed>" s)
-    (whizzy-error 'tex)
-    (whizzy-set-time t)
-    )
-   ((string-match "^<Error in Line \\([^\n]*\\) *>" s)
-    (beginning-of-line)
-    (goto-char (point-max))
-    (previous-line 1)
-    (if (whizzy-set-active-buffer)
-        (progn
-          (whizzy-show-wdiff (match-string 1 s))
-          (whizzy-auto-show 1)))
-    )
-   ((string-match "\#line \\([0-9][0-9]*\\)" s)
-    (whizzy-goto-line s)
-    )
-   ((string-match
-  "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\" #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(move\\|resize\\)to \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
-    (if (whizzy-set-active-buffer)
-        (whizzy-edit
-         (match-string 1 s)
-         (match-string 2 s)
-         (match-string 3 s)
-         (match-string 4 s)
-         (if (string-equal (match-string 5 s) "move") 'moveto 'resizeto)
-         (match-string 6 s)
-         (match-string 7 s)
-         )))
-   ((string-match "<Fatal error>" s)
-    (if (whizzy-set-active-buffer)
-        (progn
-          (whizzy-mode-off)
-          (whizzy-show-interaction t)))
-    (message "External Fatal error. WhizzyTeX Mode switched off. ")
-    )
-   ((string-match "<Quitting>" s)
-    (if (whizzy-set-active-buffer) (whizzy-mode-off))
-    (message "Mode switched off externally")
-    )
-   ))
 
 (make-face 'whizzy-slice-face)
 (set-face-background 'whizzy-slice-face "LightGray")
@@ -2308,25 +2326,30 @@ It should accept the following arguments
 )
 
 (defun whizzy-toggle-point ()
-  "Toggle whizzy-point-visible variable."
+  "Toggle `whizzy-point-visible' variable."
   (interactive)
   (setq whizzy-point-visible (not whizzy-point-visible))
   (setq whizzy-last-tick 0)
   (setq whizzy-last-point 0)
   )
 (defun whizzy-toggle-line ()
-  "Toggle whizzy-line variable."
+  "Toggle `whizzy-line' variable."
   (interactive)
   (setq whizzy-line (not whizzy-line))
   (setq whizzy-last-tick 0)
   )
 
 (defun whizzy-toggle-auto-show ()
-  "Toggle whizzy-show-output variable."
+  "Toggle `whizzy-auto-show-output' variable."
   (interactive)
   (setq whizzy-auto-show-output (not whizzy-auto-show-output))
   )
   
+(defun whizzy-toggle-delete-output ()
+  "Toggle `whizzy-delete-output' variable."
+  (interactive)
+  (setq whizzy-delete-output (not whizzy-delete-output)))
+
 
 ;;;; menus and bindings
 
@@ -2388,6 +2411,9 @@ It should accept the following arguments
       (define-key menu-map [whizzy-show-interaction]
         '("Show interaction" . whizzy-show-interaction))
       (define-key menu-map [sep2] '("--"))
+      (define-key menu-map [whizzy-toggle-delete-output]
+        '(menu-item "Auto shrink output"  whizzy-toggle-delete-output
+                    :button (:toggle and whizzy-delete-output)))
       (define-key menu-map [whizzy-toggle-auto-show]
         '(menu-item "Auto interaction"  whizzy-toggle-auto-show
                     :button (:toggle and whizzy-auto-show-output)))
@@ -2398,7 +2424,7 @@ It should accept the following arguments
         (define-key map [never]
           '(menu-item "Never"  whizzy-show-point-never
                       :button (:radio equal whizzy-point-visible nil)))
-        (define-key map [pssimistic]
+        (define-key map [pessimistic]
           '(menu-item "Be pessimistic" whizzy-show-point-pessimistic
                       :button (:radio equal whizzy-point-visible
                                       'whizzy-show-point-safer)))
@@ -2506,6 +2532,8 @@ It should accept the following arguments
           )
         [ "Auto interaction" whizzy-toggle-auto-show
           :style toggle :selected whizzy-auto-show-output ]
+        [ "Auto shrink output" whizzy-toggle-delete-output
+          :style toggle :selected whizzy-delete-output ]
         "---"
         [ "Show interaction" whizzy-show-interaction ]
         [ "View log..."  whizzy-view-log :active whizzytex-mode ]

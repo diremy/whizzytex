@@ -171,6 +171,16 @@ to slice!
 
 %% Macros to dump section numbers
 
+%% The difference between real and virtual line numbers
+\def \whizzy@diffline {0}
+\newcount \whizzy@lineno
+\def \whizzy@thelineno 
+   {\whizzy@lineno \inputlineno 
+    \advance \whizzy@lineno by \whizzy@diffline}
+\def \whizzy@setline #1{\xdef \whizzy@diffline {#1}}
+\def \AddtoInputlineno #1{%
+   \whizzy@setline{#1}\whizzy@writelineno}
+
 %% The current file (see below)
 \edef \whizzy@curfile {\jobname \WhizzyExt}
 
@@ -203,8 +213,9 @@ to slice!
    \filename@parse {\whizzy@curfile}%
    \xdef \whizzy@Curfile 
      {\whizzy@curfile \@ifundefined {filename@ext}{.tex}{}}%
+   \whizzy@thelineno
    \immediate \write \whizzy@pag
-   {\whizzy@Curfile:\the\inputlineno:#1@\thepage.%
+   {\whizzy@Curfile:\the\whizzy@lineno:#1@\thepage.%
     \@ifundefined{c@chapter}{}{\the\c@chapter.}%
     \the\c@section.\the\c@subsection.%
     \ifwhizzy@appendix 1\else 0\fi.}%
@@ -263,10 +274,14 @@ to slice!
 % We could interprepret the absence of file name as the master file name
 
 %% Two commands must be redefined, so we share there code
+\def \whizzy@reposition #1#2{%
+   \whizzy@setfile{#1}\whizzy@setline{#2}\whizzy@writelineno}
 \def \whizzy@iinput 
-   {\expandafter \whizzy@input \expandafter{\whizzy@curfile}{\latex@iinput}}
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@diffline}}%
+    \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@iinput}}
 \def \whizzy@input@
-   {\expandafter \whizzy@input \expandafter{\whizzy@curfile}{\latex@input@}}
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@diffline}}%
+    \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@input@}}
 
 %% Note the use of a function to work with recursive inputs: we cannot 
 %% open groups around the \input to save the name of current file to reset
@@ -283,8 +298,10 @@ to slice!
           \whizzy@outputline {1}{\whizzy@curfile}%
       }{}%
     #2{#3}%
-    \ifwhizzy@advi \whizzy@setfile {#1}\whizzy@writelineno \fi
+    \ifwhizzy@advi \expandafter \whizzy@reposition #1\fi
 }
+\def \SourceFile #1{%
+   \ifwhizzy@advi \whizzy@setfile {#1}\whizzy@writelineno \fi}
 
 %% Print a header when the slice is mastered 
 %% (we put a \whizzy@writelineno  hook for advi. 
@@ -445,14 +462,16 @@ to slice!
 }
 \def \whizzy@writelineno
    {\ifhmode \unskip \fi
-    \xdef \whizzy@lastparno {\the\inputlineno}%
-    \whizzy@outputline {\the\inputlineno}{\whizzy@curfile}}
+    \whizzy@thelineno
+    \xdef \whizzy@lastparno {\the\whizzy@lineno}%
+    \whizzy@outputline {\the\whizzy@lineno}{\whizzy@curfile}}
 \def \whizzy@pageno {0}
 \def \whizzy@lastpageno {0}
 \def \whizzy@writelastpage
   {\whizzy@outputline {\whizzy@lastpageno}{\whizzy@curfile}%
+   \whizzy@thelineno
    \xdef \whizzy@lastpageno {\whizzy@pageno}%
-   \xdef \whizzy@pageno {\the \inputlineno}%
+   \xdef \whizzy@pageno {\the\whizzy@lineno}%
 }
 \g@addto@macro \whizzy@everypagehook {\whizzy@writelastpage}
 
@@ -467,7 +486,8 @@ to slice!
     \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
     \special {html:</A>}%
     %\ifhmode \hskip \lastskip \fi
-    \message {[Start-Document @ \whizzy@line -> \the\inputlineno\space
+    \whizzy@thelineno
+    \message {[Start-Document @ \whizzy@line -> \the\whizzy@lineno\space
                \whizzy@curfile]}%
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
@@ -481,7 +501,9 @@ to slice!
   {\whizzy@checkline \whizzy@writelineno \latex@@par}
 \let \whizzy@catcode \relax
 \def \whizzy@@check@limit 
-  {\ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi}
+  {\ifx \whizzy@curfile \whizzy@local
+     \ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi
+   \fi}
 \def \whizzy@@checkline {%
    \ifx \whizzy@curfile \whizzy@local
       \ifnum \inputlineno>\whizzy@linelimit
