@@ -2,17 +2,18 @@ BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 VERSION=1.00-alpha
 NAME=whizzytex-$(VERSION)
+TAG=.VERSION_$(VERSION)
 
 LOCALFILES= bin/whizzytex  lib/tex/whizzytex.sty lib/emacs/whizzytex.el
 SRCFILES=$(patsubst %,$(HOME)/%,$(LOCALFILES))
 
 FILES= whizzytex whizzytex.sty whizzytex.el
-TARFILES = $(FILES) LGPL COPYING INSTALL VERSION \
+TARFILES = $(FILES) GPL COPYING INSTALL VERSION \
 	    Makefile.config.in byte-compile.el configure configure.el \
             Makefile Makefile.pkg doc examples 
        
 EXPORTS = index.html $(NAME).tgz  manual.dvi doc/manual.html \
-           CHANGES COPYING LGPL INSTALL VERSION 
+           CHANGES COPYING GPL INSTALL VERSION 
 PAUILLAC=pauillac:public_html/whizzytex/
 
 whatelse: 
@@ -29,7 +30,7 @@ doc/manual.html: doc/manual.tex manual.dvi
 
 
 VERSION: makefile
-	test `grep '^VERSION=' Makefile.pkg` = 'VERSION=$(VERSION)'
+	test `grep '^ORIGIN=' Makefile.pkg` = 'ORIGIN=$(VERSION)'
 	test "`grep '^The current version is' index.html | \
 	  sed  -e 's/.*="whizzytex-\(.*\)">whizzytex-\(.*\)<.a>/\1,\2/' \
 	       `" = '$(VERSION).tgz,$(VERSION).tgz'
@@ -37,11 +38,12 @@ VERSION: makefile
 
 FILES: $(TARFILES) makefile
 	make clean
-	(echo whizzytex/FILES; \
+	(echo whizzytex/FILES; echo whizzytex/$(TAG); \
 	 cd ..; tar zcvf /dev/null $(patsubst %,whizzytex/%,$(TARFILES)) \
 	) | grep -v CVS | grep -v '/$$' > $@
 
 $(NAME).tgz: FILES
+	touch VERSION $(TAG)
 	cd ..; tar zcvf whizzytex/$@ `cat whizzytex/FILES`
 
 check: diff
@@ -75,10 +77,11 @@ smallclean:
 	cd examples; $(MAKE) superclean
 
 clean:: smallclean
-	rm -rf whizzytex.tgz doc/{*~,.#*,#*#}
+	rm -rf doc/{*~,.#*,#*#} manual.{aux,log}
 
 superclean: clean
-	rm -f doc/ocaml.html
+	rm -f doc/ocaml.html $(TAG) $(NAME).tgz manual.dvi \
+	rm -f *~ .#* #*# FILES 
 
 .SUFFIXES: .tgz
 

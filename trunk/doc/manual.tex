@@ -39,8 +39,8 @@ Copyright \copyright 2001, 2002 INRIA
 and distributed under the GNU General Public License
 (See the COPYING file enclosed with the distribution).}}
 \\[1em]
-{\em An {\bfseries Emacs mode} 
-for incremental display of \\ 
+{\em An {\bfseries Emacs} minor-mode \\
+for {\bfseries incremental previewing of} \\ 
 {\bfseries {\LaTeX} documents}}
 }
 
@@ -78,8 +78,8 @@ uncompress and untar it in some working directory, as follows:
 \begin{quote}
 \begin{verbatim}
 gunzip whizzytex-1.0.tgz
-tar -xf whizztex-1.0.tar
-ls -1 whizzytex 
+tar -xvf whizztex-1.0.tar
+cd whizzytex 
 \end{verbatim}
 \end{quote}
 Then, the installation can be automatic, or manual.
@@ -150,74 +150,76 @@ Default value is \lst"/usr/local/lib/whizzytex/whizzytex.sty"
 \subsection {Automatic upgrading}
 
 For convenience, the distribution also offers a facility to download
-and upgrade to new versions. This requires \lst"wget" installed. 
+and upgrade to new versions (this requires \lst"wget" installed).
 
-To benefit from this service you must first execute (once for all)
+\paragraph {Setup}
+To benefit from this service you must first create, once for all, the
+following link in the top directory of the distribution (where you untar the
+original file).
 \begin{quote}
 \begin{verbatim}
-make install.pkg
+cd ..
+make -f whizzytex/Makefile.pkg Makefile
 \end{verbatim}
 \end{quote}
-This will install create a link \lst"Makefile" in your parent directory
-to the file \lst"whizzytex/Makefile.pkg". This assumes that you have not
-rename the parent directory after installation, which should remain
-\lst"whizzytex". 
+This create a \lst"Makefile" in this directory that includes
+\lst"whizzytex/Makefile.pkg", which you may later edit if you wish to override
+default settings.
 
-If you wish to edit this file, you should copy it instead of creating
-a link, since upadtes may update (hence override) the file
-\lst"whizzytex/Makefile.pkg" itself. 
+\paragraph {Upgrading}
+From the top directory of the distribution (where you did the setup), type 
+\begin{quote}
+\begin{verbatim}
+make upgrade 
+make install 
+\end{verbatim}
+\end{quote}
+(You may wish to change the rights before you run \lst"make install"). 
 
-Then, from the parent directory, you can type
+The first command is in fact an abbreviation for
 \begin{quote}
 \begin{verbatim}
-make update
-make unpack
-make build
-make install
+make update unpack build
 \end{verbatim}
 \end{quote}
-Respectively, to check for newer version and download if nevessary, unpack
-the newest version, build the current version, and install the current version
+which you can also run step-by-step to respectively
+check for newer version and download if necessary, unpack
+the current version if newer, and build the current version.
 
-You can also use
+Other available commands are:
 \begin{quote}
 \begin{verbatim}
-make upgrade
+make VERSION=xxx donwload
+make VERSION=xxx version
+make clean
 \end{verbatim}
-\begin{quote}
-as a show-cut \lst$"make update unpack build"$
 \end{quote}
-\begin{verbatim}
-make VERSION=xxx restore
-\end{verbatim}
-\begin{quote}
-to restore (unpack only) version xxx
-\end{quote}
-\begin{verbatim}
-make save-version
-\end{verbatim}
-\begin{quote}
-To pack current version in case, you lost its original tar file, 
-which is recommended before an updare, in case you want to restore the old
-version later. 
-\end{quote}
-\end{quote}
-The upgrading may ask questions to the users. To be fully automatic, you can
-also pass the option \lst"FORCE=true", which will let the installation make
-(hopefully reasonable) choices in your place.
+to download and unpack a specific version.
+
+Upgrading may prompt the user for confirmation, but you can
+pas the option \lst"FORCE=true" to the \lst"make" command and have
+a fully automated installation. Hopefully, reasonable choices 
+will be made in your place.
 
 
 \section {Using {\whizzy}} 
 
-\subsection {Quit start} 
+\subsection {Quick start} 
 
-{\whizzy} runs as a minor mode of emacs to be launched on a {\LaTeX}
-emacs buffer. One the library \lst"whizzytex.el" has been loaded (you
-probably want to declare it auto-load in your Emacs startup file)
-simply type
+You should first load the library \lst"whizzytex.el" or, better, make 
+it autoload by including the following declaration 
+in your Emacs startup file (probably  is \lst"~/.emacs"). 
 \begin{quote}
 \begin{verbatim}
-Esc-x whizzytex-mode
+(autoload 'whizzytex-mode "whizzytex" 
+    "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+\end{verbatim}
+\end{quote}
+{\whizzy} runs as a minor mode of emacs to be launched on a {\LaTeX}
+emacs buffer. To start it, type:
+\begin{quote}
+\begin{verbatim}
+ESC x whizzytex-mode
 \end{verbatim}
 \end{quote}
 By default, this should add new bindings so that you can later turn mode
@@ -226,21 +228,27 @@ on and off with key strokes {\tt C-c C-w}. This will also add a new menu
 
 When {\tt whizzytex-mode} is started for the first time on a new buffer, it
 may prompt for confirmation of default or inferred settings, which you may
-confirm or change interactively. You may also change default settings
-permanently by inserting appropriate comments in the source file ---see the
-manual below.
+confirm or change interactively. 
+
+You may also customize default settings globally by running appropriate
+hooks or locally by inserting appropriate comments in the source file ---see
+the manual below.
+
+\subsection {Editing}
 
 Once {\tt whizzytex-mode} is on, just type in as usual.  {\whizzy} should work
 transparently, refreshing the presentation as you type or move into your
-{\LaTeX} buffer. Additionally, a gray overlay is put outside
-of the current slice, {\em i.e.} outside of the region of your buffer under
-focus. When a {\LaTeX} error occurs and it can be localized in
-the  source buffer, a yellow overlay also is put on the region around the
-error, and removed when the error is fixed.
+{\LaTeX} buffer. 
+
+Additionally, a gray overlay is put outside of the current slice (the {\em
+slice} is the region of your buffer under focus, which is automatically
+determined by {\whizzy}). When a {\LaTeX} error occurs and it can be
+localized in the source buffer, a yellow overlay also is put on the region
+around the error, and removed when the error is fixed.
 
 Furthermore, when an error is persistent for several slices or some amount
 of time, the interaction-buffer will pop up with the error log
-(this option can be turned on or off from the {\tt Auto interaction} menu
+(this option can be toggled on and off with the {\tt Auto interaction} menu
 entry).  
 
 \subsection {Recovering from errors}
@@ -279,7 +287,7 @@ automatically.)
 Here are a description of errors during initialization mostly in
 chronological order. 
 
-\paragraph {Emacs fail during setup}
+\paragraph {Emacs fails during setup}
 
 This is all under emacs, so easily under control.
 Normally, emacs should report error messages. See the documentation for
@@ -412,12 +420,19 @@ This section describes how to use and
 parameterize {\whizzy}. Most of it can also be found as Emacs online help:
 \begin{quote}
 \begin{verbatim}
-Esc X describe-function C-M whizzytex-mode
+ESC x describe-function RET whizzytex-mode
 \end{verbatim}
 \end{quote}
 (Also available from the {\tt Help} entry of the {\tt Whizzy} menu of the Emacs
 menu bar once in {\tt whizzytex-mode}.)  Then, you can really almost all
-parts of the manual by following hypertext links. 
+parts of the manual by following hyper-links. (In XEmacs, you may need to 
+use 
+\begin{quote}
+\begin{verbatim}
+ESC x hyper-describe-function RET whizzytex-mode
+\end{verbatim}
+\end{quote}
+instead of \lst"describe-function" to see hyper-links.)
 
 
 \subsection {Configuration} 
@@ -528,6 +543,8 @@ This sets the emacs-variable whizzy-paragraph to the \\
 
 \subsubsection {Emacs global configuration}
 
+\label {emacs-configuration}
+
 \paragraph {Emacs cool bindings}
 
 The emacs mode defines the command \lst"whizzy-next-slice" and
@@ -557,11 +574,6 @@ such as error-display that are on by default, by adding the line
 \end{verbatim}
 to your \lst".emacs" file.
 
-We also recommend the line:
-\begin{verbatim}
-    (autoload 'whizzytex-mode "whizzytex" 
-       "Local mode for interactive previewing of TeX" t)
-\end{verbatim}
 
 \paragraph {Emacs configuration variables}
 
@@ -670,7 +682,7 @@ Additionally parameters can be passed at the end command line
 
 By default {\whizzy} take the slice as source latex code. 
 That is the slice 
-\lst"_whizzy_$BASENAME.slc" saved by emacs is turn into the 
+\lst"_whizzy_$BASENAME.new" saved by emacs is turned into the 
 into the file \lst"_whizzy_$BASENAME.tex" to be be processed by latex,
 using \lst"mv" as a preprocessor.  The above option will tell {\whizzy} to
 use \lst"MAKE" instead of \lst"mv" to turn the slice into a latex source
@@ -681,7 +693,9 @@ appropriate \lst"Makefile").  However, one may have to work around
 \lst"make"'s notion of time, which is usually too rough. 
 This is safe, since
 {\whizzy} tests itself for needed recompilations: it does so by dropping any
-new version in a pool directory (\lst"_whizzy_$BASENAME/"). %$
+new version in a  special directory (\lst"_whizzy_$BASENAME/input/"), 
+%$
+called the {\em pool}.
 
 \item[{\bf {\tt -duplex}}]\indent
 \label {dupplex}
@@ -815,8 +829,11 @@ and includes specials that allows back-pointing from the DVI file into the
 emacs buffer.
 
 \end {itemize}
-The rest of this section briefly describe these three parts, and their
-interactions. 
+The rest of this section briefly describe these three parts\footnote {This
+section is not quite up-to-date, hence it puts emphasis on the original
+design, but several aspects have changed significantly since the first
+version. Implementation of more recent features is thus ommitted.}, and
+their interactions.
 
 
 \subsection {Emacs code}
@@ -851,11 +868,11 @@ There are a few other less important hacks. For instance, the following
 macros are also made available (but only for expert use):
 \begin {itemize}
 \item
-\lst"\WysitexInput" is used by the shell-script to tell {\TeX} to dump page
+\lst"\WizzytexInput" is used by the shell-script to tell {\TeX} to dump page
 and section  numbers in some format that is later processed by Unix to be
 passed back to emacs as emacs-lisp code.
 \item
-\lst"\WysitexTex" is used by emacs to tell {\TeX} to adjust counters to
+\lst"\WizzySlice" is used by emacs to tell {\TeX} to adjust counters to
 the current section. 
 \item
 \lst"\WhizzyLine" is used by emacs to tell where the cursor is.
@@ -887,12 +904,18 @@ of the log file with annotations to the \lst"*TeX-shell*" buffer from which
 emacs has been {\whizzy}, so that emacs can report the error. 
 
 
-\subsection {Cool  hacks}
+\subsection {Cool hacks}
 
 Cursor, back-pointing, line and file numbers.
 
 
-\subsection {Some dirty hacks}
+\subsection {Dirty hacks}
+
+{\LaTeX} macros are somewhat hacky, but what else could one expect?
+Actually, the package has been written with many comments and in a modular
+way so that it should be almost easy  to modify\ldots{} for a {\TeX} expert.
+Some in some sense, for the non expert \lst"whizzytex.sty" is full of dirty
+hacks. 
 
 {\whizzy} works best with the \lst"advi" previewer, as explained above. 
 However, it also works with \lst"xdvi" and \lst"gv". 

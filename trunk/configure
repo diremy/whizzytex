@@ -2,9 +2,12 @@
 
 PS3="Your choice ==> "
 
-
+BOTH=false
 if test -z "$EMACS"; then EMACS=emacs; else BOTH=true; fi
 if test -z "$XEMACS"; then XEMACS=xemacs; else BOTH=true; fi
+Emacs=$EMACS
+XEmacs=$XEMACS
+
 
 unset EDITORS
 if $EMACS -batch 2>/dev/null
@@ -18,10 +21,12 @@ fi
 
 set xxx $EDITORS
 shift
+
 case $# in
   0) 
-    echo "Neither $EMACS nor $XEMACS seemed to be installed."
-    echo "Please, install them first or set EMACS or XEMACS variables"
+    echo "Neither Emacs [defaulting to $Emacs]"
+    echo  "nor XEmacs [defaulting to $XEmacs] seem to be installed."
+    echo "Please, install them first or set EMACS or XEMACS variables."
     exit 2;;
   1);;
   2) 
@@ -30,7 +35,6 @@ case $# in
     else
       echo "Both $EMACS and $XEMACS are installed."
       echo 'Do you wish to install whizzytex for... '
-      PS3="choice ==> "
       select ANSWER in $EDITORS both
       do
         echo "you selected $ANSWER"
@@ -108,8 +112,8 @@ sed \
 
 echo " EDITORS = $EDITORS "
 echo " EMACS = $EMACS "
-echo " XEMACS = $XEMACS "
 echo " EMACSDIR = $EMACSDIR "
+echo " XEMACS = $XEMACS "
 echo " XEMACSDIR = $XEMACSDIR "
 echo " LIBDIR = $LIBDIR "
 echo

@@ -1,33 +1,25 @@
-Time-stamp: <2001-03-04 15:25:38 remy>
+Time-stamp: <2002-02-26 15:57:40 remy>
 
 RECENT CHANGES:
 
 Emacs-mode
 
- * whizzy-mode-hook is set to whizzy-mode-suggested-hook 
- * small fixes in xemacs' version
- * xemacs menus and compatibility 
- * error-report now first attempt to report the diff with the last sucessful
-   slice if local (a single block of differences); otherwise it falls back
-   to attempt to localize the error from the latex output.
- * new previewer mode -master for files that are leaves of other tex
-   documents 
- * whizzytex-mode now ask the user to confirm default values for variables.
- * whizzytex-mode called with arg 16 recomputes default values for
-   variables. 
- * whizzytex-mode called with arg 4 ask the user to confirm/change values
-   for variables. 
- * whizzy-change-mode allows to change slicing mode while running. 
- * slicing speed ajusts automatically to the speed with which slices are
-   processed. 
- * (small) compatibility with xemacs. Should work but without frames and
-   overlays. 
+ * Cleaned up and rewritten for version 1.00-alpha
 
 Shell-script: 
 
- * Computes word-diff with the last successful slice.
- * The shell-script can either pause with "usleep" or stop itself with  
-   "kill -STOP" when waiting for a new slice. 
+ * Cleaned up and rewritten for version 1.00-alpha
+
+LaTeX macros:
+
+ * Cleaned up and rewritten for version 1.00-alpha
+
+Installation:
+
+ * Makefile for upgrading to new versions. 
+ * configuration script that attempts at finding a location for emacs files. 
+ * Makefile for version 1.00-alpha
 
 
 OLDER CHANGES:
+

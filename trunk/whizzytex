@@ -506,6 +506,7 @@ duplex () {
   $VIEWCOMMAND $NAME.$VIEW &
   echo $! >> $TMP/pids
 }
+if $DUPLEX; then duplex; fi
 
 ## The loop watching changes
 

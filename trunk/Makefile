@@ -1,16 +1,18 @@
 include Makefile.config
 
 what:
-	@echo 'make what? [ config all doc install ]'
+	@echo 'make what? [ config all install ]'
 
 Makefile.config: 
 	@echo 'run "make config" by hand to create $@'
 
 .PHONY: all
+
 all: prep/whizzytex prep/whizzytex.el \
 	$(patsubst %,prep/%/whizzytex.elc, $(EDITORS))
 
 .PHONY: config
+
 config: 
 	@if test -f Makefile.config; then \
 	 echo -n 'Do you wish to override Makefile.config? (y/n) [n] '; \
@@ -18,25 +20,23 @@ config:
 	./configure
 
 prep: 
-	if test -d $@; then : ; else mkdir -p $@; fi
-
-prep/$(EMACS): 
-	if test -d $@; then : ; else mkdir -p $@; fi
-
-prep/$(XEMACS): 
-	if test -d $@; then : ; else mkdir -p $@; fi
+	mkdir -p $@ $@/$(EMACS) $@/$(XEMACS)
 
 prep/whizzytex.el: whizzytex.el prep
 	sed -e 's|\((defvar whizzy-command-name "\)[^"]*\(".*\)|\1$(BASHDIR)/whizzytex\2|' \
 	 <  $< > $@
 
-prep/$(EMACS)/whizzytex.elc: prep/whizzytex.el prep/$(EMACS)
+ifdef EMACS
+prep/$(EMACS)/whizzytex.elc: prep/whizzytex.el byte-compile.el
 	cd prep/$(EMACS); cp ../whizzytex.el .; \
 	$(EMACS) -batch -q -l $(PWD)/byte-compile.el
+endif
 
-prep/$(XEMACS)/whizzytex.elc: prep/whizzytex.el prep/$(XEMACS)
+ifdef XEMACS
+prep/$(XEMACS)/whizzytex.elc: prep/whizzytex.el byte-compile.el 
 	cd prep/$(XEMACS); cp ../whizzytex.el .; \
 	$(XEMACS) -batch -q -l $(PWD)/byte-compile.el
+endif
 
 prep/whizzytex: whizzytex prep 
 	sed -e 's|PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
@@ -45,24 +45,20 @@ prep/whizzytex: whizzytex prep
 
 .PHONY: install
 install: all
-	@echo; echo "## Installing whizzytex.el in $(EMACSDIR)"
-	if test -d "$(EMACSDIR)"; then \
-	  install prep/whizzytex.el prep/$(EMACS)/whizzytex.elc $(EMACSDIR); \
-	else echo "$(EMACSDIR) is not a directory"; fi
-	@echo; echo "## Installing whizzytex.el in $(XEMACSDIR)"
-	if test -d "$(XEMACSDIR)"; then \
-	  install prep/whizzytex.el prep/$(XEMACS)/whizzytex.elc \
-		$(XEMACSDIR); \
-	else echo "$(EMACSDIR) is not a directory"; fi
-	@echo; echo "## Installing whizzytex in $(BASHDIR)"
+ifdef EMACS
+	@if ! test -d '$(EMACSDIR)'; \
+	 then echo '$(EMACSDIR) is not a directory'; exit 1; fi
+	install prep/whizzytex.el prep/$(EMACS)/whizzytex.elc $(EMACSDIR)
+endif
+ifdef XEMACS
+	@if ! test -d '$(XEMACSDIR)';  \
+	 then echo '$(XEMACSDIR) is not a directory'; exit 1; fi
+	install prep/whizzytex.el prep/$(XEMACS)/whizzytex.elc $(XEMACSDIR)
+endif
 	install -d $(BASHDIR)
 	install prep/whizzytex $(BASHDIR)
-	@echo; echo "## Installing whizzytex.sty in $(LATEXDIR)"
 	install -d $(LATEXDIR) && \
 	install whizzytex.sty $(LATEXDIR)
-
-install.pkg:
-	cd ..; ln -s Makefile whizzytex/Makefile.pkg
 
 clean::
 	rm -rf prep
