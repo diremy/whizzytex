@@ -1,0 +1,24 @@
+\expandafter\ifx\csname SourceFile\endcsname\relax\else\SourceFile{subfile.ltx}\fi
+\expandafter\ifx\csname Setlineno\endcsname\relax\def\Setlineno{\count0}\fi
+\Setlineno=0\relax
+
+Another figure
+
+\expandafter\ifx\csname graph\endcsname\relax \csname newbox\endcsname\graph\fi
+\expandafter\ifx\csname graphtemp\endcsname\relax \csname newdimen\endcsname\graphtemp\fi
+\setbox\graph=\vtop{\vskip 0pt\hbox{%
+    \special{pn 8}%
+    \special{ar 1250 500 1250 500 0 6.28319}%
+    \graphtemp=.5ex\advance\graphtemp by 0.500in
+    \rlap{\kern 1.250in\lower\graphtemp\hbox to 0pt{\hss {Group}\hss}}%
+    \hbox{\vrule depth1.000in width0pt height 0pt}%
+    \kern 2.500in
+  }%
+}%
+\Setlineno=
+6
+$$
+\box \graph
+$$
+
+End of figure 

@@ -1,0 +1,52 @@
+%; whizzy  -dvi
+
+\documentclass{article}
+
+\begin{document}
+
+This directory also contains a configuration file \texttt{whizzy.el} which
+will be automatically loaded.  However, local configuration, {i.e.} the above
+line, takes priority declarations in file \texttt{whizzy.el}.  To see this,
+you may the line above (or simply add a white space in front of it), and
+observe that the declaration in \texttt{whizzy.el} will indeed be taken into
+account.
+
+This directory also contains a file \texttt{whizzy.sty}, which is
+automatically loaded before executing \verb$\begin{document}$.
+
+This directory also contains a configuration file \texttt{whizzy.sh}.
+This file will be loaded every time WhizzyTeX is run. To see this, look 
+at the \texttt{initialization} log file (you may use the menu entry 
+\texttt{View log}). 
+
+Usually, you do not need any of these configuration files. 
+
+You may try the menu entry \texttt{Customize slice} and enter 
+\verb"\Large". The latex command \verb"\Large" will then be inserted
+automatically at the beginning of every slice, and in this case let your
+document be typeset in bigger font. To cancel it, just let the slice 
+customozation be the empty string. 
+
+\section {First section}
+
+Some text in the section.   
+ 
+\subsection {Sub}
+  
+Some text in the subsection.
+
+\subsubsection {SubSub} 
+
+Some text in the sub-subsection. 
+
+
+\section{Foo}
+
+\subsection {Bar}
+
+\paragraph {Par}
+
+And a paragraph aaa a jjj
+
+\end{document}   
+
