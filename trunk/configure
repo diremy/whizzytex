@@ -506,27 +506,29 @@ fi
 
 message "Other parameters"
 
-# tells wether grep accept option -B
-grep -B 2 GREPB configure 1>/dev/null 2>/dev/null
-case $? in
-  0) grepb=true;;
-  *) grepb=false;;
-esac
-output GREPB $grepb
-
 # tells whether "$ADVI" can view multiple files. 
 # check  in checkconfig
 # check if version > 1.50.2
-if [ -n "$advi" ]
+if $multiple && [ -n "$advi" ]
 then
-  if 
-    (echo 1.50.3 ; 
-     $advi --version 2>&1 >/dev/null | \
-        sed -n -e 's/.*version \([0-9.+]*\) .*/\1/p') | sort -n -c 2>/dev/null
-  then :
+  tmp=advi.version$$
+  if $advi --version 2>&1 > $tmp
+  then
+    if
+       ( echo 1.50.2 ; \
+         sed -n -e 's/.*version \([0-9.+]*\) .*/\1/p' < $tmp \
+       ) | sort -n -c 2>/dev/null
+    then
+      :
+    else
+      multiple=false
+    fi
   else
-    echo "Advi version $VERSION does not allow multiple views..."
     multiple=false
+  fi
+  rm -f $tmp
+  if $multiple; then : ; else
+     echo "Advi version $VERSION does not allow multiple views..."
   fi
 fi
 output MULTIPLE $multiple

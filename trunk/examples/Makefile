@@ -1,4 +1,4 @@
-DIRS= basic multiple includes slides advanced
+DIRS= basic multiple includes book slides effects 
 FILES= $(patsubst %,%/main.dvi,$(DIRS))
 
 all: $(FILES)

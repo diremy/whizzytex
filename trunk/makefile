@@ -1,12 +1,16 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 RELEASE=1.1
+Release=1
 VERSION=1.1.3
+YAPVERSION=1.1.3-1.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
 PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
 BASEURL=http://pauillac.inria.fr/whizzytex/
+
+RPMNAME=whizzytex-$(VERSION)-$(Release)
 
 SRCFILES=whizzytex whizzytex.el start.el whizzytex.sty
 
@@ -20,16 +24,18 @@ TARPRODUCED =  INSTALL VERSION
 
 TARDIRS = doc examples 
 
-TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
+TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS) \
 
 
-XXXPORTS = CHANGES index.html FAQ.html manual.dvi doc/manual.html FAQ 
+XXXPORTS = CHANGES index.html animation.html \
+	   FAQ.html manual.dvi doc/manual.html FAQ \
+	   whizzytex-yap-$(YAPVERSION).tgz
 
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
 	   manual.dvi doc/manual.html \
 	   COPYING GPL INSTALL VERSION RELEASE \
-	   $(XXXPORTS) $(NAME).tgz  
+	   $(XXXPORTS) $(NAME).tgz \
 
 
 whatelse: 
@@ -39,7 +45,9 @@ pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
 doc/version.tex: RELEASE VERSION
 	(echo '\def\release{'`cat RELEASE`'}' ; \
-	 echo '\def\version{'`cat VERSION`'}' ) > $@
+	 echo '\def\Release{'$(Release)'}' ; \
+	 echo '\def\version{'`cat VERSION`'}' ; \
+	 echo '\def\YAPVERSION{'$(YAPVERSION)'}' ) > $@
 
 
 doc/manual.dvi: doc/version.tex doc/manual.tex 
@@ -48,18 +56,20 @@ doc/manual.dvi: doc/version.tex doc/manual.tex
 manual.dvi: doc/manual.dvi
 	cp $< $@
 
-faq: FAQ.html FAQ
+faq: FAQ.html FAQ 
 	rcp $< $(PAUILLAC)
 
 FAQ: FAQ.html 
 	lynx -dump $< > $@
 
-FAQ.html: FAQ.tex version.tex
+FAQ.html: FAQ.tex doc/version.tex
 	hevea -o $@ -fix -nosymb -exec xxdate.exe $<
 
 index.html: index.htm makefile
+	rm -f index.html
 	sed \
 	 -e 's/@RELEASE@/$(RELEASE)/g' -e 's/@VERSION@/$(VERSION)/g' \
+	 -e 's/@Release@/$(Release)/g' \
 	 -e 's|href="@|href="|g' \
 	 $< > $@
 	chmod -w index.html
@@ -95,9 +105,10 @@ VERSION: makefile
 	echo $(RELEASE) > RELEASE
 	echo $(VERSION) > $@
 
-FILES: $(TARFILES) makefile
+FILES: $(TARFILES) makefile 
 	make smallclean
-	(echo FILES; echo $(TAG); tar zcvf /dev/null $(TARFILES)) \
+	(echo FILES; echo $(TAG); \
+	 tar zcvf /dev/null $(TARFILES)) \
 	  | grep -v CVS | grep -v '/$$' > $@
 
 $(NAME).tgz: FILES makefile
@@ -113,10 +124,10 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- src/whizzytex.el'
 	grep -e '^\((defvar whizzy-command-name "\)[^"]*\(".*\)$$' \
 	   src/whizzytex.el
-	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*")\) *$$' \
+	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' \
 	   src/whizzytex.el
 	test X`sed -n -e \
-	        's/^(defconst whizzytex-version "\([^"]*\)") *$$/\1/p' \
+	        's/^(defconst whizzytex-version "\([^"]*\)" *$$/\1/p' \
 	  src/whizzytex.el` = X'$(VERSION)'	   
 	@echo ' --- src/whizzytex'
 	test X`sed -n -e 's/^VERSION="\([^"]*\)" *$$/\1/p' \
@@ -127,6 +138,9 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	test X`sed -n -e \
 	    's/^\\\\def *\\\\whizzy@version *{\([^}]*\)} *$$/\1/p' \
 	  src/whizzytex.sty` = X'$(VERSION)'	   
+	@echo ' --- whizzytex.spec'
+	test X`sed -n -e 's/^Release:[ 	]*\([0-9]*\) *$$/\1/p' \
+	  whizzytex.spec` = X'$(Release)'	   
 	touch $@
 
 $(PACKDIR)/.exists: 
@@ -146,7 +160,7 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 
 
 Export: $(EXPORTS) xxxport DATE
-	rcp $(EXPORTS) $(PAUILLAC)
+	rcp $(EXPORTS) doc/manual0*.gif $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
 
@@ -154,10 +168,11 @@ Release: Export
 	cp Announce archive/Announce-$(RELEASE)
 	rcp Announce $(PAUILLAC)
 
-xxxport: $(EXPORTS) pack
+xxxport: $(EXPORTS) pack $(RPMNAME).noarch.rpm
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
-	rcp $(XXXPORTS) whizzytex-xxx.tgz DATE $(PAUILLAC)
+	rcp $(XXXPORTS) doc/manual0*.gif whizzytex-xxx.tgz DATE \
+	  $(RPMNAME).noarch.rpm $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean
@@ -173,6 +188,21 @@ superclean:: clean
 	rm FAQ.html FAQ
 	rm -f *~ .#* #*# FILES 
 
+REDHAT=/usr/src/redhat
+RPMINPUTFILES= $(NAME).tgz whizzytex-makefile.patch
+
+$(RPMNAME).src.rpm: 
+$(RPMNAME).noarch.rpm: $(RPMFILES)
+	cp $(RPMINPUTFILES) /usr/src/redhat/SOURCES/
+	rpmbuild -ba whizzytex.spec
+	cp \
+	 $(REDHAT)/SRPMS/$(RPMNAME).src.rpm \
+	 $(REDHAT)/RPMS/noarch/$(RPMNAME).noarch.rpm \
+	 .
+	chown remy $(RPMNAME).*rpm
+	chgrp formel $(RPMNAME).*rpm
+
+
 .in.out:
 	./configure < $<
 
@@ -182,5 +212,3 @@ superclean:: clean
 
 
 include Makefile
-
-

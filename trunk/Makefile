@@ -38,7 +38,7 @@ $(TMP):
 	rm -f $(TMP)
 	mkdir -p $@ 
 
-$(TMP)/whizzytex.el: $(SRC)/whizzytex.el $(TMP) config.ok
+$(TMP)/whizzytex.el: $(SRC)/whizzytex.el $(TMP) Makefile.config
 ifndef ADVI
 	sed -e 's|\((defvar whizzy-command-name "\)[^"]*\(".*\)|\1$(BINDIR)/whizzytex\2|' \
 	    -e 's|^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*")\)|\1\3 \2|' \
@@ -71,7 +71,6 @@ endif
 $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
 	sed -e '1s|^#!/bin/bash *$$|#!$(BASH)|' \
 	    -e 's|^PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
-	    -e 's|^GREPB=.*|GREPB=$(GREPB)|' \
 	    -e 's|^MULTIPLE=.*|MULTIPLE=$(MULTIPLE)|' \
 	    -e 's|^DVIPS=.*|DVIPS=$(DVIPS)|' \
 	    -e 's|^CONFIGFILE=.*|CONFIGFILE=$(CONFIGFILE)|' \
@@ -100,7 +99,7 @@ ifdef EMACSDIR
 	mkdir -p $(DESTDIR)$(EMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(EMACSDIR)
 	echo $(DESTDIR)$(EMACSDIR)/whizzytex.el >> Manager.installed
-	rm -f $(EMACSDIR)/whizzytex.elc
+	rm -f $(DESTDIR)/$(EMACSDIR)/whizzytex.elc
 ifdef EMACS
 	$(INSTALLR) $(TMP)/$(EMACS)/whizzytex.elc $(DESTDIR)$(EMACSDIR)
 	echo $(DESTDIR)$(EMACSDIR)/whizzytex.elc >> Manager.installed
@@ -110,7 +109,7 @@ ifdef XEMACSDIR
 	mkdir -p $(DESTDIR)$(XEMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(XEMACSDIR)
 	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.el >> Manager.installed
-	rm -f $(XEMACSDIR)/whizzytex.elc
+	rm -f $(DESTDIR)/$(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
 	cp $(TMP)/$(XEMACS)/whizzytex.elc $(DESTDIR)$(XEMACSDIR)
 	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.elc >> Manager.installed

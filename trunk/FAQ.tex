@@ -11,7 +11,7 @@
 
 \let \lst \verb
 
-\input {version}
+\input {doc/version}
 
 \begin{document}
 
@@ -28,6 +28,28 @@ and the stable version is {\version}
 
 The last version of the FAQ can be found at 
 \url{http://pauillac.inria.fr/whizzytex/FAQ.html}
+
+\hypertarget{isitabug}{}
+\section {Is this a Bug?}
+
+Before reporting a bug, have you checked that the source file correctly
+compiles and previews with the \emph{latex}, \emph{previewer}
+and \emph{options} used in {\WhizzyTeX}?
+(In recent versions of {\WhizzyTeX} you may see the previewer's command from 
+\texttt{Emacs} using the menu \texttt{View log...} and selecting
+\texttt{command}.) You may also check the latex log files (\texttt{format}, and
+\texttt{latex}, \texttt{slice}). In particular, \texttt{format} will show
+you the version of \texttt{whizzytex.sty} that has been loaded. Loading an
+old version will likely not work! (You may also check the Emacs version of
+whizzytex (from the \texttt{Help} entry of \texttt{Whizzy} menu). 
+
+In addition, in \texttt{advi} mode (when option \texttt{-advi} is used), the
+package \texttt{advi} is implicitly loaded. So you may also try to latex
+your source with the package \texttt{advi} explicitly loaded before all
+other packages, since some errors may be indirectly due to this
+\texttt{advi} and not to {\WhizzyTeX} itself---then send your bug report
+to \href{http://pauillac.inria.fr/advi/}{Active-DVI}.
+
 
 
 \section {Known problems}
@@ -107,14 +129,18 @@ LATEX=platex
 FORMAT=platex
 \end{verbatim}
 
+\hypertarget{cygwin}{}
 \section {Using {\WhizzyTeX} under Windows}
 
-{\WhizzyTeX} is designed for \lst"Unix" plateforms.  However, Marciano
-Siniscalchi reported that it successfully worked on his Window plateform
-under Cygwin (1.5.5-1), using \texttt{Cygwin/Xfree 4.3} and \texttt{xdvi}
-from \texttt{tetex 2.0.2-13}.
 
-Two tricks are necessary:
+{\WhizzyTeX} is designed for \lst"Unix" plateforms.  However, Marciano
+Siniscalchi reported that it successfully worked on his
+Window plateform under Cygwin (1.5.5-1), using \texttt{Cygwin/Xfree 4.3} and
+\texttt{xdvi} from \texttt{tetex 2.0.2-13}.
+
+The following modifications to the \texttt{whizzytex} script are
+necessary\iffalse \space
+(these have been contributed by Marciano Siniscalchi and Gregory Borota)\fi:
 \begin{itemize}
 
 \item 
@@ -133,13 +159,52 @@ with
 \end{verbatim}
 (Permission to rename the .wdvi file is denied while
 \lst"xdvi" is displaying it).
+
+\item
+Replace all occurrences of \texttt{ulimit} with \texttt{true} as
+\texttt{ulimit} is not implemented on Cygwin. Then, when {\WhizzyTeX} falls
+into a loop during latex-ing, which is possible on some input, {\WhizzyTeX}
+will not be able to get it out. (When such cases occur, you'll have to quit
+and restart whizzytex by hand---after your source file has been fixed.)
+
+\item
+Replace all instances of \texttt{wdvi} with \texttt{w.dvi}
+(as \texttt{Yap} automatically  adds \texttt{.dvi} to a file name
+not ending with \texttt{.dvi} and then complains about not finding the
+file).
+
 \end{itemize}
-Unfortunately, xdvi is very slow, so this is not very practical. 
+Unfortunately, Cygwin/XFree86 is quite slow compared to XFree86 under
+Linux, etc. An alternative is to use a commercial X server, such as
+XWin32 from StarNet (www.xwin32.com). MI/X from Microimages
+(www.microimages.com) is another alternative, but since it is
+XFree86-based, it is not as fast as XWin32.
+Performance, even with XWin32, is still inferior to Linux.
 
+\subsection*{Using \texttt{yap} instead of \texttt{xdvi} under Cygwin}
 
+\def \yaptgz{whizzytex-yap-\YAPVERSION.tgz}
+Gregory Borota has reported much better performances with 
+\texttt{yap} than with \texttt{xdvi} under Cygwin.
+He has written a small wrapper interface around \texttt{yap} to make it look
+like \texttt{xdvi} for {\WhizzyTeX} and patched the source of WhizzyTeX
+accordingly. See the README and INSTAL file coming with his
+\href{\yaptgz}{\texttt{\yaptgz}} patch, 
+\emph {coming with absolutely no warranty}. 
 
+\section{Using Virtual Fonts with Active-DVI}
 
+\href{http://pauillac.inria.fr/advi/}{Active-DVI}
+does not currently handle virtual fonts (when called with virtual fonts, it
+usually shows a more or less blank screen). This can be fixed by expanding
+virtual fonts with \texttt{dvicopy} prior to display as explained on the
+{Active-DVI} FAQ.
 
-
+In {\WhizzyTeX}, this can be done automatically by passing the option
+\texttt{-dvicopy dvicopy} or equivalently setting
+\begin{verbatim}
+        DVICOPY=dvicopy
+\end{verbatim}
+in \texttt{.whizzytexrc} configuration file in the working directory.
 
 \end{document}

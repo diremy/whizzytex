@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
-#  Copyright (C) 2001, 2002 Didier Rémy
+#  Copyright (C) 2001, 2002, 20043, 2004 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
 #  Version        : 1.1.3
@@ -31,9 +31,6 @@ VERSION="1.1.3"
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
 
-# Set to false if grep does not accept option -B
-GREPB=true
-
 # Translatin DVI to Postscript
 DVIPS=dvips
 
@@ -53,7 +50,7 @@ AUTORECOMPILE=true
 
 # Default place for configuration files
 
-CONFIGFILE=/etc/whizzytex/whizzytex.conf 
+CONFIGDIR=/etc/whizzytex/
 
 ### Configuration (manual only)
 
@@ -103,21 +100,12 @@ MULTIPLE=true
 DUPLEX=false
 ADVI=0
 
-# Load config files
-for CONFIG in "$CONFIGFILE" {"$HOME",.}/.whizzytexrc
-do
-  if [ -f "$CONFIG" ]
-  then
-    . "$CONFIG"
-  fi
-done
-
 while true
 do
   case $1 in
    -kill) DO=kill;;
    -wakeup) DO=wakeup;;
-   -reformat) DO=format;;
+   -formatonly) DO=format;;
    -mkslice) MKSLICE="$2"; shift;;
    -mkfile) MKFILE="$2"; shift;;
    -duplex) DUPLEX=true;;
@@ -196,19 +184,41 @@ done
 if $TRACE; then set -o xtrace; fi
 
 HERE=$(/bin/pwd)
+
+# Sanity check
+
 case "$1" in 
   *" "*) 
       echo 'Cannot WhizzyTeX a file '"$1"' whose name contain a space'
       echo '<Quitting>'
       exit 1;;
 esac
+
+# Computing basenmae
+
 FULLNAME=$1
 BASENAME=$(basename $1)
 FILEEXT=$(expr "$BASENAME" : '.*\(\.[^.]*\)')
 NAME=$(basename "$BASENAME" "$FILEEXT")
+
+# Load configuration files, all files are loaded in order
+
+for CONFIG in \
+    {$CONFIGDIR,$HOME/.whizzytex}/whizzy.sh whizzy.sh 
+do
+  if [ -f "$CONFIG" ]
+  then
+    echo "Loading configuration file: $CONFIG"
+    . "$CONFIG"
+  fi
+done
+
+# Selecting source file extension.
+
 case "$EXT" in
  "") EXT=$FILEEXT;;
 esac
+
 WHIZZY=_whizzy_$NAME
 WHIZZYDIR=${WHIZZY}_d
 WFORMAT=\&$WHIZZY
@@ -216,10 +226,14 @@ LOCK=.$WHIZZY$EXT
 SLICE=$WHIZZY.new
 INPUT=$HERE/$WHIZZYDIR/input
 OUTPUT=$HERE/$WHIZZYDIR/output
+DEBUGDIR=$HERE/$WHIZZYDIR/
 TMP=$HERE/$WHIZZYDIR/tmp
 SECTIONS=$OUTPUT/sections
 LOG=$TMP/log
 ERR=$TMP/err
+
+INITPHASE=true
+
 # for persistent log
 # WLOG=$NAME.wlog
 
@@ -246,14 +260,10 @@ log () {
   false
 }
 
-GREPB=false
 texlog () { 
   if [ -f $OUTPUT/$1 ] 
   then
-    if $GREPB; then
-    grep -B 3 -A $TEXERRORAROUND -e '^!' $OUTPUT/$1 | head -$TEXERRORMAXLINES
-    else sed -n -e '/^#/p' -e '/^!/,$p' $OUTPUT/$1 | head -$TEXERRORAROUND 
-    fi
+    sed -n -e '/^#/p' -e '/^!/,$p' $OUTPUT/$1 | head -$TEXERRORAROUND 
   fi
   false; 
 }
@@ -270,8 +280,16 @@ fi
 
 clean () {
    [ -f $TMP/pids ] && kill -TERM $(cat  $TMP/pids) 2>/dev/null
-   rm -f $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW
-   if $TRACE; then : ; else rm -rf $WHIZZYDIR; fi
+   if $INITPHASE 
+   then 
+     for i in $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW $NAME.waux
+     do 
+       if [ -f $i ]; then mv $i $TMP; fi
+     done
+   else
+     rm -f $WHIZZY.* ${WHIZZY}_nil.* $NAME.$FMT $NAME.$VIEW $NAME.waux
+     if $TRACE; then : ; else rm -rf $WHIZZYDIR; fi
+   fi
    rm -f $LOCK
 }
 
@@ -280,7 +298,8 @@ cleanquit () {
    echo "Quitting ($1)"
    clean
    kill -TERM 0
-   exit 0
+
+      exit 0
 }
 trap "cleanquit SIGTERM" SIGTERM
 trap "cleanquit SIGHUP" SIGHUP
@@ -307,7 +326,7 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'$CONFIGDIR'}\def\WHIZZYHOME{'$HOME'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 ############################################################################
@@ -412,7 +431,9 @@ esac
 
 # These directories are normally created by Emacs
 mkdir $WHIZZYDIR $INPUT $OUTPUT $TMP 2>/dev/null
-echo "$COMMAND"  > $OUTPUT/command
+echo '# Begin Whizzytex command line (one argument per line)' > $OUTPUT/command
+echo "$COMMAND"  >> $OUTPUT/command
+echo '# End of command' >> $OUTPUT/command
 
 if [ -f $NAME.$FMT ] && [ $NAME$EXT -ot $NAME.$FMT ]
 then 
@@ -435,20 +456,15 @@ else
      texlog format
      echo '<Initialization failed>'; 
      { echo '
-        ******************************************************
+        **************************************************************
         An error occured while building the initial format.
         Are you sure that your file can be correctly LaTeX-ed? 
-        To keep log files, start WhizzyTeX in debug mode. 
-        ******************************************************
+        Check log above and view log files (Emacs menu "View log...")
+        for help. You may also start WhizzyTeX in debug mode for 
+        additional information.
+        **************************************************************
 '         
-#         echo; echo '*** Command was:'; echo; 
-#         echo $COMMAND; 
-#         echo; echo '*** Formatting log:' ; echo; 
-#         cat $OUTPUT/format; 
-#         echo; echo '*** Other errors:' ; echo; 
-#         cat $ERR; 
      }
-#     > $WLOG
      fatal initialization 'Could not build format ---See message above'
   fi
 fi
@@ -484,7 +500,6 @@ newfiles () {
   mv $(find $INPUT -type f -print || cleanquit Find) $HERE/  2>/dev/null
 }
 newfile () {
-#  if [ -f $INPUT/$SLICE ]; then echo YES; else echo NO; fi
   mv $INPUT/$SLICE $HERE/  2>/dev/null
 }
 
@@ -566,6 +581,11 @@ then
 else
    CLIENTVIEW=''
 fi
+
+(echo '# Begin Viewer command line (one argument per line)'; \
+ echo "$VIEWCOMMAND"; echo "$WHIZZY.$VIEW"; echo "$CLIENTVIEW"; \
+ echo '2>'"$OUTPUT"/view; \
+ echo '# End of command' ) >> $OUTPUT/command
 
 {
   $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW 2>$OUTPUT/view &
@@ -662,6 +682,8 @@ viewps () {
   else echo "$file.wdvi not found"
   fi
 }
+
+INITPHASE=false
 
 echo '<Initialization succeeded, entering loop>'
 while true

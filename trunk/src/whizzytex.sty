@@ -1,6 +1,6 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
-%  Copyright (C) 2001, 2002 Didier Rémy
+%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
 %  Version        : 1.1.3
@@ -121,7 +121,13 @@
 \def \document 
   {\endgroup
    \whizzy@beforeauxhook
-   \IfFileExists{whizzy.sty}{\usepackage{whizzy}}{}%
+   \makeatletter
+   \IfFileExists{\WHIZZYCONFIGDIR/whizzy.sty}%
+        {\@input {\WHIZZYCONFIGDIR/whizzy.sty}}{}%
+   \IfFileExists{\WHIZZYHOME/.whizzytex/whizzy.sty}%
+        {\@input {\WHIZZYHOME/.whizzytex/whizzy.sty}}{}%
+   \IfFileExists{whizzy.sty}{\@input {whizzy.sty}}{}%
+   \makeatother
    \begingroup \def \@currenvir {document}%
    \whizzy@loadaux
    \endgroup
@@ -149,7 +155,10 @@
 \def \WhizzyCursorColor{yellow}
 \g@addto@macro \whizzy@beforeauxhook
    {\@ifundefined {Whizzysafe}
-       {\usepackage{color}\def \whizzy@fbox {\colorbox {\WhizzyCursorColor}}}
+       {% Package color  may take options, load only if unloaded...
+        \AtBeginDocument
+          {\@ifundefined {colorbox}{\usepackage{color}}{}}%
+        \def \whizzy@fbox {\colorbox {\WhizzyCursorColor}}}
        {\let \whizzy@fbox \fbox \whizzy@tricksfalse}}
 
 %% Macros for dumping sections in \whizzy@pag  (\jobname.pag)
@@ -232,7 +241,8 @@ to slice!\par \bigskip}}%
     \whizzy@markon {section}{section}%
     \whizzy@markon {subsection}{subsection}%
     \whizzy@markon {subsubsection}{subsubsection}%
-  }
+  }%
+  \AtEndDocument {\whizzy@mark{end}}%
   %\whizzy@markafter {@outputpage}{page}%
 }
 \def \whizzy@mark #1{%
@@ -452,7 +462,8 @@ to slice!\par \bigskip}}%
         \nobreak
         \vskip -\baselineskip \nobreak
         \hbox {\vbox to 0em{\vskip 1em
-               \setbox0 \hbox {\strut\space}\box1\whizzy@markend \vss}}%
+%% Was:        \setbox0 \hbox {\strut\space}\box1\whizzy@markend \vss}}%
+               \setbox0 \hbox {\strut\space}\whizzy@markend \vss}}%
         \nobreak
       \fi
    \fi \fi
@@ -492,7 +503,7 @@ to slice!\par \bigskip}}%
 
 \ifwhizzy@advi
 
-% Do everything after \fi
+\let \advi@continue@advi \relax
 
 \else
 
@@ -509,9 +520,9 @@ to slice!\par \bigskip}}%
 \def \WhizzyInsideEnvironment{\whizzy@ignore@oii}
 
 % Do not read after \fi
-\expandafter \endinput 
-
+\let \advi@continue@advi \endinput%
 \fi
+\advi@continue@advi
 
 %% These use advi special tricks
 
@@ -646,7 +657,7 @@ to slice!\par \bigskip}}%
 
 %%% For whizzy-edition
 
-\let \advi@edit@file \whizzy@curfile
+\def \advi@edit@file {\whizzy@curfile}
 \let \advi@edit@makelineno \whizzy@makelineno
 \def \advi@edit@line {\the\whizzy@count}
 
