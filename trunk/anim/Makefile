@@ -1,5 +1,15 @@
 all: activedvi.gif emacs.gif
 
+animation.hva: 
+	ln -s $*.sty $@
+
+emacs.tex: 
+	ln -s animation.tex $@
+
+activedvi.tex: 
+	ln -s animation.tex $@
+
+
 activedvi.gif: animation.tex animation.sty Makefile
 	rm -f $*00*.gif
 	hevea $*.tex
