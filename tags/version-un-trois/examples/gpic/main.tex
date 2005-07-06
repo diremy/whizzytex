@@ -1,0 +1,138 @@
+\expandafter\ifx\csname SourceFile\endcsname\relax\else\SourceFile{main.ltx}\fi
+\expandafter\ifx\csname Setlineno\endcsname\relax\def\SetLineno{0}\fi
+%%; whizzy -ext .tex -mkslice "../bin/mkgpic -slice" -mkfile "../bin/mkgpic -file"
+%%; whizzy -ext .tex -mkslice "make" -mkfile "make files"
+
+\documentclass{article}
+
+\title {WhizzyTeX with preprocessing}
+\author {Didier R{\'e}my}
+\let \lst \verb
+
+\begin{document}
+
+\maketitle
+
+For illustration, we use a source file with inlined {\tt gpic} macros.
+Such macros are surrounded by \lst".PS" and \lst".PE" markers on a single
+line. The preprecessor is \lst"gpic -t" that transforms a file with such
+macros into some latex code with \lst"\special" commands that more
+DVI tools understand. 
+
+WhizzyTeX must be told how to preprocess the slice and the file. 
+A first solution would be to use the \lst"gpic -t" command for both.
+However, one must first note that \lst"mkslice" command receives the target
+file \lst"_whizzy_main.tex" as argument while the \lst"mkfile" command will
+receive the target's name. So at least some analyses or source and target
+must be done. Second, note gpic expansion does not preserve line numbers. 
+This must then be correctly by inserting source line number information
+before preprocessing the file. The macro \lst"\Setlineno" followed by a
+number will tell WhizzyTeX to use that number for the current input line.
+Since \lst"\inputlineno" is readable only, we instead compute the difference
+and take that difference into account when printing line numbers. 
+
+Since the preprocessor changes the name of the file, it should also insert a
+command \lst"\SourceFile{main.ltx}" (or \lst"\SourceFile{subfile.ltx}") at
+the beginning of the file.  This is by the function \lst"gpicheader" defined
+in the local configuration script file \lst"whizzy.sh".
+
+The script redefines \texttt{MKFILE} and \texttt{MKSLICE}. 
+It also set the extension of processed files \texttt{.tex} 
+and use the extension \texttt{.ltx} to source files. This should be used
+rather than the converse, since the extension \texttt{.tex} has higher
+priority than \texttt{.ltx} and indeed, the preprocessed file should always
+be used when available.
+
+We could also use the command \lst"make" to do the preprocessing: 
+
+We can also the command make. For brievity, we assume that 
+the commands \texttt{mkfile} and \texttt{mkslice} 
+call \texttt{gpicmkfile} and \texttt{gpicmkslice} of file
+\texttt{whizzy.sh}. 
+\begin{quote}
+\begin{verbatim}
+SOURCES = main.ltx subfile.ltx
+TEXFILES = $(patsubst %.ltx, %.tex, $(SOURCES))
+GPIC=whizzygpic
+
+main.dvi: $(TEXFILES)
+	latex main.tex
+
+files: $(TEXFILES)
+
+# to force recompilation even if same date (second is not precise enough)
+.force:
+_whizzy_%.tex: _whizzy_%.new .force
+	mkslice $@
+
+%.tex: %.ltx
+	mkfile $<
+
+clean:
+	rm -f *.{tex,log,aux,dvi}
+\end{verbatim}
+\end{quote}
+Then
+\begin{quote}\small
+\begin{verbatim}
+%; whizzy -ext .tex -mkslice "make" -mkfile "make"
+\end{verbatim}
+\end{quote}
+In fact, all files, should have been at least processed once with 
+\lst"make files". 
+
+
+
+\subsection* {Other uses of preprocessing}
+
+The use of {\tt gpic} macros with multiple files is already sophisticated. 
+Preprocessing is simpler when either  line numbers are left unchanged, or 
+when the document is composed of a single file. 
+
+\subsection* {Examples of drawing}
+
+Here is a drawing that need preprocessing:
+\expandafter\ifx\csname graph\endcsname\relax \csname newbox\endcsname\graph\fi
+\expandafter\ifx\csname graphtemp\endcsname\relax \csname newdimen\endcsname\graphtemp\fi
+\setbox\graph=\vtop{\vskip 0pt\hbox{%
+    \special{pn 8}%
+    \special{pa 0 1500}%
+    \special{pa 1350 1500}%
+    \special{pa 1350 0}%
+    \special{pa 0 0}%
+    \special{pa 0 1500}%
+    \special{da 0.050}%
+    \graphtemp=\baselineskip\multiply\graphtemp by -1\divide\graphtemp by 2
+    \advance\graphtemp by .5ex\advance\graphtemp by 0.000in
+    \rlap{\kern 0.675in\lower\graphtemp\hbox to 0pt{\hss {Generic structures}\hss}}%
+    \special{ar 650 350 400 150 0 6.28319}%
+    \graphtemp=.5ex\advance\graphtemp by 0.350in
+    \rlap{\kern 0.650in\lower\graphtemp\hbox to 0pt{\hss {Monoid}\hss}}%
+    \special{ar 650 1000 375 150 0 6.28319}%
+    \graphtemp=.5ex\advance\graphtemp by 1.000in
+    \rlap{\kern 0.650in\lower\graphtemp\hbox to 0pt{\hss {Group}\hss}}%
+    \special{pa 650 500}%
+    \special{pa 650 850}%
+    \special{fp}%
+    \special{sh 1.000}%
+    \special{pa 675 750}%
+    \special{pa 650 850}%
+    \special{pa 625 750}%
+    \special{pa 675 750}%
+    \special{fp}%
+    \hbox{\vrule depth1.500in width0pt height 0pt}%
+    \kern 1.350in
+  }%
+}%
+\Setlineno=
+109
+$$
+\box\graph
+$$
+End of the drawing.
+
+Note: Dashed and dotted lines are not implemented yet in gpic.
+
+\input{subfile}
+
+\end{document}

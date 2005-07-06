@@ -1,0 +1,1764 @@
+% manual.tex --- WhizzyTeX, a wysiwyg environment for TeX
+%
+%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.2.2
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  WhizzyTeX is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (enclosed in the file GPL).
+%  
+%  See the file COPYING enclosed with the distribution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File manual.tex (WhizzyTeX documentation source file)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt]{article}
+
+\input {version}
+\usepackage {manual}
+
+\begin{document}
+\begin{rawhtml}
+<link rel="Top" href="index.html">
+<link rel="Up" href="#htoc">
+<link rel="Contents" href="#htoc">
+<link rel="Section" title="Installation" href="#install">
+<link rel="Section" title="Using WhizzyTeX" href="#using">
+<link rel="Section" title="Manual" href="#manual">
+<link rel="Section" title="Viewers" href="#viewers">
+<link rel="Section" title="Customizing" href="#custom">
+<link rel="Section" title="WhizzyEditing" href="#edit">
+<link rel="Section" title="Implementation" href="#impl">
+\end{rawhtml}
+\pagestyle {empty}
+\author {\rightline {Didier R{\'e}my}}
+\date {\hfill Version {\version}, \today}
+\begingroup
+\let \@\relax
+\title {
+\hfilneg{\huge \Whizzy\footnote{{\whizzy} is free software, 
+Copyright \copyright 2001, 2002 INRIA
+and distributed under the GNU General Public License
+(See the COPYING file enclosed with the distribution).}}
+\\[1em]
+{\em
+%HEVEA An {\bfseries Emacs} minor-mode \\
+%HEVEA for {\bfseries incremental viewing of} \\ 
+%HEVEA {\bfseries {\LaTeX} documents}
+%BEGIN LATEX
+\vbox {%
+\centerline
+{{\raggedright \normalsize \activedvi {Whizzy-}{Te\/X}{WhizzyTeX}}
+\hfill
+{\raggedright \normalsize \emacs {Whizzy-}{Te\/X}{WhizzyTeX}}
+\hfill
+\vtop {\vskip -5em \hbox {%
+\begin{tabular}{r@{}}
+An {\bfseries Emacs} minor-mode for\\
+{\bfseries incremental viewing of} \\ 
+{\bfseries {\LaTeX} documents}
+\end{tabular}}}}\vskip -1em}
+%END LATEX
+}
+}
+
+\maketitle   
+\endgroup
+
+\begin{abstract}
+\def \B{\textbf}
+{\Whizzy}
+% \footnote {Standing for {\em {\B W}hat {\B i} {\B z}ee {\B i}z what
+% {\B y}ou {\expandafter \B \TeX}}}
+is an Emacs minor mode for incrementally
+viewing {\LaTeX} documents that you are editing.
+%
+It works under Unix with {\tt gv} and {\tt xdvi} viewers, but 
+the \href{http://pauillac.inria.fr/advi/}{\ActiveDVI} viewer will
+provide much better visual effects and offer more functionalities.
+
+In addition, when used with {\ActiveDVI}, {\Whizzy} allows for mouse
+edition of dimensions and floats, which can be used to adjust spaces,
+move or resize objects visually. 
+\end{abstract}
+
+\newpage
+\tableofcontents
+
+
+%HEVEA\hypertarget{install}{}
+
+\section {Installation}
+
+\subsection {Requirements}
+
+{\whizzy} is designed for \lst"Unix" plateforms\footnote{It has 
+been reported to successfully work on Windows under Cygwin---See the 
+\href{FAQ.html}{FAQ}.}.
+
+To use {\whizzy}, you need {\tt Emacs} or {\tt XEmacs}, some standard 
+{\tt latex} distribution, 
+{\tt bash}, and at least one DVI, Postscript or PDF previewer, such as
+{\tt advi}, {\tt xdvi}, or {\tt dvips} combined with {\tt gv}, or 
+\texttt {xpdf}.
+
+{\whizzy} has been developed under Linux but has not been extensively tested
+on other platforms. However, {\LaTeX} and Emacs are quite portable and
+possible compatibility problem with the bash shell-script should be minor
+and easily fixable. Hence {\whizzy} should work with all distributions of
+\texttt{latex} that are compliant to the standard. 
+
+\subsection {Get the source}
+Get the source {\tt whizzytex-\version.tgz} 
+from the \href{http://pauillac.inria.fr/whizzytex}{distribution}, 
+uncompress and untar it in some working directory, as follows:
+\begin{quote}
+\begin{tt}
+gunzip whizzytex-\version.tgz\\
+tar -xvf whizztex-\version.tar\\
+cd whizzytex-\version
+\end{tt}
+\end{quote}
+Then, the installation can be automatic (default or customized), or manual.
+
+
+\subsection{Warning!}
+Many Linux installations make \lst"xdvi" a shell-script that erroneously
+end with the line \lst#xdvi.bin "$@"# instead of 
+\lst#exec xdvi.bin "$@"#. The later is needed to preserve the process 
+id, so that signals sent to \lst"xdvi" are correctly received and
+handled by \lst"xdvi.bin". 
+
+Since correct signal handling is crucial for {\whizzy}, and this problem
+is so common we provide a script to check your configuration with the command
+\begin{quote}
+\begin{tt}
+./checkconfig
+\end{tt}
+\end{quote}
+By default, this check is performed by automatic installation below.
+
+\subsection {Automatic installation}
+
+\label {install/automatic}
+
+By default, shell-script \lst"whizzytex" will be installed in 
+\lst"/usr/local/bin/" and, library files in
+a subdirectory of \lst"/usr/local/share/whizzytex/" and the documentation in
+\lst"/usr/local/share/doc/whizzytex/".  Moreover, Emacs-lisp code will not
+be byte-compiled.
+
+For default installation, just type: 
+\begin{quote}
+\begin{tt}
+make all
+\end{tt}
+\end{quote}
+This will create a \lst"Makefile.config" file (only if nonexistent) by
+taking a copy of the template \lst"Makefile.config.in". This will also check
+the \lst"Makefile.config" (whether it is the default or a modified version)
+against the software installed on your machine.  If you wish to change the
+default configuration, or if your configuration is rejected, see Section
+\ref {customizing}. This will also prepared configured
+versions of the files for installation.
+
+Finally, to install files, become superuser (unless you are making 
+an installation for yourself) and do:
+\begin{quote}
+\begin{tt}
+umask 022
+make install
+\end{tt}
+\end{quote}
+The first line ensures that you give read and execute permission to all.
+
+See {\bf Using {\whizzy}} (Section \ref {using}) to test your
+installation.
+
+\subsection {Customizing the installation}
+\label {customizing}
+
+To customize the installation, you can edit 
+\lst"Makefile.config", manually.
+You may also use either the command
+\begin{quote}
+\begin{tt}
+./configure
+\end{tt}
+\end{quote}
+This command may be passed arguments to customize your installation.
+Call it with the option \lst"-help" to see a list of all options.
+%
+By default, the configuration is not interactive.  However, you may call it
+with option \lst"-helpme" to have the script do more guessing for you and
+prompt for choices if needed.
+
+Note that by default, the Emacs-lisp code whizzytex.el is not
+byte-compiled. You need to pass the option \lst"-elc" to \lst"configure" in
+order to byte-compiled it.
+
+\paragraph {Checking {\tt Makefile.config}}
+
+A misconfiguration of your installation, or ---much more subttle--- a
+misconfiguration of other commands (it appears that some installations wrap
+scripts around standard commands that are sometimes incorrect and break
+their normal advertized interface) may lead to systematic errors when
+launching {\whizzy}. To prevent delaying such obvious errors, some sanity
+checks are done after \lst"Makefile.config" has been produced and before
+building other files.  These include checking for mandatory bindings (useful
+for manual configuration) and for the conformance of {\tt initex}, {\tt
+latex}, and viewers commands to their expected interface.
+
+Checking viewers interface implies simulating a small {\whizzy} session: a
+small test file is created for which a specializled version of latex format
+is built and used to run {\LaTeX} on the test file; finally, required
+viewers are tested on the DVI output, which opens windows, temporarily.
+
+If the sanity check fails, at least part of your configuration is 
+suspicious. If some windows remain opened, your confirguration is likely to
+be erronesous (and so, even if not detected by the script).  
+
+However, if you really know what you are doing, you may bypass the check by
+typing \lst"make config.force", which will stamp your \lst"Makefile.config"
+as correct without checking it. Checking compliance to viewers interface
+is also bypassed if you you do not have a connection to X. Conversely, you
+may force checking manually by typing \lst"./checkconfig".
+
+At the end of customization, proceed as described in Section \ref
+{install/automatic}.
+
+\paragraph {Customization notes}
+
+By default, {\whizzy} assumes the standard convention that 
+\lst"latex" is the command name used to call {\LaTeX}, 
+\lst"initex" the command name used to build a new format, and 
+\lst"latex" is the predefined latex format.
+
+If your implementation of {\LaTeX} uses other names, you may redefine the
+variables \lst"INITEX", \lst"LATEX", and \lst"FORMAT" accordingly in the
+file \lst"Makefile.config".
+%
+For instance, \lst"platex" could be use the default configuration
+\begin{quote}
+\begin{tt}
+INITEX = iniptex\\
+LATEX = platex\\
+FORMAT = platex\\
+BIBTEX = jbibtex
+\end{tt}
+\end{quote}
+This would be produced directly with the configuration line:
+\begin{quote}
+\begin{tt}
+./configure -initex iniptex -latex platex -format latex -bibtex jbibtex
+\end{tt}
+\end{quote}
+If you wish to run {\whizzy} with several configurations, you must still
+choose a default configuration, but you will still be able to call {\whizzy}
+with another configuration from Emacs (see Section \ref{configuration.tex}
+below).
+
+It is possible to load this setup dynamically by creating, for example, 
+by including the following lines: 
+\begin{quote}
+\begin{tt}
+INITEX = iniptex\\
+LATEX = platex\\
+FORMAT = platex\\
+BIBTEX = jbibtex
+\end{tt}
+\end{quote}
+in a configuration file (see Section \ref {configuration}).
+
+During the configuration, you must at least choose one default previewer
+type among \lst"advi", \lst"xdvi", and \lst"ps", and at most one default
+previewer for each previewer type you chose. You will still be able to call
+{\whizzy} with other previewers from Emacs, via Emacs configuration (see
+Section
+\ref {configuration.viewers}). 
+
+\subsection {Manual installation}
+
+Since {\whizzy} only need three files to run, installation can also be done
+manually:
+\begin {itemize}
+
+\item[]\hspace{-2em}{\tt whizzytex.el}
+
+This could be installed in a directory visible by Emacs, but does not need
+to, since you can always use the full path when you load it or declare
+autoload. 
+
+No default location.
+
+\item[]\hspace {-2em}{\tt whizzytex}
+
+This file is a bash-shell script that should be executable.  There is not
+reason to have it visible from the executable path, since it should not be
+used but with {\whizzy}.
+
+The variable {\tt whizzytex-command-name} defined in {\tt whizzytex.el} 
+contains its full path (or just its name if visible from the executable
+path). 
+
+Default value is \lst"/usr/local/bin/whizzytex"
+
+You may  need to adjust the path of \lst"bash" in the very first line of the
+script, as well as some variables in the manual configuration section of the
+script. 
+
+\item[]\hspace{-2em}{\tt whizzytex.sty}
+
+This file are {\tt latex2e} macros. There is no reason to put this visible
+from {\LaTeX} path, since it should not be used but with {\whizzy}.
+
+Variable variable {\tt PACKAGE} defined in {\tt whizzytex} 
+the full path (or just the name if the path is visible from {\LaTeX}. 
+
+Default value is \lst"/usr/local/share/whizzytex/latex/whizzytex.sty"
+
+\end {itemize}
+
+
+\subsection {Automatic upgrading (depreciated)}
+
+For convenience, the distribution also offers a facility to download and
+upgrade new versions of {\whizzy} (this requires \lst"wget" to be
+installed).  If automatic upgrading does not work, just do it manually.
+
+All operations should be performed in the {\whizzy} top directory, {\em
+i.e.} where you untar whizzytex for the first time, that is right above the
+directory from were you made the installation. We assume that have 
+created a link to the current version subdirectory: 
+\begin{quote}
+\begin{tt}
+ln -s whizzytex-\version\space whizzytex
+\end{tt}
+\end{quote}
+(the manager will then update this link when version changes).
+Alternatively, you can also use the full name {\tt whizzytex-\version} in
+place of {\tt whizzytex} below. The main commands are:
+\begin{quote}
+\begin{tt}
+make -f whizzytex/Manager upgrade \\
+make -f whizzytex/Manager install
+\end{tt}
+\end{quote}
+The command \lst"upgrade" will successively download the newest version,
+unpack it, copy the configuration of the current version to the newest
+version, and bring the newest version up-to-date. The command \lst"install"
+will install files of the newest version. 
+
+The following command will (re-)install an old version:
+\begin{quote}
+\begin{tt}
+make VERSION=<version> download downgrade install
+\end{tt}
+\end{quote}
+
+%HEVEA\hypertarget{using}{}
+\section{Using {\protect\whizzy}}
+\label{using}
+
+\subsection {Loading {\tt whizzytex.el}}
+
+Maybe, {\tt whizzytex} is already installed on your (X)Emacs system, which
+you may check by typing:
+\begin{quote}
+\begin{tt}
+ESC x whizzytex-mode RET
+\end{tt}
+\end{quote}
+If the command is understood, skip this section.
+Otherwise, you should first load the library \lst"whizzytex.el" or, better,
+declare it autoload. To do this permanently, include the following
+declaration in your Emacs startup file (which probably is \lst"~/.emacs" if
+you are using \lst"Emacs"):
+\begin{quote}\small
+\begin{tt}
+(autoload 'whizzytex-mode \\ \indent\obeyspaces
+    "whizzytex" \\ \indent\obeyspaces
+    "WhizzyTeX, a minor-mode WYSIWIG environment for LaTeX" t)
+\end{tt}
+\end{quote}
+This asumes that \lst"whizzytex.el" has been installed in your (X)Emacs
+{\tt load-path}. Otherwise, you may either adjust the load-path
+appropriately, or replace \lst"whizzytex" by the full path to the file
+\lst"whizzytex.el", which depends on your installation and can be
+obtained by typing {\tt make where} in the installation root directory.  For
+instance, if you are using Emacs, the default location for
+\lst"whizzytex.el" is
+\lst"/usr/local/share/whizzytex/lisp/whizzytex.el" (but it will be different
+if you are using XEmacs or a customized installation).
+
+
+\subsection {Quick start} 
+
+{\whizzy} runs as a minor mode of Emacs to be launched on a {\LaTeX} Emacs
+buffer. The extension of the buffer should be
+\lst".tex".  {\whizzy} also understands \lst".ltx" extensions, but gives
+priority to the former when it has to guess the extension. Other extensions
+are possible but not recommended.
+\begin{quote}\em
+The file attached to the buffer must exists and either be a well-formed
+{\LaTeX} source file, or be {\em mastered}, {\em i.e.} loaded by another
+{\LaTeX} source file. Thus, whenever the buffer does not contain a
+\lst"\begin{document}" command), {\whizzy} will search for its master file,
+asking the user if need be, so as to first launch itself on a buffer
+visiting the master file. In particular, an empty buffer will be considered
+as beeing mastered, which may not be what you intend.
+\end{quote}
+To start {\whizzy} on either kind of buffer, type:
+\begin{quote}
+\begin{tt}
+ESC x whizzytex-mode RET
+\end{tt}
+\end{quote}
+By default, this should add new bindings so that you can later turn mode
+on and off with key strokes {\tt C-c C-w}. This will also add a new menu
+{\tt Whizzy} in the menu bar call ``the'' menu below. (If you are using 
+the {\tt auctex}, your may use other configuration key strokes to avoid
+clashes (see online emacs-help). 
+
+When {\tt whizzytex-mode} is started for the first time on a new buffer, it
+attempts to configure buffer local variables automatically by examining
+the content of file, and using default values of global bindings.
+
+You may customize default settings globally by running appropriate
+hooks or locally by inserting appropriate comments in the source file ---see
+the manual below. 
+
+You may also change the settings interactively using the menu, or tell
+whizzytex-mode to prompt the user for confirmation of file configuration by
+passing prefix argument 4 (using, for instance, key sequence 
+\lst"C-u C-c C-w"). 
+
+
+\subsection {Editing}
+
+Once {\tt whizzytex-mode} is on, just type in as usual.  {\whizzy} should work
+transparently, refreshing the presentation as you type or move into your
+{\LaTeX} buffer. 
+
+Additionally, a gray overlay is put outside of the current slice (the {\em
+slice} is the region of your buffer under focus, which is automatically
+determined by {\whizzy}). When a {\LaTeX} error occurs and it can be
+localized in the source buffer, a yellow overlay also is put on the region
+around the error, and removed when the error is fixed.
+
+Furthermore, when an error is persistent for several slices or some amount
+of time, the interaction-buffer will pop up with the error log
+(this option can be toggled with the {\tt Auto interaction} menu entry).  
+
+The buffer mode line also displays a brief summary of
+{\whizzy}'s status.  When \lst"whizzytex-mode" is on, the line contain
+$\lst"Whizzy".n$ where $n$ is a numeric indication of the load in number
+of buffer changes between two slices (so the higher, the slower). 
+
+However, $\lst"Whizzy".n$ is changed to $\lst"Whizzy-"e$ where $err$ range
+over \lst"FORMAT", \lst"LATEX", or \lst"SLICE" an indicates that while
+formating or \LaTeX ing the full document, or while recompiling the current
+slice. Errors have priority in this order.  That is, if there is both an
+error in the format and the slice, only the \lst"FORMAT" error will be
+repported.
+
+When a \lst"SLICE" error occurs, emacs attempts to locate the error
+and overlay the region that caused the error. (This identifies the 
+text around which  the error was detected by \LaTeX, which may not be the 
+text that caused the error.) One can jump to the current error location by
+calling the \texttt {Jump to error} menu emty (or the equivalent key
+sequence). 
+
+
+\section{Error recovery and debugging}
+
+{\whizzy} makes a good attempt at doing everything automatically. 
+However, there remain situations where the user need to understand 
+{\whizzy} ---when {\whizzy} does not seem to understand the user anymore. 
+
+\subsection {Errors while \whizzy-ing}
+
+Quite often, the error overlay is sufficient to fix a latex source error. 
+Actually, the error overaly may just indicate that you are in the middle of
+typing a command or an environment, in which cases {\whizzy} will indicate
+temporarily report an undefined command or and ill-balanced environment. 
+Whether an overlay is ephemerous and mean an incomplete edition or 
+persistent and mean a real {\LaTeX} error is usually unambiguous. 
+In addition, because \whizzy ing is dynamic and the error is repported
+immediately it is usually easier to fix a real error than it would be in a
+batch compilation, and without even looking at the error message.
+
+Indeed, {\whizzy} also display the {\LaTeX} error message
+(and other processsing messages) in its interaction buffer.
+The interaction buffer is named from the master file name surrounded
+by \lst"*" characters. By default, the interaction buffer appears
+in a pop up window a few seconds after an error persists and is pop down
+when the error disapears. 
+
+For serious debugging, you may unset {\tt Auto interaction} menu entry so as
+to see the interaction buffer permanently. You may also unset {\tt Auto
+Shrink output} menu entry to keep all log information (by default, the
+interaction window is shrunk at every slice).
+
+The {\tt View Log...} menu entry can be used to view the compele log files of
+last actions performed by whizzytex (\lst"format", \lst"latex",
+\lst"slice"). 
+
+\subsection {Error during initialization}
+
+The most delicate part of {\whizzy} is when starting {\tt whizzytex-mode},
+and usually for the first time in a new buffer, since at that time all kinds
+of initialization errors may occur (in addition to {\LaTeX} errors. 
+
+{\whizzy} will attempt to identify the error and report appropriate messages
+in the interaction buffer. (In case an error occurs ---or nothing happens---
+always have a look at the interaction buffer first, even if it did not
+prompt automatically.)
+
+{\whizzy} keeps more debugging information during initialization phase, 
+and if an error occurs during initialization, it will keep all log files.
+Once initialization has succeeded  {\whizzy} turns into normal more and
+by default all log and auxiliary files will be removed error et exit
+(including at exit on error). However, {\whizzy} can also be launched in
+debug more, which will keep additional debugging information including 
+after initialization. 
+
+To see log information, use the \lst"View log..." menu entry 
+and the completion buffer. Available log files are \lst"command", 
+\lst"format", \lst"latex", \lst"slice", and \lst"view".
+The command log is simple the list of arguments---one per line---with which
+the shell script \lst"whizzytex" was called; the log file view is the
+content of the standard error description the viewer.  Some logs may not be
+available if an error occured before the corresponding command has been
+called. 
+
+Most frequent errors are described below, in chronological order.
+
+
+\paragraph {Emacs fails during setup}
+
+This is the easiest case, because {\whizzy} has not been called yet, so it
+is only involves debugging under emacs. 
+You may check the emacs error messages (emacs buffer \lst"*Messages*"),
+check the on-line documentatino of variables set or functions calls, and
+in case of uncaught fatal errors, you may
+\verb"ESC X toggle-debug-on-error" to get help from Emacs, and try to fix
+the problem. 
+
+Note that setup may succeed, but not be result as expected. 
+You may see what configuration files have been loaded in different buffers: 
+\lst"*Message*" for emacs customization, the interaction buffer 
+for shell-script customozation, and the format log file for latex
+configuration.
+
+
+\paragraph {Emacs cannot find whizzytex}
+
+This should typically be an installation problem, where the variable
+\lst"whizzytex-command-name" is erroneous (maybe you need to give the full
+path). Try to evaluate \verb"(shell-command whizzy-command-name)" in the
+minibuffer, which of course should fail, but only after the command has been
+reached.
+
+\paragraph {{\whizzy} cannot build a format}
+
+Then {\whizzy} will refuse to start. 
+
+The problem could result from an abnormal interaction between your macros
+and {\whizzy} macros, but this situation seems rather unfrequent.  So there
+is most probably an error in your macros.  Try to compile {\LaTeX} your
+file.  
+
+By default the interaction window will pop-up with an section of the format
+log, but you can also view the log of latex formatting 
+
+. If this is not enough, you may need view log files.  However, log
+files are normally removed when {\whizzy} exits.  To keep log files on,
+you must retart {\whizzy} in debug mode (select the debug mode in the
+menu and restart {\whizzy}). Then, you can check the \lst"format" log and
+if necessary the \lst"command" with which {\whizzy} has been launched.
+(Once the bug is fixed, you should switch off the debug mode, which may slow
+down {\whizzy}.)
+
+
+\paragraph {{\whizzy} cannot launch the previewer}
+
+Usually, this is because whizzytex received wrong previewer parameter.  See
+the command echoed in the interaction buffer or try to evaluate
+\lst"(whizzy-get whizzytex-view-mode)".
+
+\paragraph {Other errors}
+
+There are two remaining problems that could happen at launch time, but that
+are not particular to launch time: {\whizzy} could not recompiled the whole 
+document or the current slice. However, these should not be fatal. 
+In the former case, whizzytex will proceed, ignoring the whole document 
+(or using the slice instead if you are in duplex mode). In the later case,
+whizzytex will replace the slice by an empty slice ---and print a welcoming
+document, as if you launched {\whizzy} outside of any slice. 
+
+\subsection {Errors while editing}
+
+After initialization time, {\whizzy} will keep recompiling slices as you
+type or move, but also recompiles the format and the whole document when you
+save a file. Each of this step may failed, but this should not be fatal, and
+Emacs should report the error, possible pop up the interaction window, and
+continue. 
+
+\paragraph {\whizzy\space fails on the current slice}
+
+This should not be considered as an error, it {\bf must} happen during
+edition. In particular, {\whizzy} is not much aware of {\LaTeX} and could
+very well slice in the middle of the typesetting of an environment or a
+macro command. This should not matter, since the erroneous slice will be
+ignore temporarily until the slice is correct again.
+
+\paragraph {\whizzy\space keeps failing on the current slice}
+
+The slice can also be erroneous because the Emacs did not correctly inferred
+where to insert the cursor, which may slice erroneous, although what you
+typed is correct. Hopefully, this will not occur too often, and disappear as
+you move the point. It should also disappear if you switch off both {\tt
+Point visible} and {\tt Page to Point} options, which is actually a good
+thing to do when you suspect some misbehavior.  This will make WhizzyTeX
+more robust, but less powerful and more boring.
+
+\paragraph {\whizzy\space does not seem to slice at all}
+
+The interaction window does not produce any output. 
+Try to move in the slice, or to another slice. 
+
+If nothing happens, check the interaction
+window, to see if it did attempt to recompile the slice.
+If nothing happens in the interaction window, check for Emacs messages
+(in the \lst"*Messages*" buffer). You may also check for the presence 
+(and content) of the slice by visiting 
+\lst"_whizzy_filename.tex" or
+\begin{quote}
+\begin{verbatim}
+_whizzy_filename/input/_whizzy_name.new
+\end{verbatim}
+\end{quote}
+If neither file exists, it means that Emacs did
+not succeed to slice, which you may force by evaluating
+\lst"(whizzy-observe-changes t)". 
+This can be run in even if {\tt whizzytex-mode} is suspended, which may
+avoid automatic processing of slices, and their erasure.
+
+If the slice is present, you may try to compile it by hand (outside of
+Emacs) with 
+\begin{quote}
+\begin{verbatim}
+latex '&_whizzy_filename' _whizzy_filename.tex
+\end{verbatim}
+\end{quote}
+and see if it succeeds. 
+
+
+\paragraph {Reformatting failed}
+
+Formatting errors are fatal during initialization, but accepted once
+initialized. In case of an error during reformatting, {\whizzy} will ignore
+the error and continue with the old format.  This means that new macros may
+be ignored leading to further slicing errors. When rebuilding the format
+failed, the mode-line string will display the suffix \lst"FMT" until the
+error is fixed.  See the interaction buffer or select \lst"format" from the
+\lst"log..." menu entry).
+
+You may also force reformatting by typing the \lst"reformat" command
+in the interaction buffer. 
+
+
+\paragraph {Whizzytex cannot process the whole document}
+
+This is very likely a problem with you document, so try to {\LaTeX} it 
+first. There is a small possibility of strange interaction between
+your macros and {\whizzy} package. Try to turn options 
+{\tt Page to Point} and {\tt Point visible} off and retry. 
+This will make {\whizzy} more robust (but also less powerful and more
+boring). 
+
+\subsection {Debugging}
+
+If you are still completely lost after trying all of the above help, you may
+turn on the debugging mode by typing either line in the interaction window:
+\begin{quote}
+\begin{verbatim}
+trace on
+trace off
+\end{verbatim}
+\end{quote}
+or with the menu entry \lst"Debug".
+The entry can also be called to start {\whizzy}, which will then start in 
+debugging mode, including during initialization. 
+
+If need be, you can also turn emacs debug mode on and off with
+\begin{quote}
+\begin{verbatim}
+ESC x toggle-debug-on-error RET
+\end{verbatim}
+\end{quote}
+
+If you are still stuck, then you are left on your own and need real
+debugging.  If this is your first attempt at {\whizzy}, you should suspect
+your global configuration. You should then try it first with the examples of
+the distribution.  Otherwise, you may rollback to a file and configuration
+that used to work (e.g. one of the distribution), and make incremental or
+logarithmic changes until you hit the problem. 
+
+%HEVEA\hypertarget{help}{}
+\section{On line help}
+
+The Emacs source is fully documented and most of the documentation is
+available  as on-line Emacs help, through the \lst"Help" entry of the
+\lst"Whizzy" menu and following hyperlinks.
+%
+Alternatively, you can type
+\begin{quote}
+\begin{verbatim}
+ESC x describe-function RET whizzytex-mode RET
+\end{verbatim}
+\end{quote}
+(In XEmacs, you may need to use
+\begin{quote}
+\begin{verbatim}
+ESC x hyper-describe-function RET whizzytex-mode RET
+\end{verbatim}
+\end{quote}
+instead of \lst"describe-function" to see hyper-links.)
+
+To avoid redundancy, on-line help is not reproduced here, configuration
+described in the next section.
+
+
+%HEVEA\hypertarget{manual}{}
+\section{Configuration} 
+\label{manual}
+
+This section describes how to use and parameterize {\whizzy}.  
+Section \ref{configuration}, \ref{modes} and
+\ref{types} are also available as online help. 
+
+
+\subsection {Emacs global configuration}
+
+\label{configuration.viewers}
+\label{configuration.bindings}
+\label{Emacs-configuration}
+
+See Emacs help for \lst"whizzy-default-bindings" and
+\lst"whizzytex-mode-hook" for list of bindings.
+
+The Emacs on-line help for \lst"whizzytex-mode" lists all user-configurable
+variables,  which  may be given default values in your Emacs startup file
+to be used instead of {\whizzy} own default values. 
+
+\subsection {File-based configuration}
+
+\label{configuration}
+\label {File-configuration}
+
+{\whizzy} allows for inlined customization in the source file, as described
+below. While this mecanism is quit convenient for short and simple
+customization (such as selecting the output format and previewer or
+sectioning), it is harsh and \emph{depreciated} for advanced customization,
+for which you should prefer local customozation files (see Section~\ref
+{sec/local-custom}). 
+
+A configuration line is one that starts with regexp prefix ``\lst"^%; +"''
+followed by a configuration keyword.  If two configuration lines have the same
+keyword, only the first one is considered. The argument of a configuration
+line is the rest of the line stripped of its white space.
+
+The keywords are:
+\begin{description}
+\item[whizzy-master]\arg {master}
+\\
+This only makes sense for a file loaded by a {\em master} file. 
+\arg{master} is the relative or full name of the
+master file. Optional surrounding quotes (character \lst`"`) %" 
+%
+stripped off, so that \lst$"foo.tex"$ and \lst"foo.tex" are equivalent.
+
+\item[whizzy-macros]\arg {master}
+\\
+  This is equivalent to {\bf whizzy-master} \arg{master}, but for a file
+  containing   macros. The file is not sliced while editing, but 
+  saving it reformats the master. 
+
+\item[whizzy] 
+\opt{\arg{slicing}} 
+\opt{\arg{viewer} \opt{\arg{command}}}\\
+\opt{\texttt{-mkslice} \arg{command}} 
+\opt{\texttt{-mkfile} \arg{command}} \\
+\opt{\texttt{-tex} \arg{suffix}} 
+\opt{\texttt{-initex} \arg{initex}}
+\opt{\texttt{-latex} \arg{latex}}
+\opt{\texttt{-fmt} \arg{format}}\\
+\opt{\texttt{-bibtex} \arg{bibtex}}
+\opt{\texttt{-dvicopy} \arg{command}}
+\opt{\texttt{-watch}}
+\opt{\texttt{-duplex}}
+\opt{\texttt{-trace}}
+\\[1em]
+All arguments are optional, but if present they must appear in order and on
+a single line:
+\begin{description}
+\item[\arg{slicing}]\indent\\ 
+determines the way the document is sliced
+(see section~\ref{modes}).
+
+\item[\arg{viewer}]\indent\\
+is the type of viewer and can only be one of 
+\lst"-advi", \lst"-xdvi", \lst"-ps", or \lst"-pdf" (see section~\ref{types})
+
+\item[\texttt{-display} \arg{display}]\indent\\
+specifies which X display to show the DVI previewer in,
+such as \texttt{:0.1} for multidisplay set-ups.
+
+\item[\arg{command}]\indent\\
+is optional and is the command used to call the viewer
+(of course, it should agree with \arg{viewer}). 
+
+\item[\texttt{-mkslice} \arg{command}]\indent\\
+tells {\whizzy} to use  \arg{command} to preprocess the slice. 
+The command \arg{make} will receive one argument
+\texttt{\_whizzy\_basename.new} and should produce 
+\texttt{\_whizzy\_basename.tex}
+(or \texttt{\_whizzy\_basename.ltx} if the extension of the master file is 
+\texttt{.ltx}).
+By default, \lst"mv" is simply used.
+
+{\em The Unix \lst"make"  can itself be used as a preprocessor (with an
+appropriate \lst"Makefile").  However, one may have to work around
+\lst"make"'s notion of time (using FORCE), which is usually too rough. 
+This is safe, since {\whizzy} tests itself for needed recompilations.}
+
+\item[\texttt{-mkfile} \arg{command}]\indent\\
+executes ``\arg{command} \arg{filename}'' before recompiling every time a
+buffer is saved. The argument ``\arg{filename}'' is the buffer-file-name
+path relative to the path of the master file directory.
+
+\item[\texttt{-makeindex} \arg{command}]\indent\\
+uses ``\arg{command} \arg{filename.idx}'' for rebuilding the index instead
+the default ``\arg{makeindex} \arg{filename.idx}''.  If ``\arg{command}'' is
+false, then do not attempt to rebuild the index.
+
+\item[{\bf {\tt -bibtex \arg{bibtex}}}]\indent
+
+uses \arg{bibtex} for the bibtex command instead of the value 
+assign to BIBTEX in \lst"Makefile.config" (or \lst"whizzytex")
+
+\item[{\bf {\tt -initex \arg{initex}}}]\indent
+
+uses \arg{initex} for the initex command instead of the value 
+assign to INITEX in \lst"Makefile.config" (or \lst"whizzytex")
+
+\item[{\bf {\tt -latex \arg{latex}}}]\indent
+
+uses \arg{latex} for the latex command instead of the value 
+assign to LATEX in \lst"Makefile.config" (or \lst"whizzytex")
+
+\item[{\bf {\tt -fmt \arg{format}}}]\indent
+
+uses \arg{format} for the latex format instead
+of the default value, usually fmt (see configuration).
+
+{\em This can either be used in combination with \lst"-latex" and
+\lst"-initex", 
+or alone. For instance,
+\lst"hugelatex" could be used (depending on your {\LaTeX} configuration) to
+build a larger format to process huge files.}
+\label{configuration.tex}
+
+\item[{\bf {\tt -dvicopy \arg{command}}}]\indent
+\label {sec/dvicopy}
+
+uses \arg{command} instead of the default (mv) to copy DVI files
+(from \lst"FILE.dvi" to \lst"FILE.wdvi"). This can be used with command
+\lst"dvicopy" so as  to expand virtual font, which advi does not understand
+yet) 
+
+\item[\texttt{-watch}]\indent\\
+watches other files than just the slice (see Section~\ref {sec/watch}).
+
+\item[\texttt{-duplex}]\indent\\
+launches another window with the whole document (which is
+recompiled every time the source buffer is saved).
+
+{\em With \lst"-advi" previewers, both views  communicate with Emacs and can be
+used to navigate through source buffers and positions.}
+
+\item[\texttt{-trace}]\indent\\
+traces all script commands (for debugging purposes only.)
+\label{configuration.trace}
+
+\end{description}
+
+For instance, a typical configuration line will be:
+\begin{verbatim}
+   %; whizzy subsection -dvi "xdvi -s 3"
+\end{verbatim}
+It tells whizzytex to run in subsection slicing mode and use a \lst"dvi"
+style viewer called with the command
+\lst"xdvi -s 3". This is also equivalent to
+\begin{verbatim}
+   %; whizzy subsection -dvi xdvi -s 3
+\end{verbatim}
+since Emacs removes outer double-quotes in option arguments. 
+
+A more evolved configuration line is:
+\begin{verbatim}
+   %; whizzy -mkslice make -initex iniptex -latex platex -fmt platex
+\end{verbatim}
+It tells {\whizzy} to use \lst"iniptex" and \lst"platex" comands instead
+of \lst"initex" and \lst"latex" and to use the format file \lst"platex.fmt" 
+instead of \lst"latex.fmt". Moreover, it should use \lst"make" to preprocess
+the slice.
+
+\item[whizzy-paragraph] \texttt{regexp}\\
+This sets the Emacs variable \lst"whizzy-paragraph" to \texttt{regexp}.
+\end{description} 
+
+
+\subsection {Modes} 
+\label {modes}
+
+{\whizzy} recognizes three modes \lst"slide", \lst"section", and
+\lst"document".  
+The mode determines the slice of the document being displayed and indirectly
+the frequently of slicing. 
+
+Note that in any mode but \lst"none" slices are always included in the file
+beeing editing and files that it may include. Thus, when slice delimitors
+are not found, the slice default to the whole file. The slice may also be
+empty if the cursor is located before \lst"\begin{document}" or 
+after \lst"\end"\lst"{document}". 
+
+\begin{description}
+
+\item [slide]
+
+The mode \lst"slide"  is mainly used for documents of the class seminar. 
+In slide mode, the slide is the text between two \lst"\begin {slide}"
+comments (thus,  the text between two slides is displayed after the
+preceding slide).  
+
+In slice modes, overlays are ignored {\em i.e.} all overlays all displayed in
+the same slide, unless a command
+\lst"\overlay {"$n$\lst"}" occurs on the left of the point, on the same line
+(if several commands are on the same line, the 
+right-most one is taken), in which case only layers $p \le n$ are displayed.
+
+\item [section]
+In \lst"section" mode, the slice of text is the current chapter, section.
+
+\item [subsection]
+As \lst"section" but also slice at subsections. 
+
+\item [paragraph]
+The \lst"paragraph" mode is a variation on section mode where, the separator
+\lst"whizzy-paragraph" is defined by the user (set to two empty lines by
+default) instead of using \lst"\section"  and \lst"\subsection" commands. 
+subsection.
+
+\item [document]
+The \lst"document" take the region between \lst"\begin{document}"
+and \lst"\end"\lst"{document}" as the slice. Hence it defaults to the file
+when the file is a slave, which does not contain \lst"\begin{document}". 
+
+\item [none]
+In \lst"none" slicing mode, there is no sectioning unit at all and
+the whole document is recompiled altogether. 
+Currently, pages are not turned to point and the 
+cursor is not shown in \lst"document" mode, because full documents are not
+sliced. (A slicing document mode could be obtained by working in paragraph
+mode, with an appropriate regexp.)
+
+\end{description}
+
+\subsection {Viewer types}
+\label {types}
+
+See help for \lst"whizzy-viewers".
+
+The previewer types can have three possible values:
+{\tt -advi}, {\tt -dvi}, {\tt -ps}, or {\tt -pdf}. 
+
+The previewer type should agree with the previewer command in several ways:
+\begin {itemize}
+
+\item
+They tell how to trigger reload on the previewer. 
+This may signal the previewer with signal \texttt{SIGHUP} for \texttt{-ps}
+or {\tt SIGUSR1} for \texttt{-dvi} and \texttt{-advi}, or to establish the 
+previewer as a remote server with \texttt{-pdf}.
+
+
+In particular, if you write a front-hand shell-script \lst"viewer" to the
+call previewer,  and want to use \lst"viewer" as the previewer, you should 
+arrange for \lst"viewer" to understand these signals (and forward them to the
+previewer). The simplest way is to hand your script with an exec command
+calling the \lst"gv", \lst"dvi" or \lst"advi".
+
+Also, the option \texttt{-pdf} assumes \texttt{xpdf} remote server 
+(launched with the whizzytex process id as name) and its reload protocol. 
+Thus, if you wish to use another previewer, you also need to cutomize the
+variable \texttt{RELOAD} of the shell-script. 
+
+\item
+They tell whizzytex whether to process the slice to 
+Postscript (with {\tt -ps}) or to DVI format (with {\tt -dvi} and {\tt
+-advi} or directly generate \texttt{pdf} output with \texttt{pdflatex}.
+
+\item
+Moreover, {\tt -advi} requires the previewer to 
+recognize additional \lst"\special" commands, in particular
+source line information of the form: 
+\begin{quote}
+\begin{verbatim}
+#line 780, 785 <<to<<rec>><<ognize>>additional>> manual.tex
+\end{verbatim}
+\end{quote}
+
+\end {itemize}
+Then, the previewer command is the command to call the previewer.  This
+string will be passed as such to the {\whizzy} shell-script. Note that the
+name of the \lst"dvi" or postscript file will be appended to the previewer
+command.
+
+
+
+\subsection {Watching other files}
+\label {sec/watch}
+
+{\whizzy} is designed to watch other files and not just the slice saved by
+Emacs. In fact, it watches any file dropped in the pool directory. 
+For instance, 
+if your source file uses images, you can just change the image and
+drop the new version in the pool. Then {\whizzy} will pick the new version,
+move it to the working directory and recompile a new slice. Be aware of name
+clashes: if you drop a file in the pool, it will automatically be move to
+the working directory with the same name, overriding any file of the same
+name sitting there. 
+
+However, activity is entirely controlled by Emacs, since after every
+iteration {\whizzy} waits for Emacs to send a new command (usually the empty
+command that means iterate again). Hence, other files will only be taken
+into account at the next iteration. If you really wish these files
+to be watched you need to instrument emacs to send and empty line input to
+the interaction buffer regularly, even when idle. 
+
+\subsection {Frequency of recompilation} 
+
+To obtain maximum {\whizzy} effect, a new slice should be save after any
+edition changed or any displacement that outside of the current slice.
+However, to avoid overloading the machine with useless and annoying
+refreshments, some compromise is made, depending on Emacs several
+parameters: edition {\em v.s.} move Emacs last commands, 
+successful {\em v.s.} erroneous last slice, and the duration of last slice
+recompilation. This usually works well. However, different behavior may wish
+to be obtained in different situations. For instance, when editing on a
+lab-top, one may wish to save batteries by keeping the load rather low, hence
+not using the full power of the processor. Conversely, one may wish 
+{\whizzy} to be as responsive as possible. There is an function
+\lst"whizzy-load-factor" that control a variable of the same name, which can
+be used to adjust the responsiveness (by increasing or decreasing the
+load-factor). This simply adds extra delays between slicing. 
+
+The format is automatically recompiled at the beginning of each session, and
+whenever the buffer containing the file is saved. That is, to load new
+packages or define new global macros (before the \lst"\begin{document}"), it
+suffices to save the current file.
+
+\subsection {\whizzy-ing macro files} 
+
+Macro files can be \Whizzy-ed as well.  The effect is them only to
+automatically call \lst"reformat" when the file is saved.
+Files can also be declared as macro-files with 
+\lst"whizzy-macro" file configuration keyword (see Section \ref
+{File-configuration}), which argument should then indicate the master file.
+Files with \lst".sty" extension are by default considered as macro files
+and their master file is guessed if possible.
+
+
+\subsection {Cross-references, page and section numbers} 
+
+The slice is always recompiled with the \lst".aux" file of the whole
+document.  In paragraph mode, cross references and section numbers are 
+recompiled whenever the buffer itself is saved (manually). 
+The recompilation of the whole document is off in slide mode.
+
+\subsection{Per session {\LaTeX} customization}
+
+The Emacs variable \lst"whizzy-customize" (that can be set
+interactively from the \lst"Customize slice" menu) may contain
+a few {\LaTeX} commands to be inserted at the beginning of each slice, which 
+allows a per-session customization.  Customization can be easily changed
+anytime in the middle of a session. For instance, setting this variable to
+\lst"\large" can be used to temporarily enlarge the text, while keeping the
+same page layout.
+
+
+%HEVEA\hypertarget{custom}{}
+\subsection{System, user, and local customization} %
+\label{sec/local-custom}
+
+{\whizzy} is a three-part engine, with Emacs, Latex, and the glue
+Bash-script running altogether. Some of the parameters can be adjusted at
+installation-time by modifying the respective files \lst"whizzytex.el",
+\lst"whizzytex.sty", or \lst"whizzytex" of the distribution.  However, you
+should normally not have to do that after installation, and instead use
+system, user, or local configuration files.
+
+When launched, each engine looks for configuration files in appropriate
+directories with basenames \lst"whizzy.el", \lst"whizzy.sh", and
+\lst"whizzy.sty", respectively. The Emacs configuration search path is 
+defined by the emacs variable variable \lst"whizzy-configuration-path". 
+Search path for Bash and Latex settings are composed of the directories
+\lst"CONFIGDIR/", \lst"$HOME/.whizzytex/" and the
+current directory (actually \lst"$TEXINPUTS" for latex).  All configuration
+files found are loaded, in the order given above.
+
+Remark that a local configuration file (\emph{i.e.} one in the current
+directory) can be used to make per-document configuration by testing on 
+jobname.
+
+\iffalse
+\subsection*{Example of {\LaTeX} per-document customization}
+
+\whizzy attempts to make the slice appears as much as possible as in 
+the full document, so that all typesetting adjustments, including overfull
+boxes, {\em etc.} can be fixed under \whizzy. 
+(Some tricks, such as showing the cursor, may disturb the
+presentation, but locally.)
+
+Still, one may wish to permanently or temporarily give the document another
+appearance when under \whizzy. For instance, you may wish to switch to draft
+mode under \whizzy (maybe using a few {\ActiveDVI} tricks to include
+annotations) and use a normal mode under regular processing.
+
+This can be achieved by defining macros in a file \lst"whizzy.sty" in the
+{\LaTeX} path that will be automatically loaded by 
+{\whizzy} at the end format building. This file can be be placed in your
+macro directory and be used for all documents (you may thus customize
+{\Whizzy} itself), or in the current directory
+and be used for only some documents.
+\fi
+
+%HEVEA\hypertarget{viewers}{}
+\section{Viewers}
+
+
+\subsection {Viewing with \ActiveDVI}
+
+\href{http://pauillac.inria.fr/advi/}{\ActiveDVI} is a DVI previewer with
+several additional features. 
+In particular, it recognizes extra specials, some of which are particular 
+useful for whizzytex that allows a two way communication between 
+the source Emacs buffer and the previewer: 
+\begin {itemize}
+\item
+The previewer will automatically turn pages for you, as you are editing. 
+This is done by telling Emacs to save the current position in the slice. 
+Then, the recompilation of the slice will include the current position 
+as an hyperref location \lst"Start-Document" whenever possible. 
+Then, just tell {\ActiveDVI} to automatically jump at this location
+when it opens/reloads the file (option -html Start-Document).
+
+\item
+Conversely, {\ActiveDVI} can dump source file positions on clicks, 
+when available (usually on \lst"shift-mouse-1" or \lst"mouse-1" in
+\lst"edit" mode), that
+is forwarded to Emacs so that it can move to the corresponding line.
+
+To enjoy this feature, the option \lst"-advi" should be used instead of
+\lst"-dvi". This will produce extra information (such as source line
+numbers) using \lst"\special" that most DVI previewers do not recognize
+and may complain about.
+
+\item
+{\ActiveDVI} does not currently recognizes virtual fonts, but \lst"dvicopy" 
+can be used to expand them. See the option \lst"-dvicopy" in Section~\ref
+{sec/dvicopy}. 
+
+\item
+\noindent
+\NEW{1.1.3}\relax
+If you have a recent version of {\ActiveDVI} (version number exists and is
+greater than 1.5.2), you can also enjoy the multiple view mode, which is
+configured by default (variable \lst"MULTIPLE" is set to \lst"true" in
+Makefile.config). In this case, {\Whizzy} will call the previewer both
+the slice and the whole document in the same window and may automatically
+switch from the slice to the whole document when clicking on local hyperrefs
+that are out of the slice (press \lst"Esc" to come back). You can also
+switch between views by pressing \lst"w" and when on the whole document
+view, goto the page when the cursor is in Emacs by pressing \lst"W". 
+
+\emph{Warning! If by mistake or misconfiguration, the multiple view is
+enable and your version of advi does not support multiple views, you
+will only see the full document view and never see the slice. }
+\end {itemize}
+
+\subsection{Defining your own previewer}
+
+To use your own command as a previewer, you must choose either type
+\lst"-dvi" or \lst"-ps" . In particular, your previewer should 
+accept \lst"SIGUSR1" (for \lst"-dvi") signal or \lst"SIGHUP" (for \lst"-ps") 
+signal and respond by reloading the file.
+
+%HEVEA\hypertarget{pdf}{}
+\subsection{Viewing with \texttt{xpdf}}
+
+
+{\whizzy} now works with \lst"pdf" using the \lst"xpdf" previewer
+and its remote server capabilities to reload the file and jump to the
+cursor position (this does not work because they is no simple way to tell
+\lst"acroread" to reload its file in batch). You must choose \lst"-pdf" 
+as previewer type, which will also set other variables so as to compile the
+document with pdflatex instead of latex. You must leave the default
+previewer command, i.e. enter \lst"-pdf ." and not \lst"-pdf xpdf" (or else
+understand the internals of the \lst"whizzytex" script) because
+other options need to be passed to \lst"xpdf".
+
+\section{Whizzy Effects}
+
+Since {\whizzy} knowns about the current point in the buffer, rendering
+of the document may depend on that possition. For examples, an environment
+may be displayed differently when the point is inside or outside the
+environment. A natural choice is to make drawer-like environments that 
+are \emph{closed} when the point is outside and \emph{open} when the point
+is inside.
+
+{\whizzy} provides a the macro \lst"\WhizzyInsideEnvironment"
+to help make such effects. It takes the same parameters as the command
+\lst"\newenvironnement". The first argument should be the name of an
+existing environment, which will behave as before when the point appears
+outside and according to the new definition when the points is inside.  The
+second and first arguments defines the behavoir as do the arguments of
+\lst"\newenvironment". However, \lst"\WhizzyInsideEnvironment" also defines
+the macro \lst"\out@myenv" and \lst"endout@myenv" to refers to the
+cursor-outside version of the environment. Typically, these macros can be
+used in the second and third argument of \lst"\WhizzyInsideEnvironment" to
+define the cursor-inside version by difference with the cursor-outside
+version. 
+
+The example \lst"effects" shows two applications.  First, a \lst"drawer"
+environment is used to delimit sections and make them open or closed
+automatically as cursor moves. Second, using the
+\texttt{exercise} package, we provide a cursor-inside version of the answer
+environment that inline the answer rather than pushing it to the Appendix. 
+
+
+%HEVEA\hypertarget{edit}{}
+\section {\WhizzyEdit ing}
+\begin{quote}
+\em
+\noindent\NEW{1.1.3}\relax
+This feature requires at least version \texttt{1.60} of
+{\ActiveDVI}.
+\end{quote}
+
+When used together with Active-DVI, {\whizzy} can be made much mode
+powerful. In particular, it is not difficult to lift  {\whizzy} from an
+incremental viewer to an assistant editor.
+
+What was a dream has now become real.
+%
+The latest version Active-DVI provides a notion of active boxes. 
+The DVI may be  annotated with \verb"advi: edit" specials commands.  
+When {\ActiveDVI} is put in edition mode,
+active boxes are drawn on top of the previewer window  and can be move or
+resized with the mouse. 
+When the mouse is released, the new size or position is printed on standard
+output together with the action to be taken and received by emacs watching
+the output.
+%
+Emacs has then enough information to adjust some dimensional parameters in
+the source buffer. Just after this edition, the new slice is processed and
+the new position is displayed.  Thanks to the short incremental loop, this
+almost appears as if actions where executed by Active-DVI itself.
+
+Indeed, \WhizzyEdit ing is not meant to break up the structual edition
+philosophy of {\TeX} and {\LaTeX}. Its incremental viewing is an assistant
+to an not a replacement of structural source edition. Mouse editing should
+also be seen similarly.  In particular, all editions are visible in the
+emacs source buffer, can be saved, manually changed or disable. Moreover,
+Whizzy-editing is not meant for document layout (even it can occassionally
+be used for that, \emph{e.g.} in slides), but rather to help adjust
+dinmensions that require manual tuning.
+
+For instance, imaging you are importing an Encapsulated Postscript picture
+you would like to place some bubble whose origin must be position precisely
+inside the picture. Then, you'd better do it with the mouse rather than by
+small measurements or adjustements. Drawing a graph with a few nodes may now
+become quite confortable with PStricks, with the advantage of remaining
+within {\LaTeX} rather than using some external tool. Finally,
+Whizzy-editing is likely to be convenient when writting slides with visual
+gadgets. For instance, adjusting bubbles with the mouse is likely to be more
+efficient than doing it by hand.
+
+
+\subsection{Enabling edition with the \texttt{\protect\string\adviedit} macro}
+
+{\ActiveDVI} provides one general editing command that can be used by
+{\Whizzy} for all mouse editing.  The syntax of this command is
+\begin{quote}
+\docdef \adviedit{[tag]}\docarg{options}\docarg{body}
+\end{quote}
+where \docid{options} is a comma separated list of bindings
+according to the \doctt{keyval} package. Each binding is either of the form
+\docid{var}=\docid{float} where 
+\docid{var} ranges other letters 
+\doctt{x}, \doctt{y}, \doctt{h}, \doctt{w}, \doctt{d} 
+in lowercase or uppercase, or \doctt{field}=\docid{dimension} where 
+\docid{field} ranges over \docid{unit} and \docid{min}.
+
+The \docid{field} respectively bindings specifies the unit, which default to
+\doctt{1em}, and the minimal dimension of boxes. Both fields are inherited,
+which enable inner edition to be scale altogether.  The \docid{var} bindings
+defines values for the corresponding variables. 
+The are not inherited. On the opposite, they are always reset to
+default values.  Lowercase letters mean that the corresponding variables
+are whizzy-editable, while uppercase letters treat them as constants. 
+The expression \doctt{body} should be horizontal box material: it is then
+placed in an \doctt{\string\hbox} at coordinates (\doctt{x}, \doctt{y})
+relatively to the current position.  
+Moreover, a virtual box of width \doctt w, height \doctt
+h, and depth d is draw at that position when editing is made active.
+The box can this float around the current point and has no dimension.
+However, a box with no coordinates specified is fixed and has the dimensions 
+of \doctt w, \doctt h, and \doctt d. When not specified, these fields takes
+the value of the box in which body is typeset. 
+All dimensions \doctt x, \doctt y, \doctt w, \doctt h, and \doctt d are
+bound to \doctt{advix}, \doctt{advix}, \doctt{adviy}, \doctt{adviw},
+\doctt{advih}, and \doctt{advid} macros during the evaluation of
+\docid{body}. 
+
+Whizzy-editable objects can be nested. All parameters are reset to default
+values, within the new object. Sometimes, emacs may be confused and take an
+object for another. In these rare cases, the two objects can use the 
+\docid{tag} argument to be distinguished. This argument does nothing but
+being passed to {\ActiveDVI} and sent back to Emacs to identified 
+the object exactly. 
+
+\subsection{Performing mouse edition under {\ActiveDVI} control} 
+
+\begin{quote}\em
+This section depends entirely on {\ActiveDVI}. Hence, it may depend on your
+version of {\ActiveDVI} or how you have parameterized it.  The appearance
+and description below is based on default bindings for version
+\texttt{1.50+3}.
+\end{quote}
+
+To actually \emph{edit} whizzy-editable objects, you need to toggle the
+\emph{edit} mode of {\ActiveDVI}. You can do this interactively by key stoke
+\lst"e" in the {\ActiveDVI} window. You may also start {\ActiveDVI} in
+\emph{edit} mode by passing the option \texttt{-edit}.
+
+When in edit mode, whizzy-editable objects are drawn as below:
+\begin{center}
+\begin{toimage}
+\psframebox[framesep=2em]{\adviedit
+{w=0.7571,unit=\hsize}{\parbox[t]{\adviw}{\setedit{unit=\adviw}\relax  
+This small page contains
+
+\hbox {\hbox to 0em
+{\hss\circlenode[linecolor=green,boxsep=0pt,framesep=0.4ex]{A}{}\hss}%
+\adviedit{x=0.3418,y=-0.1445,w=0.6574}
+{\pnode{P}\psframebox[linecolor=blue,framesep=0pt]{\setbox0=\hbox{\parbox[c]{\adviw}{This
+whizzy-editable parbox drawn in a blue rectangle. 
+The blue line in the middle of the rectangle marks the baseline of the box. 
+The green line is attached to the left hand-side of the baseline on the one
+hand  and to the anchor of this object, dran as a small green circle, on the
+other hand. 
+}}\box0\pnode{Q}%
+\ncline[linecolor=green]{A}{P}%
+\ncline[linecolor=blue]{P}{Q}%
+}}}%
+and right
+
+below is\ldots
+
+\setbox0=\hbox{\adviedit{d=0.1780}{\vtop{\vspace{\advid}}}}%
+\wd0=1ex\ht0=1ex
+\psframebox[linecolor=blue,framesep=0pt]
+{\pnode{P2}\hbox to 0em
+{\hss\circlenode[linecolor=green,boxsep=0pt,framesep=0.4ex]{A}{}\hss}%
+\box0\pnode{Q2}\ncline[linecolor=blue]{P2}{Q2}}%
+
+a whizzy-editable vertical space. 
+
+\hspace{1.5em}%
+The vertical space is an unmovable resizable box whose dimensions are as
+displayed in blue.  
+In contrast, the parbox above is movable (and width-resizable) and behaved
+as an empty box.  }}}
+\end{toimage}\imageflush
+\end{center}
+\par\noindent
+You may edit such objects in two ways: 
+\begin{itemize}
+\item \textbf{move} them, using the middle button.
+\item \textbf{resize} them, using the right button for width and height
+or the shift-right button for depth.
+\end{itemize}
+When pressing the button on the corresponding rectangle, the mouse shape
+should intuitively illustrate the action to be perfomed. 
+However, some actions may be inhibited. For instance, the
+\texttt{\string\parbox} can only be moved or resized in width and the
+vertical space can only be resized in depth but not be moved.  When an
+action (either \emph{move} or \emph{resize}) is disable in all directions,
+the cursor will not changed. When resizing is enabled both in \emph{height}
+and in \emph{depth}, the default action is \emph{height} and you must press
+the shift key to perform the \emph{depth} resizing.
+
+Finally, an edition can be aborted by pressing the \emph{meta} key (actually
+the one bound to \emph{modifier-1}) while release the mouse. 
+
+
+\subsection {Examples}
+Several examples can be found in file {\tt example/edit/main.tex} coming with
+{\ActiveDVI} distribution. Here are a couple of simple ones. 
+For example, 
+\begin{verbatim}
+        \adviedit{x=-2.8845,y=0.2717}{A}
+\end{verbatim}
+will simply place make the letter $A$ whizzy-movable. 
+The values of $x$ and $y$ when unspecified defaults to $0$. 
+Values for $W$, $H$ or $D$ when not given, will default to the
+value  of $\hbox{A}$. However, if $W$, $H$, or $D$ are zero (or too small)
+they will default to some small value.
+\begin{verbatim}
+        \adviedit{X=2,Y=3}{A}
+\end{verbatim}
+can simply be used instead of the latex $\string\put$ command.
+Spaces are also whizzy-adjustables: an horizontal space is just
+\begin{verbatim}
+        \adviedit{w}{\hspace{\adviw}}
+\end{verbatim}
+Note that the material is placed into a default \texttt{\string\hbox}. 
+Thus, for vertical spaces, one need and explicit \texttt{\string\vbox}:
+\begin{verbatim}
+        \adviedit{d}{\vtop {\vspace {\advid}}}
+\end{verbatim}
+Note that 
+\begin{verbatim}
+        \adviedit{h}{\vbox {\vspace {\advih}}}
+\end{verbatim}
+would do as well, but would usually be less intuitive, graphically.
+
+A paragraph of adjustable size: 
+\begin{verbatim}
+        \adviedit{w}{\parbox[c]{\adviw}{text material}}
+\end{verbatim}
+Whizzy-edition can also be used to resize images (as well as return them)
+\begin{verbatim}
+        \adviedit{w,h}{\includegraphics[width=\adviw,height=\advih]{caml.eps}}
+\end{verbatim}
+Note that while {\string\adviedit} must remain in the should, hence the
+whole line cannot be abbreviated into a macro, one can freely abbreviate its
+body, and it is quite easy to build a camel caravan: 
+\begin{verbatim}
+        \adviedit[A]{w,unit=\hsize}{%
+          \setedit{unit=0.2\adviw}%    
+          \def \camel{\includegraphics[width=\adviw,height=\advih]{caml.eps}}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{x,y,w,h}{\camel}%
+          \adviedit{d}{\vtop{\vspace\advid}}% 
+          \hspace{\adviw}% 
+        }
+\end{verbatim}
+Be aware that a camel may hide another one! Indeed, at the beginning all
+camels are superposed. The first caml you pick is the one in front. 
+An interesting use of units is to let an inner editable command sets its
+unit according to the dimension of an outer command, as illustrated above.
+Here the outer object (tagged \texttt{A}) is used to control the origin
+and scale of the projection.  Then, each camel can be translated and
+resized, but relatively to this origin and this scale. Thus moving 
+of rescaling the outer object will treate the caravan as a whole.
+The last line allow expansion of the bounding box as needed. 
+The one before last sets the vertical ratio of the bounding box.
+The result can be seen in Figure~\ref {caravan}. 
+\begin{figure}
+\centerline{%
+\begin{toimage}
+\epsbygs
+\def \camel{\includegraphics[width=\adviw,height=\advih]{caml.eps}}
+%%To adjuste the scale...
+\adviedit{w=0.5633,unit=\hsize}{%
+\setedit{unit=0.2\adviw}%
+\adviedit{x=3.8029,y=-0.9056,w=-0.5217,h=0.8348}{\camel}%
+\adviedit{x=4.2886,y=-3.1835,w=-1.6228,h=2.1934}{\camel}%
+\adviedit{x=1.1410,y=-0.9226,w=1.1661,h}{\camel}%e
+\adviedit{x=0.1224,y=-1.5206,w=1.4992,h=1.3165}{\camel}%
+\adviedit{x=1.4281,y=-1.5888,w=1.5068,h=1.3165}{\camel}%
+\adviedit{x=0.5156,y=-3.1263,w=1.3621,h=1.6604}{\camel}%
+\adviedit{x=4.7780,y=-1.2986,w=-0.6045,h=0.6559}{\camel
+\adviedit{x=0.3666,y=0.5704,w=0.6741,h=0.8008}{\bubble
+        {}(\advicw,\advich){Joe}}}%
+\adviedit{d=3.1698}{\vtop{\vspace\advid}}%
+\hspace{\adviw}%
+}%
+\end{toimage}\imageflush
+}
+\caption{\label{caravan}A Whizzy-editable Camel Caravan}
+\end{figure}
+Below is another example with two circles:
+\begin{verbatim}
+        \adviedit[A]{w=4}
+          {\setedit{unit=\adviw}%
+           \psset{boxsep=0pt,framesep=0pt}%
+           \hbox to \adviw
+             {\circlenode{A}{\hspace {\adviw}}\hss
+              \adviedit[B]{w=0.5}{\circlenode{B}{\hspace{\adviw}}}}}
+\end{verbatim}
+Many {\LaTeX} commands such as \texttt{\string\hspace},
+\texttt{\string\parbox}, \emph{etc.} are parameterized by dimensions.
+However, some other commands, such as \texttt{\string\picture}, 
+\texttt{\string\pspicture} and  most PsTricks commands,
+\texttt{\string\bubble}, and \texttt{\string\adviedit} itself are
+parameterized by a coefficients (floats) and, separately, a dimension. 
+
+To whizzy-edit such coefficients, there are also commands
+\texttt{\string\advicx},
+\texttt{\string\advicy},
+\texttt{\string\advicw},
+\texttt{\string\advich}, and 
+\texttt{\string\advicd} that contain the float ratio of 
+the corresponding dimension with respect to
+\texttt{\string\adviunit}---whenever the dimension is itself defined.
+As an example, the position of bubble can whizzy-edited as follows:
+\begin{verbatim}
+        \adviedit{h=1.8902,w=1.5259,unit=\bubbleunit}
+          {\bubble{anchored text}(\advicw,\advich){bulle text}}
+\end{verbatim}
+
+\subsection{Writing whizzy-editable macros}
+
+Although the command \texttt{\string\whizzyedit} is quite general and
+powerful, the user may wish to write its own versions.  
+One must then be careful that the macro correctly passes its name to 
+{\ActiveDVI}. For instance, rebinding or partially evaluating the macro
+\texttt{\string \adviedit} does not work, since then the text-source macro
+will not be \texttt{\string \adviedit} anymore. See the latex
+\texttt{advi.sty} source package for envolved examples. 
+
+Below are just a couple of simple examples. 
+We can abbreviate the example of adjustable horizontal spaces defining the
+following macro: 
+\begin{verbatim}
+        \newcommand{\advihspace}[1]
+           {\adviedit{comm=\advihspace,#1}{\hspace{\adviw}}}
+\end{verbatim}
+The argument \lst"comm=\advihspace" set the name of the calling source text
+macro to \lst"\advihspace". Then, you may simply write: 
+\begin{verbatim}
+        \advihspace{w}
+\end{verbatim}
+instead of 
+\begin{verbatim}
+        \adviedit{w}{\hspace{\adviw}}
+\end{verbatim}
+The macro could additionally check that \lst"w" is indeed defined.
+
+Another example of specialization is to place bubbles: so as to be more
+intuitive, the orgin of the edition should start at the center rather then
+at the left of the anchor, which requires a small acrobatics with boxes and
+dimensions: 
+\begin{verbatim}
+        \newcommand{\editbubble}[3]
+           {\setbox0=\hbox{#2}\copy0\hbox to 0em {\kern-0.5\wd0\relax
+            \bbb@dima=\ht0\bbb@dimb=\dp0
+            \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+              {\adviedit{comm=\editbubble,unit=\bubbleunit,#1}
+                 {\bubble{\box0}(\advicw,\advich){#3}}}\hfilneg}}
+\end{verbatim}
+Then a nicely editable bublle can be obtained with
+\begin{verbatim}
+        \editbubble{w,h}
+          {\editbubble{w,h}
+            {\editbubble{w,h}{flowers}{First}}
+            {Second}}
+          {third}
+\end{verbatim}
+(See the result in Figure~\ref{flowers})
+\begin{figure}
+$$
+\begin{toimage}
+\makeatletter
+\newcommand{\editbubble}[3]
+           {\setbox0=\hbox{#2}\copy0\hbox to 0em {\kern-0.5\wd0\relax
+            \bbb@dima=\ht0\bbb@dimb=\dp0
+            \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+              {\adviedit{comm=\editbubble,unit=\bubbleunit,#1}
+                 {\bubble{\box0}(\advicw,\advich){#3}}}\hfilneg}}
+\makeatother
+\vbox{\vspace{2em}
+\hbox{\editbubble{w=3.5896,h=0.5549}
+{\editbubble{w=0.3121,h=1.1212}
+            {\editbubble{w=-2.6822,h=0.5145}{anchor}{first}}
+            {second}}
+          {third}
+}}
+\end{toimage}\imageflush
+$$
+\caption{\label{flowers}A bubble flower}
+\end{figure}
+
+%HEVEA\hypertarget{impl}{}
+\section{A quick overview of the implementation}
+
+In short, {\sc \whizzy} is selecting a small slice of the document that 
+you are editing around the cursor (according to the selected mode) 
+and redisplay the slice incrementally as it changes through edition. 
+\begin {itemize}
+
+\item {\bf Emacs is watching you} typing and moving in the 
+Emacs buffer attached to the {\LaTeX} source file that your editing and keeps
+saving the current slice (current slide, section, or subsection, according
+to the mode).
+
+\item {\bf A shell-script daemon}
+keeps recompiling whenever a new slice (or other files) are produced, and if
+recompilation succeeds, tels the previewer to updates the display of the slice.
+
+\item {\bf A few {\LaTeX} macros} allow to build a specialized
+format with all macro loaded, which considerably speed up the time for
+slicing. Additionally, the slice is a bit instrumented to show the cursor,
+and includes specials that allows back-pointing from the DVI file into the
+Emacs buffer.
+
+\end {itemize}
+The rest of this section briefly describe these three parts\footnote {This
+section is not quite up-to-date, hence it puts emphasis on the original
+design, but several aspects have changed significantly since the first
+version. Implementation of more recent features is thus omitted.}, and
+their interactions.
+
+
+\subsection {Emacs code}
+
+The main trick is to use \lst"post-command-hook" to make Emacs watch
+changes.  It uses \lst"buffer-modified-tick" to tell if any editing has
+actually occurred, and compare the point position with the (remembered)
+position of the region being displayed to see if saving should occur.  It
+uses \lst"sit-for" to delay slicing until at least the time of slice
+computation has ellapsed since last saving, a significant number of editing
+changes has occurred, or iddleness.
+
+{\whizzy} can also display the cursor position, in which case slices are
+also recomputed when the cursor moves, but with lower priority.
+
+\subsection {{\LaTeX} code}
+
+The main TeX trick is to build a format specialized to the current
+document  so as to avoid reloading the
+whole macros at each compilation. This is (almost\footnote{{\tt
+$\backslash$begin\{document\}} should be typed as such without any white
+white space}) entirely transparent, that is, the source file does not have
+to understand this trick.
+
+This is implemented by redefining \lst"\documentclass" which in turn
+redefines \lst"\document" to execute \lst"\dump" (after redefining
+\lst"\document" to its old value and \lst"\documentclass" so that it skips
+everything till \lst"\document"). This is robust ---and seems 
+to work with rather complex macros. 
+
+The specialized format can be used in two modes: by default it expects a
+full document: it them dumps counters at sectioning commands (chapters, 
+sections, and subsections). This is useful to correctly 
+numberred sections and pages on slices. 
+
+There are also a a few other used to get more advanced behavior, especially
+to dump source line numbers and file names so that the previewer can
+transform clicks into source file positions. 
+
+When building the format, {\whizzy} also look for a local file of name
+\lst"whizzy.sty", which if existing is loaded at the end of the macros. 
+This may be used to add other macros in {whizzy} mode, {\em e.g.} 
+some {\TeX} environments may be redefined to changed they type setting,
+according to whether the current line is inside or outside the environment. 
+(We have written such an extension for an exercise package that sends the
+answers at the end in an appendix, unless the cursor is inside the answer,
+in which case the answer is in-lined.)
+
+\subsection {Bash code}
+
+There is no real trick there. This is a shell-script watching the pool
+(a directory where slices and other new version of files must be dropped). 
+It them recompiles a slice and wait for input (in stdin). 
+It recognizes a few one-line commands as input {\tt reformat}, {\tt
+dupplex}, and by default just watch for the presence of a new slice. 
+It recompiles the format file (and the page and section number, but in batch
+mode) whenever the source file (its Unix date) has changed  and 
+recompiles the slice whenever it is present (since {\whizzy} renames ---hence
+removes--- the slice before processing it).
+
+If the file has been recompiled successfully, it triggers the previewer
+(ghostscript or xdvi) so that it rereads the dvi or ps file. Otherwise, it
+processes the {\TeX} log file and tries to locate the error. It then sends part
+of the log file with annotations to the \lst"*TeX-shell*" buffer from which
+Emacs has been {\whizzy}, so that Emacs can report the error. 
+
+\subsection {Interaction between the components} 
+
+The control is normally done by Emacs, which launches and kills the Unix
+daemon. Quitting the previewer should be noticed by the daemon, which tells
+Emacs to turn mode off before exiting. 
+
+Muliple {\whizzy} running on the same file would certainly raise racing
+conditions between files and would not make sense. 
+For that purpose, the daemon pid is saved in a file and {\whizzy}
+will kill any old {\whizzy} process on startup. 
+
+\subsection {Whizzy edition}
+
+The macros \texttt{\string\adviedit} passes information
+to {\ActiveDVI} inside \texttt{edit} specials. This information is used to
+identify the source file command that requested some edition and is passed
+by from {\ActiveDVI} to emacs as command strings of the form: 
+\begin{quote}
+\begin{verbatim}
+<edit "\adviedit" ""[x=1.2001]" #56 @main.tex moveto 5.1529,-1.1708>
+\end{verbatim}
+\end{quote}
+This command emitted by {\ActiveDVI} in its standard output is thus received by
+emacs via {\Whizzy} in the process buffer associated to the current
+session. 
+
+Emacs interprets such commands starting with the ``\verb"<edit "'' prefix 
+as whizzy edition commands. In the above example, the string
+\verb"\adviedit" is a latex commands that should be present the master
+buffer \verb"main.tex" at line \verb"56" and with x coordinate equal to
+\texttt{1.2001}. Its \texttt x and \texttt y coordinates should be 
+changed by \texttt 5.1529 and \texttt{-1.1708}.  Usually, the command can be
+precisely located by its line position in the buffer and one significant
+coordinates.  In case of conflict, a tag optional argument pass
+\texttt{\string\adviedit} will be passed to {\ActiveDVI} and then sent back
+to emacs (which is filled in the empty string above).
+
+
+\end{document}
+
+- Clicks
+
+- Say that cursor does not always appear.
+% LocalWords:  whizzy advi html whizzytex HeVeA BGCOLOR Didier INRIA ee ou ing
+% LocalWords:  ghostview xdvi DVI XEmacs Redhat tgz untar gunzip xf usr config
+% LocalWords:  tex minibuffer FMT online dvi dview args autoload ps pre mv
+% LocalWords:  BASENAME hyperref gv HUP pid dvips xvf cd wget WhizzyTeX WYSIWIG
+% LocalWords:  RET preprocess basename fmt hugelatex BASICFILENAME SIGHUP recog
+% LocalWords:  SIGUSR nizes acroread localmacros ghostscript

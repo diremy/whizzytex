@@ -1,0 +1,166 @@
+% whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
+%
+%  Copyright (C) 2001, 2002 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.1
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  WhizzyTeX is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (enclosed in the file GPL).
+%  
+%  See the file COPYING enclosed with the distribution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File whizzedit.sty (LaTeX macros)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This example requires the a version of advi later than May 7
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage {advi}
+
+\@ifundefined {whizzy@curfile}{}
+    {\def \advi@edit@file {\whizzy@curfile}}
+\@ifundefined {whizzy@thelineno}{}
+    {\def \advi@edit@edit@setlinehook \whizzy@setlineno
+     \def \advi@edit@line {\the\whizzy@thelineno}}
+%\def \advi@edit@line {\the \inputlineno}
+
+\newdimen \wedit@dim
+\def \wed@id #1{#1}
+
+\newcommand{\weditbox}[3][]{%
+  \hbox \bgroup
+  \advi@edit{\weditbox}{#1}{#2}[unit=1em]
+  {}{}
+  {\hbox {\kern \advi@edit@x\advi@edit@unit
+     \vbox 
+       {\vss
+        \hbox {\hsize \advi@edit@w\advi@edit@unit
+          {\vbox to \advi@edit@h\advi@edit@unit {#3}}}%
+        \vskip \advi@edit@y\advi@edit@unit}}}%
+  \egroup}
+
+\def\wedid@vbox #1#2#3#4#5#6{%
+ \hbox \bgroup
+ \advi@edit{#1}{#4}{#5}[#3]
+  {\setbox0 \hbox{#6}%
+    \wed@dim \ht0 \advance \wed@dim by \dp0
+    \adviseth{\wed@dim}}
+  {}
+  {\hbox {\kern \advi@edit@x\advi@edit@unit
+     \vbox to \wed@dim {\vss #2{\box0}\vskip \advi@edit@y\advi@edit@unit}}}%
+  \egroup
+}
+
+
+\newcommand{\weditvbox}[3][]%
+    {\wed@vbox{\wedvbox}{\wed@id}{unit=1em}{#1}{#2}{#3}}
+
+%% \newcommand {\weditvspace}[2][]{%
+%%   \advi@edit{\weditspace}{#1}{#2}[unit=1em]
+%%     {\def \advi@edit@x{0}\def \advi@edit@y{0}%
+%%      \def \advi@edit@w{1}}%
+%%      {}%
+%%      {\vspace {\advi@edit@h\advi@edit@unit}}}
+
+%% \newcommand {\wedithspace}[2][]{%
+%%   \advi@edit{\weditspace}{#1}{#2}[unit=1em]
+%%     {\def \advi@edit@x{0}\def \advi@edit@y{0}%
+%%      \def \advi@edit@h{1}}
+%%     {}
+%%     {\hspace {\advi@edit@w\advi@edit@unit}}}
+
+\newcommand{\weditannot}[4][]{%
+\advi@edit{\weditannot}{#1}{#2,w=1,h=1,unit=\bbb@unit}{}{}
+{\adviannot{#3}(\advi@edit@x,\advi@edit@y){#4}}
+}
+
+
+\newcommand{\weditovalnode}[1]{\@ifnextchar [{\weditovalnode@i{#1}}
+{\weditovalnode@ii{#1}{}}}
+\def \weditovalnode@i#1[#2]{\weditovalnode@ii{#1}{#2}}
+\def \weditovalnode@ii#1#2#3#4%
+ {\adviedit{comm=\weditovalnode,#1}%
+  {\hskip -\adviw\ovalnode[#2]{#3}{\hspace{2\adviw}}\hskip -\adviw
+   \hbox to 0em{\hss \begin{tabular}{c}#4\end{tabular}\hss}%
+  }}%
+
+
+\newcommand{\weditput}[3][]{%
+  \setbox0 \hbox {#3}%
+  \advi@edit{\weditput}{#1}{#2}[unit=\psunit]
+    {\wed@dim \ht0 \advance \wed@dim by \dp0 \adviseth{\wed@dim}%
+     \advisetw{0.5\wd0}%
+     \edef \advi@edit@tmp {\advi@edit@x}%
+     \wed@dim \advi@edit@x\advi@edit@unit \advance \wed@dim by -0.5\wd0
+     \advisetx {\wed@dim}%
+     \edef \advi@edit@x {\advi@edit@tmp}%
+    }
+    {}
+    {\rput (\advi@edit@x,\advi@edit@y){\box0}}%
+}
+
+\newcommand{\weditbubble}[4][]
+   {\setbox0=\hbox{#3}\copy0\hbox to 0em
+    {\kern-0.5\wd0\bbb@dima=\ht0\bbb@dimb=\dp0%
+     \setbox0=\null\ht0=\bbb@dima\dp0=\bbb@dimb
+      {\adviedit[#1]{comm=\weditbubble,unit=\bubbleunit,#2}
+         {\bubble{\box0}(\advicw,\advich){#4}}}\hfilneg}}
+
+\newcommand{\weditarrowcomment}[5][]
+   {\rnode{ac-from-#1}{#4}%
+    \adviedit[#1]{comm=\weditarrowcomment,#2}
+      {\rnode{ac-to-#1}{#5}}%
+    #3{ac-from-#1}{ac-to-#1}}
+
+\newcommand{\wedithspace}[1]
+	{\adviedit{comm=\wedithspace,#1}{\hspace{\adviw}}}
+
+\newcommand{\weditvspace}[1]
+	{\adviedit{comm=\weditvspace,#1}{\vtop {\vspace{\advid}}}}
+
+\newcommand{\weditcirclenode}
+  {\@ifstar {\weditcirclenode@lr{1}{1}}{\weditcirclenode@lr{0}{0.5}}}
+\def \weditcirclenode@lr #1#2#3%
+  {\@ifnextchar [{\weditcirclenode@i{#1}{#2}{#3}}%
+        {\weditcirclenode@ii{#1}{#2}{#3}}}
+
+\def \weditcirclenode@i#1#2#3[#4]{\weditcirclenode@ii{#1}{#2}{#3}{#4}}
+\def \weditcirclenode@ii#1#2#3#4#5#6%
+ {\adviedit{comm=\weditcirclenode,#3}%
+  {\hskip -#1\adviw\circlenode[#4]{#5}{\hskip #2\adviw\hskip #2\adviw}%
+   \hskip -#2\adviw
+   \hbox to 0em{\hss \begin{tabular}{c}#6\end{tabular}\hss}%
+  }}%
+
+\renewcommand{\weditovalnode}
+  {\@ifstar {\weditovalnode@lr{1}{1}}{\weditovalnode@lr{0}{0.5}}}
+\def \weditovalnode@lr #1#2#3%
+  {\@ifnextchar [{\weditovalnode@i{#1}{#2}{#3}}%
+        {\weditovalnode@ii{#1}{#2}{#3}}}
+
+\def \weditovalnode@i#1#2#3[#4]{\weditovalnode@ii{#1}{#2}{#3}{#4}}
+\def \weditovalnode@ii#1#2#3#4#5#6%
+ {\adviedit{comm=\weditovalnode,#3}%
+  {\hskip -#1\adviw\ovalnode[#4]{#5}{\hskip #2\adviw\hskip #2\adviw}%
+   \hskip -#2\adviw
+   \hbox to 0em{\hss \begin{tabular}{c}#6\end{tabular}\hss}%
+  }}%
+
+

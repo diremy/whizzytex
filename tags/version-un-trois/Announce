@@ -1,0 +1,44 @@
+It is my pleasure to announce a new release of WhizzyTeX. 
+
+WhizzyTeX is an Emacs minor mode for incrementally viewing LaTeX documents
+that you are editing. It works under Unix with gv and xdvi viewers, but the
+Active-DVI viewer (see http://pauillac.inria.fr/activedvi/) will provide
+much better visual effects and will offer more functionalities.
+
+Version 1.2.0 is now available. 
+
+The source code, documentation, and information are available at
+
+        http://pauillac.inria.fr/whizzytex/
+
+Bug reports to whizzytex-bugs@pauillac.inria.fr
+
+
+This release is compatible (and required) with the freshly released version
+1.6.0 of Active DVI.  Conversely, version 1.6.0 is required for this new
+release to benefit from some of the new features.  This release also
+contains several bug fixes and improvements since version 1.1.  Significant
+and user-visible changes are:
+
+ - Better support for debugging. 
+
+ - Duplex views: both the slice and the full document can now be viewed in
+   the same Active DVI window. Switching between views can be done
+   explicitly by typing 'w' or implicitly when clicking on cross-references
+   that are outside of the current slice.
+
+ - Support for whizzy-edition, which is especially usefull to seize
+   scaling factors or dimensions by mouse.
+
+For more details see the web site.
+
+Enjoy, 
+
+        Didier Rémy 
+
+
+PS:
+
+To keep informed of upgrades, check the WhizzyTeX WEB page occasionally, or
+just watch the content of the file http://pauillac.inria.fr/whizzytex/VERSION.
+

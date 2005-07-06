@@ -1,0 +1,263 @@
+\documentclass{article}
+
+\usepackage {color}
+\usepackage {hyperref}
+\usepackage {hevea}
+\def \WhizzyTeX{Whizzy\TeX}
+
+\title {\textcolor{blue}{WhizzyTeX}  Frequently Asked Questions}
+\author {Didier R{\'{e}}my}
+\date {Last Modified: \today}
+
+\let \lst \verb
+
+\input {doc/version}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\section {Where to find it}
+
+The URL is \url{http://pauillac.inria.fr/whizzytex}
+
+The last major release is {\release}
+and the stable version is {\version}
+
+The last version of the FAQ can be found at 
+\url{http://pauillac.inria.fr/whizzytex/FAQ.html}
+
+\hypertarget{isitabug}{}
+\section {Is this a Bug?}
+
+Before reporting a bug, have you checked that the source file correctly
+compiles and previews with the \emph{latex}, \emph{previewer}
+and \emph{options} used in {\WhizzyTeX}?
+(In recent versions of {\WhizzyTeX} you may see the previewer's command from 
+\texttt{Emacs} using the menu \texttt{View log...} and selecting
+\texttt{command}.) 
+
+You may also check the latex log files (\texttt{format}, and
+\texttt{latex}, \texttt{slice}). In particular, \texttt{format} will show
+you the version of \texttt{whizzytex.sty} that has been loaded. Loading an
+old version will likely not work! (You may also check the Emacs version of
+whizzytex (from the \texttt{Help} entry of \texttt{Whizzy} menu). 
+
+Since the latex \texttt{color} package is implicitly loaded, you 
+should also check the compatibility with this package by 
+by explicitly including \verb"\usepackage{color}" right before the
+\verb"\begin{document}" (because whizzytex would load this package last) 
+and checking that it still compiles with \emph{latex}.
+
+In \texttt{advi} mode (when option \texttt{-advi} is used), the
+\texttt{advi} package is also implicitly loaded. So you should then also try
+to latex your source with the package \texttt{advi} explicitly loaded before
+all other packages, since some errors may be indirectly due to this
+\texttt{advi} and not to {\WhizzyTeX} itself---then send your bug report
+to \href{http://pauillac.inria.fr/advi/}{Active-DVI}.
+
+Also, do not forget to check your version number before repporting a bug. 
+See the value of variable \texttt{whizzytex-mode} in Emacs manually or
+through the Emacs on-line documentation of \texttt{whizzytex-mode}. 
+This version number should be identical to the one of
+\texttt{whizzytex.sty}, which is displayed on the welcoming page when
+starting WhizzyTeX, and also  to the one of the script \texttt{whizzytex},
+which you can check with the shell command \texttt{whizzytex -version}.
+If these three version numbers do not match, you have a broken
+installation, maybe a file of old version takes priority, which you can
+solve by deleled the old file or adjusting the corresponding PATH variable.
+
+
+\section {Known problems}
+
+Fixed refers to last stable version.
+\def \FIXED {\textit{Fixed in versions $\ge$ {\version}}}
+
+\begin {enumerate}
+
+\item
+{\WhizzyTeX} uses hard links and hence does not work on file systems that do
+not support them, such as VFAT.
+
+\item
+It has been reported with old versions that sometimes the cursor jumps to the
+end of the buffer while typing fast, and the mark is left a few characters
+before where the point was when the cursor jumped.
+
+The problem should be \FIXED. 
+
+Otherwise, an (imperfect) workaround is to reduce the slicing speed
+\emph{e.g.}  by the follow setting (you may need to adjust the value):
+\begin{verbatim}
+        (setq whizzy-load-factor 0.1)
+\end{verbatim}
+
+
+\item Its does not work with the  \lst"x-symbol" package.
+
+The \lst"x-symbol" package may now work together with {\WhizzyTeX}, provided
+you have a version of {\tt x-symbol} greater than v4.3.3.  However, the
+option Page-to-point may still not work (under \lst"x-symbol", the cursor
+would be inserted at the end of the buffer instead of at the
+current-position).  Then, you may use the following alternative.
+
+Alternatively, with (X)Emacs version 21 and above, you may set
+\lst"whizzy-write-annotate" to nil to tell {\WhizzyTeX} not to use
+\lst"write-region-annotation-functions". The slice will be write slower, but
+in a way so that the \lst"x-symbol" package should always be compatible with 
+{\WhizzyTeX}. 
+
+You may also wish to set \lst"'x-symbol-auto-conversion-method" to
+\lst"'fast".
+
+\item How can a click in the \lst"advi" window reposition the point
+in the emacs window?
+
+First, you should be using the \lst"advi" previewer.  Then, check the
+documentation of \lst"advi", since bindings may depend on versions. This is
+likely to be \lst"shift-left-mouse" or \lst"left-mouse".
+
+There might also be a short-cut that temporarily rebinds
+\lst"shift-xxx-mouse" to \lst"xxx-mouse". This can be toggled by typing
+\lst"e"   in the \lst"advi" or by calling \lst"advi" with the option
+\lst"-edit". 
+%
+Note that \lst"shift-midddle-click" and \lst"shift-right-click" (or their
+shortcut versions) are used for \lst"move" and \lst"resize" commands when
+WhizzyEditting.
+
+
+\end {enumerate}
+
+
+\section {Using {\WhizzyTeX} with platex}
+
+{\WhizzyTeX} has been designed to work with standard LaTeX.
+However, it should also work  with other implementations of LaTeX, as long
+as they allow the creation of new formats. 
+
+As an example, to make it work with \lst"platex" you can edit 
+the script \lst"whizzytex" and change some findings as follows
+(in the experimental version): 
+\begin{verbatim}
+INITEX=iniptex
+LATEX=platex
+FORMAT=platex
+\end{verbatim}
+
+\hypertarget{cygwin}{}
+\section {Using {\WhizzyTeX} under Windows}
+
+
+{\WhizzyTeX} is designed for \lst"Unix" plateforms.  However, Marciano
+Siniscalchi reported that it successfully worked on his
+Window plateform under Cygwin (1.5.5-1), using \texttt{Cygwin/Xfree 4.3} and
+\texttt{xdvi} from \texttt{tetex 2.0.2-13}.
+
+The following modifications to the \texttt{whizzytex} script are
+necessary\iffalse \space
+(these have been contributed by Marciano Siniscalchi and Gregory Borota)\fi:
+\begin{itemize}
+
+\item 
+Fix the \lst"xdvi" script by replacing \lst"xdvi.bin"
+by \lst"exec xdvi.bin" on the last line of the script
+(as in some Linux distribs).
+
+\item
+Fix the  \lst"whizzytex" script by replacing  the line
+\begin{verbatim}
+        preview() {mv $WHIZZY.dvi $WHIZZY.$VIEW; }
+\end{verbatim}
+with
+\begin{verbatim}
+        preview() {cp $WHIZZY.dvi $WHIZZY.$VIEW; rm $WHIZZY.dvi}
+\end{verbatim}
+(Permission to rename the .wdvi file is denied while
+\lst"xdvi" is displaying it).
+
+\item
+Replace all occurrences of \texttt{ulimit} with \texttt{true} as
+\texttt{ulimit} is not implemented on Cygwin. Then, when {\WhizzyTeX} falls
+into a loop during latex-ing, which is possible on some input, {\WhizzyTeX}
+will not be able to get it out. (When such cases occur, you'll have to quit
+and restart whizzytex by hand---after your source file has been fixed.)
+
+\item
+Replace all instances of \texttt{wdvi} with \texttt{w.dvi}
+(as \texttt{Yap} automatically  adds \texttt{.dvi} to a file name
+not ending with \texttt{.dvi} and then complains about not finding the
+file).
+
+\end{itemize}
+Unfortunately, Cygwin/XFree86 is quite slow compared to XFree86 under
+Linux, etc. An alternative is to use a commercial X server, such as
+XWin32 from StarNet (www.xwin32.com). MI/X from Microimages
+(www.microimages.com) is another alternative, but since it is
+XFree86-based, it is not as fast as XWin32.
+Performance, even with XWin32, is still inferior to Linux.
+
+\subsection*{Using \texttt{yap} instead of \texttt{xdvi} under Cygwin}
+
+\def \yaptgz{whizzytex-yap-\YAPVERSION.tgz}
+Gregory Borota has reported much better performances with 
+\texttt{yap} than with \texttt{xdvi} under Cygwin.
+He has written a small wrapper interface around \texttt{yap} to make it look
+like \texttt{xdvi} for {\WhizzyTeX} and patched the source of WhizzyTeX
+accordingly. See the README and INSTAL file coming with his
+\href{\yaptgz}{\texttt{\yaptgz}} patch, 
+\emph {coming with absolutely no warranty}. 
+
+See also the detailed
+\ahref {http://home.imf.au.dk/hellmund/whizzy.html}
+{installation guide} written by
+%\ahref {http://home.imf.au.dk/hellmund}
+{Gunnar Hellmund}.
+
+\section{Using Virtual Fonts with Active-DVI}
+
+\href{http://pauillac.inria.fr/advi/}{Active-DVI}
+does not currently handle virtual fonts (when called with virtual fonts, it
+usually shows a more or less blank screen). This can be fixed by expanding
+virtual fonts with \texttt{dvicopy} prior to display as explained on the
+{Active-DVI} FAQ.
+
+In {\WhizzyTeX}, this can be done automatically by passing the option
+\texttt{-dvicopy dvicopy} or equivalently setting
+\begin{verbatim}
+        DVICOPY=dvicopy
+\end{verbatim}
+in \texttt{.whizzytexrc} configuration file in the working directory.
+
+\section{Known bogus latex packages}
+
+\subsection{ieee.cls [2000/01/11]}
+
+This package introduced a bug in the redefinition of \verb"\@xfloaf" 
+that makes it incompatible with the \texttt{color} package
+
+To fix it, your must redefine it as follows:
+{\small
+\begin{verbatim}
+\def\@xfloat#1#2{\ifhmode \@bsphack\@floatpenalty -\@Mii\else
+    \@floatpenalty-\@Miii\fi\def\@captype{#1}\ifinner
+      \@parmoderr\@floatpenalty\z@
+     \else\@next\@currbox\@freelist{\@tempcnta\csname ftype@#1\endcsname
+       \multiply\@tempcnta\@xxxii\advance\@tempcnta\sixt@@n
+       \@tfor \@tempa :=#2\do
+                        {\if\@tempa h\advance\@tempcnta \@ne\fi
+                         \if\@tempa t\advance\@tempcnta \tw@\fi
+                         \if\@tempa b\advance\@tempcnta 4\relax\fi
+                         \if\@tempa p\advance\@tempcnta 8\relax\fi
+         }\global\count\@currbox\@tempcnta}\@fltovf\fi
+    \global\setbox\@currbox \color@vbox \normalcolor \vbox\bgroup
+    \def\baselinestretch{1}\small\normalsize
+    \hsize\columnwidth \@parboxrestore}
+\end{verbatim}}
+
+
+
+
+\end{document}

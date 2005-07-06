@@ -1,0 +1,53 @@
+#!/bin/sh
+
+header () {
+  if [ -n "$1" ]
+  then 
+    echo \
+  '\expandafter\ifx\csname SourceFile\endcsname\relax\else\SourceFile{'$1'}\fi'
+  fi 
+  echo \
+  '\expandafter\ifx\csname Setlineno\endcsname\relax\def\SetLineno{0}\fi'
+}
+
+process () {
+sed \
+ -e '/^.PE/ {
+i\
+.PE\
+\\Setlineno=
+=
+d
+}' $1 | gpic -t 
+}
+
+case $# in
+  0|1)
+    exit 1
+    ;;
+esac
+
+case $1 in 
+  -slice)
+     base=`expr "$2" : "_whizzy_\(.*\).tex"`
+     from=_whizzy_$base.new
+     to=_whizzy_$base.tex
+     src=$base.ltx
+     header $src > $to
+     process $from >> $to
+     ;;
+  -file)
+     from=$2
+     case $from in
+       *.tex) ;;
+       *.ltx) 
+          to=`basename $from .ltx`.tex
+          src=$from
+          header $src  > $to
+          process $from >> $to
+          ;;
+     esac
+     ;;
+esac
+   
+

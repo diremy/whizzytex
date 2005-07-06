@@ -1,0 +1,26 @@
+\usepackage{comment}
+\@ifundefined {WhizzyTeX}{}{%
+  \WhizzyInsideEnvironment {itemize}
+     {\em \out@itemize}
+     {\endout@itemize}
+  \WhizzyInsideEnvironment {enumerate}
+     {\em \out@enumerate}
+     {\endout@enumerate}
+  \let \latex@drawer \drawer
+  \let \endlatex@drawer \enddrawer
+  \renewenvironment {drawer}[1]%
+     {\subsection {#1}\qquad
+        {\emph{(Move cursor in subsection to open)}}\par 
+      \setbox0\vbox \bgroup}
+     {\egroup}
+  \WhizzyInsideEnvironment {drawer}%
+     {\latex@drawer}
+     {\endlatex@drawer}
+  \WhizzyInsideEnvironment {proof}
+     {\@answer@laterfalse \out@proof}
+     {\endout@proof}
+  \expandafter \g@addto@macro \csname endnow-proof\endcsname 
+    {\whizzy@envlimit@waux}
+  \let \latex@mpr@and \mpr@and
+  \def \mpr@and {\latex@mpr@and \whizzy@writelineno}
+}

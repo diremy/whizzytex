@@ -1,0 +1,565 @@
+#!/bin/sh
+
+case "$1" in
+  noloop) shift;;
+  *)
+    case "$BASH" in
+      *bash);;
+      *)
+        if bash -c echo
+        then exec bash $0 noloop "$@"
+        else
+          echo 'This is a bash script, but bash does not seem to be working'
+          echo 'Please, try bash "bash configure"' 
+        fi;;
+    esac;;
+esac
+
+configure_options="$*"
+prefix=/usr/local
+bindir=''
+libdir=''
+datadir=''
+docdir=''
+
+elc=false
+latexdir=''
+emacsdir=''
+xemacsdir=''
+
+bash=bash
+latex=latex
+initex=initex
+format=''
+fmt=''
+bibtex=bibtex
+
+emacs=emacs
+xemacs=xemacs
+
+advi=advi
+xdvi=xdvi
+gv=gv
+dvips=dvips
+multiple=true
+
+configfile='/etc/whizzytex/whizzytex.conf'
+
+# Parse command-line arguments
+is_absolute () {
+  case "$prefix" in
+    /*) ;;
+     *) echo "The -prefix directory must be absolute." 1>&2; exit 2;;
+  esac
+}
+absolute_or_prefix () {
+  case "$1" in
+    "") echo;;
+    /*|'$(PREFIX)'*|'$(LIBDIR)'*|'$(DATADIR)'*) echo $1;;
+    *) echo '$(PREFIX)'/$1;;
+  esac
+}
+
+while : ; do
+ case "$1" in
+  "") break;;
+#begin help
+##Usage:
+##
+##      configure <option list>
+## 
+##where options are either <key> or pairs <key> <arg> as listed below;
+##default value for <arg> is given after #; <path> when relative is taken
+##from the default prefi,   <command> is taken as such, whether relative 
+##(to PATH) or absolute (PATH  starting with '$(DATADIR)', '$(LIBDIR)',
+##or '/' are treated as absolute). 
+## 
+  -helpme) ##                       
+        ## proposes choices to the user when meaningful
+        ## actually equivalent to -emacsdir ? -xemacsdir ?
+        emacsdir=?; xemacsdir=?;;
+## 
+  -prefix|--prefix) ## <absolute path>          # /usr/local
+        ## set the default prefix PREFIX of all directories
+        is_absolute $2; prefix="$2"; shift;;
+##
+  -bindir|--bindir) ## <path>                   # bin
+        ## Set the directory for the excutable BINDIR
+        bindir=$(absolute_or_prefix $2); shift;;
+##
+  -libdir|--libdir) ## <path>                   # lib/whizzytex
+        ## set the directory for architecture dependent libraries LIBDIR
+        libdir=$(absolute_or_prefix $2); shift;;
+##
+  -datadir|--datadir) ## <path>                 # share/whizzytex
+        ## set the directory for architecture-independent files DATADIR
+        datadir=$(absolute_or_prefix $2); shift;;
+##
+  -latexdir) ## <path>                          # $(DATADIR)/latex
+        ## set the directory where to install source lisp code 
+        latexdir=$(absolute_or_prefix $2); shift;;
+##
+  -docdir|--docdir) ## <path>                   # share/doc/whizzytex
+        ## set the directory where to install documentation DATADIR
+        docdir=$(absolute_or_prefix $2); shift;;
+##
+  -emacsdir) ## .|?|<path>                      # $(LIBDIR)/emacs
+        ## set the directory for emacs lisp code
+        ## ! find for the most obvious choice in emacs system load-path
+        ## ? list all choices in emacs and users load-path and ask the user
+        emacsdir=$2; shift;;
+##
+  -xemacsdir) ## .|?|<path>                     # search for
+        ## set the directory for xemacs byte-compiled lisp code
+        xemacsdir=$2; shift;;
+##
+  -elc) ## 
+        ## also compiles lisp code
+        elc=true;;
+  -emacs) ## <command>                          # emacs
+        ## use <command> instead of emacs
+        emacs="$2"; shift;;
+##
+  -xemacs) ## <command>                         # xemacs
+        ## use <command> instead of xemacs
+        xemacs="$2"; shift;;
+##
+  -bash) ## <absolute path>                     # /bin/bash
+        ## Set the bash interpreter command to BASH
+        is_absolute $2; bash=$2; shift;;
+##
+  -initex) ## <command>                         # initex
+        ## Set the latex command to INITEX
+        initex="$2"; shift;;
+##
+  -latex) ## <command>                          # latex
+        ## Set the latex command to LATEX
+        latex="$2"; shift;;
+##
+  -format) ## <name>                            # latex
+        ## Set the name of the format (.fmt suffix removed) 
+        format="$2"; shift;;
+##
+  -fmt) ## <name>                               # fmt
+        ## Set the name of the format extension
+        fmt="$2"; shift;;
+##
+  -bibtex) ## <command>                         # bibtex
+        ## Set the default command for BIBTEX
+        bibtex="$2"; shift;;
+##
+  -advi) ## false|<command>                     # advi
+        ## Set the Advi-like previewer command name; false means do not use 
+        ## advi-like previewer at all (default if  the command is not found)
+        advi="$2"; shift;;
+##
+  -multiple) ## true|<command>                  # multiple
+        ## Tell if advi-like previewer can view multiple files. 
+        multiple="$2"; shift;;
+##
+  -xdvi) ## false|<command>                     # xdvi
+        ## Idem but for xdvi-like previewer command name 
+        xdvi="$2"; shift;;
+##
+  -gv) ## false|<command>                       # gv
+        ## Idem but for gv-like previewer command name set to to GV
+        gv="$2"; shift;;
+##
+  -dvips) ## <command>                          # dvips
+        ## Set the DVI-to-Postcript-converter command name
+        dvips=$2; shift;;
+##
+  -configfile|--configfile) ## <file>           # /etc/whizzytex/whizzytex.conf
+        ## Set the system configuration file (full path)
+        configfile="$2"; shift;;
+##
+  -help|--help) ##
+##
+#end help
+        sed -n -e '/^#begin help/,/^#end help/p' -e '/#end help/q' configure \
+        | sed -n -e '/^ *-.*)/s/)//' -e 's/##//p'
+        exit 0;;
+  *) 
+        echo "*** Unknown option $1"
+        configure --help; exit 1;;
+ esac
+shift
+done
+
+# Interaction with the user
+
+PS3="Your choice ==> "
+
+yorn () {
+  echo -n "$1 (y/n) [n] "
+  read ANSWER
+  if test "$ANSWER" = 'y'; then true; else false; fi
+}
+nory () {
+  echo -n "$1 (y/n) [y] "
+  read ANSWER
+  if test "$ANSWER" = 'n'; then false; else true; fi
+}
+
+message () { echo; echo '#' "$1"; }
+info () { echo "$1"; }
+warning () { echo '*** Warning:'; echo "$1"; }
+rm -f config.errors
+error () { touch config.errors; echo '*** Error:'; echo "$1"; }
+fatal () {
+  error "$1"
+  rm config.errors
+  echo "
+     ************ They were serious Errors ************
+
+     Makefile.config was still build but is probably incorrect.
+     You should check your configuration and rerun ./configure.
+     You may also edit Makefile.config if you know what you are doing.
+
+  "
+  exit 1
+}
+
+rm -f config.sed
+touch config.sed
+output () {
+  echo "s%^\($1 *=\).*%\1 $2%" >> config.sed
+  info "$1"' is `'"$2'"
+}
+
+# Prefix
+
+message "Setting directories"
+
+output PREFIX "$prefix"
+
+if test -z "$bindir"; then bindir='$(PREFIX)'/bin; fi
+output BINDIR "$bindir"
+
+if test -z "$libdir"; then libdir='$(PREFIX)'/lib/whizzytex; fi
+output LIBDIR "$libdir"
+
+if test -z "$datadir"; then datadir='$(PREFIX)'/share/whizzytex; fi
+output DATADIR "$datadir"
+
+if test -z "$docdir"; then docdir='$(PREFIX)'/share/doc/whizzytex; fi
+output DOCDIR "$docdir"
+
+if test -z "$latexdir"; then latexdir='$(DATADIR)'/latex; fi
+output LATEXDIR "$latexdir"
+
+# Find commands
+
+findcommand () {
+  com=$1 
+  option=$2
+  found=''
+  case "$com" in
+   "") ;;
+   /*) 
+     test -x $com && found=$com;;
+   *)
+     for i in $(type -path -all $com) \
+              /bin/$com /usr/bin/$com /usr/local/bin/$com
+     do if test -x $i; then found=$i; break; fi;  done
+     ;;
+  esac
+  if test -n "$found"
+  then echo $found
+  else 
+    if $2; then error "command $com not found"; fi
+    false
+  fi
+}
+
+message "Checking bash command"
+
+if test -n "$bash" 
+then
+  bash=$(findcommand "$bash" true)
+  if test -z "$bash"; then error "bash not found"; fi
+else
+  bash=bash; 
+  findcommand "$bash" true
+fi
+output  BASH "$bash"
+
+message "Checking Emacs configuration"
+
+if $elc
+then
+  if test -n "$emacs"; then findcommand "$emacs" false || emacs=''; fi
+  if test -n "$xemacs"; then findcommand "$xemacs" false || xemacs=''; fi
+  if test -z "$emacs$xemacs"; then
+     error " 
+     Cannot compile to bytecode: Neither Emacs nor XEmacs have been found. 
+     Remove -elc option or adjust -emacs or -xemacs
+   "
+  fi
+fi
+
+if test -n $USER; then user="-u $USER"; else user=''; fi
+case "$emacsdir" in
+ "") emacsdir='$(DATADIR)'/emacs;;
+ "!") 
+   if findcommand "$emacs" false 1>/dev/null \
+      && $emacs -batch -q 1>/dev/null 2>/dev/null
+   then 
+     emacsdir=$($emacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p | head -1)
+   else 
+     warning "$emacs not found"
+     emacs=''
+   fi
+   ;;
+ "?") 
+   if findcommand "$emacs" false 1>/dev/null \
+      && $emacs -batch -q 1>/dev/null 2>/dev/null
+   then
+     set $($emacs -batch -q $user -l $(pwd)/configure.el \
+                 -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p) exit
+     echo "--- Please, select one value for $emacs byte-compiled lisp"
+     select tmp in "$@"
+     do 
+       echo "You selectd $tmp"
+       case "$tmp" in
+         "") ;;
+         "exit") exit 1;;
+         *) emacsdir="$tmp"; break 2 ;;
+       esac
+     done
+   else
+      warning "$emacs not found"
+      emacs=''
+   fi
+   ;;
+  *) emacsdir=$(absolute_or_prefix $emacsdir)
+   ;;
+esac
+
+message "Checking XEmacs configuration"
+
+case "$xemacsdir" in
+ "") xemacsdir='$(DATADIR)'/xemacs;;
+ "!") 
+   if findcommand "$xemacs" false 1>/dev/null \
+      && $xemacs -batch -q 1>/dev/null 2>/dev/null
+   then 
+     xemacsdir=$($xemacs -batch -q -l $(pwd)/configure.el -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p | head -1)
+   else 
+     warning "$xemacs not found"
+     xemacs=''
+   fi
+   ;;
+ "?") 
+   if findcommand "$xemacs" false 1>/dev/null \
+      && $xemacs -batch -q 1>/dev/null 2>/dev/null
+   then
+     set $($xemacs -batch -q  $user -l $(pwd)/configure.el \
+                 -eval "(printall)" \
+                2>/dev/null | sed -n -e s/FOUND://p) exit
+     echo "--- Please, select one value for $xemacs byte-compiled lisp"
+     select tmp in "$@"
+     do 
+       echo "You selected $tmp"
+       case "$tmp" in
+         "") ;;
+         "exit") exit 1;;
+         *) if test "$emacsdir" = "$tmp"
+            then warning \
+ "  You cannot choose the same byte-code directory for both $emacs and $xemacs"
+            else xemacsdir="$tmp"; break 2 
+            fi;;
+       esac
+     done
+   else
+      warning "$xemacs not found"
+      xemacs=''
+   fi
+   ;;
+  *) xemacsdir=$(absolute_or_prefix $xemacsdir)
+   ;;
+esac
+
+if $elc 
+then
+  if test -n "$emacs" && test -n "$xemacs" && test "$emacsdir" = "$xemacsdir"
+  then
+     error "
+     Cannot compile to bytecode: $emacs and $xemacs byte-code directories 
+     are equal (and equal to $emacsdir).
+     You must use -emacsdir or -xemacsdir to specify different directorries.
+   "
+     emacs=''
+     xemacs=''
+  fi
+else
+  emacs=''
+  xemacs=''
+fi
+output EMACS $emacs
+output EMACSDIR $emacsdir
+output XEMACS $xemacs
+output XEMACSDIR $xemacsdir
+
+
+# initex
+message "Checking initex, latex and format"
+
+findcommand "$latex" true 1>/dev/null
+findcommand "$initex" true 1>/dev/null
+output LATEX "$latex"
+output INITEX "$initex"
+output BIBTEX "$bibtex"
+
+cat <<EOF > dummy.tex
+\documentclass{article}
+\def \dummy {Testing you installation}
+\def \documentclass #1\dump {\relax}
+\let \dump \relax
+\dump
+\begin{document}
+\huge {\bf \dummy}\par Don't worry, feel lucky!
+\end{document}
+EOF
+
+if test -z "$format"
+then formats="$(basename $latex) latex"
+else formats="$format"
+fi
+
+format=''
+for f in $formats
+do
+  if $initex '&'$f '\input{dummy}' > initex.log
+  then format=$f; break
+  fi
+done
+if test -z "$format"
+then error "Cannot run $initex with any of the formats: $formats"
+fi
+if test -z "$fmt"
+then fmt=$(initex '&stroumf' 2>&1 \
+       | sed -n -e 's%^.*the format `stroumf.\([a-z][a-z]*\)'"'.*"'%\1%p')
+fi
+if test -z "$fmt"; then fmt=fmt; fi
+
+echo -n "Running LATEX=$latex... "
+if [ -n "$latex" ]; then
+  # was: $latex '&dummy' dummy.tex
+  if $latex "&$format" dummy.tex > latex.log && test -f dummy.dvi
+  then echo ok
+  else
+    error "
+    Command failed:
+
+      $latex "'"&'$format'"'" dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
+
+    $latex installation seem to have problems. 
+    See dummy.tex and latex.log
+  "
+  fi
+fi
+
+output FORMAT $format
+output FMT $fmt
+
+# Previewers
+
+findcommand "$advi" false >/dev/null || advi=''
+findcommand "$xdvi" false >/dev/null || xdvi=''
+
+# Should we try to fix it and call xdvi.bin directly? 
+# probably not, because the wrappe xdvi is use to setup graphical parameters
+
+# xdvipath=$(which xdvi)
+# if test -x "$xdvipath.bin"
+# then 
+#   if grep -e ^"$xdvipath".bin $(which "$xdvipath") 2>&1 >/dev/null && \
+#      ! grep -e ^"$xdvipath".bin $(which "$xdvipath") 2>&1 >/dev/null 
+#   then
+#     warning "$xdvi command, \ie. $xdvipath, seems to call $xdvipath.bin
+# without exec. Using $xdvi.bin instead."
+
+
+if findcommand "$gv" false >/dev/null 
+ then
+   if findcommand "$dvips" >/dev/null 
+   then
+     echo -n "Running DVIPS=$dvips... "
+     if $dvips -o dummy.ps dummy.dvi 2>/dev/null 1>/dev/null
+     then echo ok
+     else error "
+    Command failed:
+
+      $dvips -o dummy.ps dummy.dvi 2>/dev/null 1>/dev/null
+
+    $dvips seems to have problems
+"
+     fi
+   else gv=''; dvips=''
+   fi
+ else
+   gv=''; dvips=''
+fi
+case "$advi" in false) advi='';; esac
+case "$xdvi" in false) xdvi='';; esac
+case "$gv" in false) gv=''; esac
+output ADVI "$advi"
+output XDVI "$xdvi"
+output GV "$gv"
+output DVIPS "$dvips"
+
+output CONFIGFILE "$configfile"
+
+if test -z "$advi$xdvi$gv"
+then error "At least one previewer amoing advi, xdvi, gv should be defined"
+fi
+
+
+message "Other parameters"
+
+# tells whether "$ADVI" can view multiple files. 
+# check  in checkconfig
+# check if version > 1.50.2
+if $multiple && [ -n "$advi" ]
+then
+  tmp=advi.version$$
+  if $advi --version 1>$tmp 2>&1
+  then
+    if
+       ( echo 1.50.2 ; \
+         sed -n -e 's/.*version \([0-9.+]*\) .*/\1/p' < $tmp \
+       ) | sort -n -c 2>/dev/null
+    then
+      :
+    else
+      multiple=false
+    fi
+  else
+    multiple=false
+  fi
+  rm -f $tmp
+  if $multiple; then : ; else
+     echo "Advi version $VERSION does not allow multiple views..."
+  fi
+fi
+output MULTIPLE $multiple
+
+message "Building Makefile.config"
+
+for file in Makefile.config
+do
+   sed -f config.sed < $file.in > $file
+done
+rm config.sed
+
+if test -f config.errors; then fatal; else
+rm -f dummy.{tex,fmt,dvi,aux,ps,log}
+echo "
+Configuration suceeded
+See Makefile.config for details
+"
+fi

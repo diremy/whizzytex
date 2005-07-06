@@ -1,0 +1,365 @@
+%; whizzy -advi "advi -html Start-Document"  -mkfile mkfile
+
+\documentclass[12pt]{article}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This example requires the a version of advi later than May 7
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Some macros
+\usepackage {advi-annot}
+\usepackage {whizzedit}
+\usepackage {../../doc/manual}
+
+\usepackage {color}
+\usepackage {graphicx}
+\usepackage {calc}
+\usepackage {pst-node}
+\usepackage {array}
+\usepackage {tabularx}
+
+\def \ActiveDVI {Active-DVI}
+\def \WhizzyTeX {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
+\def \WhizzyEdit {Whizzy\sc 
+\raise 0.2ex \hbox{E}\kern -0.2ex%
+\lower 0.0ex \hbox{d}\kern -0.2ex%
+\lower 0.2ex \hbox{i}\kern -0.5ex%
+\raise 0.2ex \hbox{T}}%
+
+\title{\huge \WhizzyEdit}
+\author {Didier R{\'e}my}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This self-documented document illustrates the potential for interactive
+editions within {\WhizzyTeX}. This requires the use of \verb"advi" and of a
+recent version that recognized \verb"advi: edit" specials.
+ 
+\em 
+{\bfseries Note:} At this stage, {\WhizzyEdit} is experimental, and any
+changes, including in the interface, could be made in future versions of
+{\WhizzyTeX}.
+\end{abstract}
+
+\section{Overview}
+
+{\WhizzyEdit} requires {\ActiveDVI} and {\WhizzyTeX} to work in harmony. 
+Actually, {\WhizzyEdit} requires very little {\WhizzyTeX} machinery, which we
+describe below. Most of the work resides in the {\ActiveDVI} engine. 
+Then, to benefit from {\WhizzyEdit}, one must write style files that
+instrument some of the latex commands. 
+
+\subsection {Emacs point of view}
+
+{\WhizzyTeX} now recognizes, in addition to position clicks, previewer
+commands of the form:
+\begin{quote}
+\begin{verbatim}
+<edit "\wedvbox" "" #56 @main.tex moveto 5.1529,-1.1708>
+\end{verbatim}
+\end{quote}
+This command emitted by {\ActiveDVI} in its standard output is thus received by
+emacs via {\WhizzyTeX} in the process buffer associated to the current
+session. 
+
+Emacs interprets such commands starting with the \verb"<edit " prefix 
+as whizzy edition commands. In the above example, the string
+\verb"\wedvbox" is a latex commands in the master buffer \verb"main.tex"
+at line \verb"56" whose x and y coordinates should be changed by 5.1529 and
+-1.1708. The empty string is an optional tag to help locate the command, in
+case line numbers would not suffice. For instance,
+\begin{quote}
+\begin{verbatim}
+<edit "\wedvbox" "A" #56 @main.tex moveto 5.1529,-1.1708>
+\end{verbatim}
+\end{quote}
+would search for the occurrence \verb"\wedvbox[A]" instead of
+\verb"\wedbbox". 
+
+\subsection {{\ActiveDVI} point of view}
+
+\def \docdef #1{{\tt \string #1}}
+\def \docid #1{$\langle \hbox {\rm\em #1}\rangle$}
+\def \doctt #1{{\tt #1}}
+\def \docarg #1{{\tt \{\docid {#1}\}}}
+\def \docopt #1{{\tt [\docid {#1}]}}
+\def \docpar #1{{\tt (\docid {#1})}}
+\def \docempty {}
+\renewcommand \dockey[3][]{{\tt #2\def \test {#3}\ifx \test \docempty \else
+  =\docid{#3}\fi} \def \test {#1}\ifx \test \docempty \else
+  \quad (default value is {\tt #1})\fi}
+
+{\ActiveDVI} recognize a new form of special for editable boxes. 
+This should not be used directly, but with the command 
+\begin{quote}
+
+\docdef \adviedit  
+\docopt{Label}
+\docarg{Name}
+\docarg{A}
+\docopt{B}
+\docarg{C}
+\docarg{D}
+\docarg{Body}
+\end{quote}
+where \doctt{A}, \doctt{B}, and \doctt{D} are key bindings. 
+Bindings are 
+\begin{quote}
+\dockey[1em]{unit}{dimen}
+
+\dockey[0]{x}{float}\\
+\dockey[0]{y}{float}\\
+\dockey{w}{float}\\
+\dockey{h}{float}
+\begin{quote}
+Defines the active box with respect to current point.
+\doctt x and \doctt y are coordinates of the bottom left corner. 
+\doctt w and \doctt h are the width and height and are mandatory.
+\end{quote}
+
+\dockey[XY]{move}{directions}
+\begin{quote}
+Make the box movable, by default in both \doctt X and
+\doctt Y coordinates. Thus, \verb"move" is equivalent to 
+\verb"move=XY". Use \verb"move=X" to make the box movable only in the
+\doctt X coordinate. 
+\end{quote}
+
+\dockey[XY]{resize}{directions}
+\begin{quote}
+Similarly, make the box re-sizable \doctt{resize}.
+\end{quote}
+
+\dockey[\string\the \string\inputlineno]{line}{number}
+
+\dockey[\string \jobname]{file}{filename}
+
+\end{quote}
+Both bindings \doctt{A} and \doctt{B} are executed before any other code.
+Then, \doctt{C}, which is plain \LaTeX is executed.  Finally, binding
+\doctt{D} are  executed. Thus \doctt D do not affect the execution of \doctt
+C. The body of the command \doctt {E} is executed after all settings. 
+
+Type character \verb"'e'" in {\ActiveDVI} to toggle the edition mode. 
+In edition mode, rectangular boxes are drawn around active boxes.
+
+Use the middle button to move a box and the right button to resize it.  When
+you seize a box for motion or resizing, the cursor change accordingly to the
+action that can be performed. When you release the move, the order is
+printed into standard output.
+
+If the cursor does not change or if the background document box is capture,
+the box you meant may not be active or have immutable parameters.
+
+Actions can also be performed in normal mode by holding the shift key. 
+However, boxes will not be drawn.
+
+\subsection {Instrumenting {\LaTeX} commands}
+
+One could use the \verb"\adviannot" command directly. 
+However, this is a general purpose command, that may not be easy to 
+use. Instead, one should use this command to define specialized edition
+commands. 
+
+That is, \verb"\adviannot" can be used to defined equivalent version of
+latex commands that use dimensions, but with editable capabilities.  Example
+of such commands can be found in the Package whizzedit.sty described in the
+next section.
+
+
+\section {The whizzedit.sty package}
+
+This package is given as an example of instrumentation of {\LaTeX} macros
+for whizzy-edition. Of course, these can be used as such. However, there is
+a lot of space for {\TeX} experts to instrument other macros ---or yet
+better, to set up a more systematic mechanism for instrumentation.
+
+We refer to the source files {\tt main.tex} and {\tt whizzyedit.sty} for
+documentation.
+
+\paragraph {Minpages}
+
+Here are two movable and resizable minipages, connected with 
+a pstrick arrow
+
+\wedvbox{x=5.0546,y=-0.2348,w=17.9334}
+  {\hbox 
+    {\hsize \adviw
+     \vbox {\noindent 
+    This is a version with tex  hbox and vbox \ovalnode a {\TeX} commands. 
+    For fun, we connect this box to the next one using a PStrick arrow. 
+     }}} 
+
+\wedvbox{x=3.9708,y=-3.2145,w=18.7158}
+  {\begin{minipage}[b]{\adviw}
+   This is a similar version but using \ovalnode k {\LaTeX} minipage macro. 
+   For fun, we include a adjustable space 
+   %\hbox {right~\wedspace{w=4.2888}~here} 
+   in the middle of the text. 
+   By the way, you can play with this space to visually observe how {\TeX} will
+   organize the paragraph into lines.
+   \end{minipage}}
+ 
+\ncarc a k
+
+\paragraph {Spaces}
+
+The space below is vertically extendible
+
+\wedvspace{h=4.4458}
+
+And these spaces are 
+\wedhspace{w=1.4682}
+horizontally 
+\wedhspace{w=3.2255}
+extendible 
+
+\wedvspace{h=1.6820}
+
+\paragraph {Tables}
+
+A table with an extensible column space: 
+$$
+\begin{tabular}{|r|c|l|}
+\hline
+a & \wedhspace{w=8.8389} & b \\
+ghj g  && hjkh jk\\
+\hline
+\end{tabular}
+$$
+
+\wedvspace{h=3.1972}
+
+An extendible table witdth auto-adjusted:
+$$
+\wedvbox{w=20.2069}{%
+\begin{tabularx}{\adviw}{|XrX|XcX|XlX|}
+\hline
+& a &&& u &&& b  &\\
+& ghj g  &&& hjkh &&& jk &\\
+\hline
+\end{tabularx}}
+$$
+
+\paragraph {Movable objects}
+
+\paragraph {Resizable rigid boxes}
+
+\nobreak
+
+\noindent
+
+\nobreak
+
+\wedbox{x=11.7812,y=-6.5511,w=15.6825,h=10.7709}{%
+This text must fix in the box. Not that this space will extend, unless, the
+end of the material has a {\tt \char `\\vfil} command. 
+This is not robust.
+
+The box will not adjust as necessary. Instead, overflow will be reported.
+}  
+
+\subsection* {Annotations}
+
+\wedvspace{h=4.5433}
+
+\wedannot{x=2.2048,y=0.7984}{These}{These} 
+\wedannot{x=-1.3756,y=1.5781}{are}{Are} 
+\wedannot{x=0.0949,y=1.9320}{annotations}{Annotations} 
+
+\subsection* {Pstricks drawings}
+
+\makeatletter
+\renewcommand{\wedput}[3][]{%
+  \setbox0 \hbox {#3}%
+  \advi@edit{\wedput}{#1}{#2}[unit=\psunit]
+    {\wed@dim \ht0 \advance \wed@dim by \dp0 \adviseth{\wed@dim}%
+     \advisetw{0.5\wd0}%
+     \edef \advi@edit@tmpx {\advi@edit@x}%
+     \edef \advi@edit@tmpy {\advi@edit@y}%
+     \wed@dim \advi@edit@x\advi@edit@unit \advance \wed@dim by -0.5\wd0
+     %\advisetx {\wed@dim}%
+     \wed@dim \advi@edit@y\advi@edit@unit
+     \advance \wed@dim by -\ht0
+     %\advisety {\wed@dim}%
+    }
+    {}%
+    {\rput (\advi@edit@tmpx,\advi@edit@tmpy){\box0}}%
+}
+\makeatother
+
+
+$$
+\wedoval[u]{x=-0.7536,y=-0.7865,w=12.8722,h=7.7389}[fillcolor=yellow,fillstyle=solid]{A}{\noindent
+This is an yellow oval node with an  inside
+green~\wedoval[c]{w=2.4107,h=1.1468}
+    [fillcolor=green,fillstyle=solid]{B}{\noindent oval}~node inside.  
+\vfil
+Just to check that embeded editions work. 
+} 
+\quad  
+\wedoval{x=9.2495,y=4.1226,w=7.8652,h=4.6265}{B}{\noindent
+\vfil
+\noindent 
+This text is centered in an resizable oval node.
+\vfil
+\wedput {x=-3.4562,y=1.7527}
+ {\begin{tabular}{c}Follow  \\ the Arrow!\end{tabular}}
+} 
+\ncarc[linecolor=blue,linewidth=5pt]{->}{A}{B}
+$$ 
+
+\section{Multiple files documents}
+
+\input {subfile.tex}
+
+\section {Tests}
+
+\wedput {x=7.9939,y=0.7371}
+ {\begin{tabular}{c}Follow  \\ the Arrow!\end{tabular}}
+
+\newdimen \weddim
+\vspace {8em}
+
+\makeatletter
+
+
+\noindent
+\advidget{x=5.5006,y=-0.0675,w=10.5558,h=9.2817,d=4.1123}
+{a aaa aa hkjh kjh khh
+aa aa aa hkj h kjh khh
+a aa aa hk jh kjh khh
+\advidget[a]{x=6.3835,y=-3.3952,w=6.2093,h=3.0339,d=1.8713}
+{aa h jh jh jh k k hh kj ha}
+aaaa aa h kjh kjh kh h
+aaaa aa hkjh kjh khh}
+
+% \advidget{x=16.7733,y=-5.2291,w=9.4006,h=2.8986,d=5.4024}
+%  {\noindent\ovalnode {A}
+%  {\parbox{0.7\hsize}{aa aa  a a aaa hkj kj a aaa hkj kj kj hkj k j}}}
+
+
+\advidget{d=9.6922}{\vspace{\advid}}
+
+\makeatletter
+
+\noindent
+\advidget{w=5.4195}{\hspace{\adviw}}
+\advidget{h=4.5313,W=8.7415,d=6.6363}{\noindent
+aa avb aba b jb h k kkk a a aaa
+aa avb aba b jb h k kkk a a aaa
+}
+\advidget {h=7.3835,w=10.3035,d=9.3528}{\noindent 
+aa avb aba b jb h k kkk a a aaa
+aa avb aba b jb h k kkk a a aaa
+}
+
+\end{document}
+% LocalWords:  advi tex moveto whizzy dimen XY

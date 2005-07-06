@@ -1,0 +1,278 @@
+#!/bin/bash
+
+CONFIGOK=false
+usage () {
+   (echo 'Usage:
+        checkconfig [ -timeout N ] [ config.ok ] 
+
+    N > 0 in seconds (default is 3).
+    config.ok, if mentioned and existing is be used as default configuration.
+') >&2
+   exit 1
+}
+
+
+TIMEOUT=3
+while [ $# -gt 0 ]
+do
+  case "$1" in
+    "") ;;
+    -timeout)  
+       if expr "$2" : '1[0-9]*' >/dev/null
+       then  TIMEOUT="$2"
+       else usage
+       fi
+       shift;;
+   config.ok) CONFIGOK=true;;
+   *) ;;
+  esac
+  shift
+done
+
+message () { echo -n "$@" '... '; }
+warning () { echo; echo '*** Warning:'; echo "$@"; }
+ERRORS=false
+error () { echo; ERRORS=true; echo '*** Error:'; echo "$@"; false; }
+fatal () { 
+  echo; echo -n "$@"; 
+  echo '
+************ They were serious Errors ************
+
+Makefile.config is likely to be incorrect. 
+Maybe you just need to reconfigure. Edit Makefile.config or type:
+
+      make config
+
+If you wish to continue, despite errors, type:
+   
+      make force
+
+Good luck.
+'
+  exit 1
+}
+
+nonempty () {
+  message "Checking $1 nonempty"
+  if [ -z "$2" ]; then error "$1 is empty" ; else echo ok; fi
+}
+
+# Bash configuration
+message "Checking that BASH is executanble"
+test -x "$BASH" && echo ok || error ERROR
+
+sed -e 's/ *= */=/' -e 's/(\([A-Z][A-Z]*\))/{\1}/' \
+    -e 's/^\(.*\)=\(.*[^ \t]\)/\1=\"\2\"/' \
+    Makefile.config \
+   > config.bash
+source config.bash
+rm config.bash
+if $CONFIGOK && [ -f config.ok ]; then 
+  echo 'Using existing configuration config.ok'
+  source config.ok; 
+fi
+
+# Emacs 
+if test -z "$EMACSDIR" -a -n "$EMACS" 
+then error "EMACSDIR must be defined when EMACS is"
+else echo "XEMACS and XEMACSDIR ok"
+fi
+
+if test -z "$XEMACSDIR" -a -n "$XEMACS" 
+then error "XEMACSDIR must be defined when XEMACS is"
+else echo "XEMACS and XEMACSDIR ok"
+fi
+
+# Other directories
+nonempty DATADIR "$DATADIR"
+nonempty BINDIR "$BINDIR" 
+nonempty LATEXDIR "$LATEXDIR" 
+nonempty DOCDIR "$DOCDIR" 
+
+# Initex and Latex 
+# message "INITEX and LATEX must be defined"
+
+# BEGIN TEX
+if
+   nonempty INITEX "$INITEX" && \
+   nonempty LATEX "$LATEX" && \
+   nonempty FORMAT "$FORMAT" 
+then
+cat << END > dummy.tex
+\documentclass{article}
+\def \dummy {Testing Your Installation}
+\def \dojump{\def \documentclass ##1\dump {\relax}}
+\dojump
+\dump
+\begin{document}
+\huge {\bf \dummy}\par Don't worry, feel Lucky!
+\end{document}
+END
+
+# initex
+message "Running INITEX=$INITEX "
+
+if $INITEX '&'$FORMAT 'dummy' > initex.log && [ -f dummy.$FMT ] 
+then echo ok
+else 
+  error "
+  Command failed:
+
+      $INITEX '&$FORMAT' dummy > initex.log"' && [ -f dummy.$FMT ]'"
+
+  $INITEX seems to have problems building format $FORMAT for $LATEX
+  It could be a problem with $INITEX, format extension $FMT, 
+  or the initial $FORMAT.$FMT may not be availableb.
+  See initex.log
+"
+fi 
+
+# latex
+message "Running LATEX=$LATEX"
+if [ -n "$LATEX" ]; then
+  if $LATEX '&dummy' dummy.tex > latex.log && [ -f dummy.dvi ]
+  then echo ok
+  else
+    error "
+    Command failed:
+
+      $LATEX '&dummy' dummy.tex > latex.log"' && [ -f dummy.dvi ]'"
+
+
+    $LATEX installation seem to have problems. 
+    See dummy.tex and latex.log
+  "
+  fi
+fi
+
+fi
+# END TEX
+
+# if interactive check
+
+if test -z "$DISPLAY"
+then
+ echo "Skipping viewers check (run with no option to check viewers)"
+else
+# viewers
+echo "Checking viewers"
+
+#begin checkviewers 
+checkdvi () {
+  DVI="$1"
+  EXEC="$2"
+  OK="$3"
+  if [ -n "$EXEC" ] && [ ! "$EXEC" = "$OK" ]
+  then
+    echo "Launching $DVI=$EXEC dummy.dvi&"
+    $EXEC dummy.dvi &
+    sleep "$TIMEOUT"
+    PID=$!
+    echo -n "Sending USR1 to $DVI ... "
+    if kill -USR1 $PID && sleep 1 && kill -CONT $PID 
+    then echo ok
+    else
+      warning "
+    $EXEC killed by signal USR1.
+    This may be fatal or downgrade the refreshing speed considerably. 
+
+    This may also be due to missing fonts or other latency problem.
+    You may try again a longer timeout in second (default is 3).
+
+    Continuing...
+"    
+     unset $DVI
+     fi
+     kill -TERM $PID 
+  fi
+}
+
+if [ -f dummy.dvi ]
+then
+  ## check for ADVI
+  checkdvi ADVI "$ADVI" "$ADVIOK"
+
+  ## check for multiple views with advi
+  if $MULTIPLE && [ -n "$ADVI" -a -f dummy.dvi ]
+  then
+    $ADVI dummy.dvi dummy.dvi &
+    sleep "$TIMEOUT"
+    PID=$!
+    echo -n "Sending USR1 to $DVI ... "
+    if kill -USR1 $PID && sleep 1 && kill -CONT $PID 
+    then echo ok
+    else
+      warning "
+    $EXEC does not seem to accept multiple files.
+    please, set MULTIPLE=false in Makefile.config or
+    reconfigure with 
+
+        ./configure -multiple false
+
+    Continuing...
+"    
+    fi
+    kill -TERM $PID 
+  fi
+
+  ## check for XDVI
+  checkdvi XDVI "$XDVI" "$XDVIOK"
+  if [ -n "$DVIPS" -a -n "$GV" -a "$GV" != "$GVOK" ] ; then
+    if $DVIPS -o dummy.ps dummy.dvi 2>/dev/null 1>/dev/null
+    then 
+      $GV dummy.ps &
+      PID=$!
+      sleep "$TIMEOUT"
+      echo -n "Sending HUP to $GV ... "
+      if kill -HUP $PID && sleep 1 && kill -CONT $PID
+      then echo OK
+      else
+        warning "
+    $GV does not respond to signal HUP.
+    This may be fatal or downgrade the refreshing speed considerably. 
+
+    Continuing...
+"
+        unset GV
+      fi
+      kill -TERM $PID 
+    else 
+      warning "
+      $DVIPS does not seem to work as expected
+
+    Continuing...
+"
+      unset DVIPS
+      unset GV
+    fi
+  fi
+fi
+#end checkviewers 
+
+fi
+#end of interactive check
+
+nonempty 'One of ADVI, XDVI or GV' "$ADVI$XDVI$GV" && \
+if [ -n "$GV" ]; then
+  nonempty 'DVIPS (when GV is nonempty)' "$DVIPS"
+fi
+
+if [ -z "$ADVI" ]; then
+  warning '
+    Active-DVI does not seem to be installed. (You may wish to install it.)
+'
+fi
+
+if $ERRORS
+then
+  fatal
+else
+  echo 'No anomaly detected in Makefile.config.'
+  rm -f dummy.{fmt,efmt,tex,aux,log,dvi,ps}
+  # config.ok
+  (if test -n "$ADVI"; then echo ADVIOK=$ADVI; fi
+   if test -n "$XDVI"; then echo XDVIOK=$XDVI; fi
+   if test -n "$GV"; then echo GVOK=$GV; fi) > config.ok
+fi
+
+

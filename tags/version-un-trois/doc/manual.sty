@@ -1,0 +1,155 @@
+% manual.sty --- WhizzyTeX, a wysiwyg environment for TeX
+%
+%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.2.2
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  WhizzyTeX is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (enclosed in the file GPL).
+%  
+%  See the file COPYING enclosed with the distribution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File manual.sty (WhizzyTeX documentation macros)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage {hevea}
+\usepackage {fullpage}
+\usepackage {color}
+\usepackage {graphicx}
+\usepackage {pst-node}
+\ifimagen \def \driver{dvips}\fi
+\def \dvips{dvips}
+\ifx \driver \dvips
+\usepackage [dvips]{bubble}
+\usepackage [ignore]{advi}
+\PassOptionsToPackage{ignore}{advi}
+\fi
+\usepackage {advi-annot}
+\usepackage {hyperref}
+
+\let \lst \verb
+\ifhevea
+  \def \space { }\let \hfil \relax \let \hfill\relax
+  \let \hbox \mbox
+  \def \ActiveDVI{ActiveDVI}
+\else
+  \def \TeX{T\kern -.4ex\lower .5ex\hbox {E}\kern -.3emX}
+\fi
+\def \whizzy {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\TeX}}}
+\def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
+\def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
+\def \WhizzyEdit {Whizzy{\sc 
+\raise 0.2ex \hbox{E}\kern -0.2ex%
+\lower 0.0ex \hbox{d}\kern -0.2ex%
+\lower 0.2ex \hbox{i}\kern -0.5ex%
+\raise 0.2ex \hbox{T}}}%
+
+\def \docdef #1{{\tt \string #1}}
+\def \docid #1{$\langle \hbox {\rm\em #1}\rangle$}
+\def \doctt #1{{\tt #1}}
+\def \docarg #1{{\tt \{\docid {#1}\}}}
+\def \docopt #1{{\tt [\docid {#1}]}}
+\def \docpar #1{{\tt (\docid {#1})}}
+\def \doc@empty {}
+\newcommand \dockey[3][]{{\tt #2\def \@test {#3}\ifx \@test \doc@empty \else
+  =\docid{#3}\fi} \def \@test {#1}\ifx \@test \doc@empty \else
+  \quad (default value is {\tt #1})\fi}
+
+%% The following lines are to help HeVeA make  the HTML version of the manual
+
+\ifhevea
+ \def \instruction #1{}
+ \def \whizzy{{Whizzy{\TeX}}}
+ \def \WhizzyEdit {{WhizzyEdit}}
+ \def \tocname {\hyperlink{htoc}{Table of Contents}\hypertarget{htoc}{}}
+\fi
+%\renewcommand{\@bodyargs}{TEXT=black BGCOLOR=white}
+
+\usepackage {color}
+\definecolor{pale}{rgb}{0.95,0.95,0.95}
+
+\def \whizzy@markend 
+   {\bgroup
+      \setbox1 \hbox
+         {\colorbox{yellow} {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}%
+      \wd1 \wd0 \dp1 0em \ht1 0em \box1
+    \egroup} 
+
+\def \/{%
+   \ifmmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
+   \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
+      \ifvmode
+        \nobreak
+        \vskip -\baselineskip \nobreak
+        \hbox {\vbox to 0em{\vskip 1em
+               \setbox0 \hbox {\strut\space}\box1\whizzy@markend \vss}}%
+        \nobreak
+      \fi
+   \fi \fi
+  }
+
+\def \activedvi #1#2#3{\fboxsep=0em \parindent=0em \hsize=7em
+\fcolorbox{black}{pale}
+{\vbox to 6.3em{
+\noindent 
+\fboxsep=4pt
+\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil 
+\textcolor{pale}{\bfseries \em Active-DVI}\hfil}}
+\par
+\vskip 0.2em
+\parindent=0.5em
+\Large \sc 
+\indent\hbox{}#1\par
+\indent\hbox{}#2\par%
+\vfil
+}}}
+
+\def \emacs #1#2#3{\fboxsep=0em \parindent=0em \hsize=6.3em
+\fcolorbox{black}{pale}
+{\vbox to 6.3em{
+\noindent 
+\fboxsep=4pt
+\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil 
+\textcolor{pale}{\bfseries \em Emacs \hfil}}}
+\par
+\vskip 0.2em
+\parindent=0.5em
+\large \tt
+\{\char`\\sc \par
+#3\par
+\}\par
+\vfil
+}}}
+
+\ifhevea \else
+\message {jobname=\jobname}
+
+\expandafter \def \csname activedvi.image\endcsname 
+{\message {output=activedvi} \let \page \activedvi}
+
+\expandafter \def \csname emacs.image\endcsname 
+{\message {output=emacs} \let \page \emacs}
+
+\csname \jobname\endcsname
+\fi
+
+% %BEGIN LATEX
+% \newenvironment{rawhtml}{\setbox0=\vbox \bgroup \catcode `\#=11}{\egroup}
+% %END LATEX
+
+\def \arg#1{$\langle\texttt {#1}\rangle$}
+\def \opt#1{[ #1 ]}
+
+\@mparswitchfalse  \@reversemargintrue
+\def \NEW#1{\def \@test{#1}\ifx \@test \version\marginpar{\textbf{New!}}\fi}

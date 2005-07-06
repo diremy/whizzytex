@@ -1,0 +1,722 @@
+% whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
+%
+%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.2.3
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  WhizzyTeX is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (enclosed in the file GPL).
+%  
+%  See the file COPYING enclosed with the distribution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File whizzytex.sty (LaTeX macros)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 1: The core engine
+
+\def \whizzy@version {1.2.3}
+
+%% The best to remove problem with hyperref.
+%% Because hyperref does not behave well when precompiled in a format
+
+\providecommand*{\Hy@defaultdriver}{hypertex}%
+
+
+%% General purpose
+
+\def \whizzy@empty {}
+\def \whizzy@ignore #1{}
+
+%% Enforce nonstopmode, forever
+\nonstopmode
+
+%% We must prevent any change, hence make change of mode behaves as \relax.
+%% However, \hyperref test on \scrollmode, which if it expands to \relax
+%% may accidentally capture another \relax. Hence, we must not use \relax, but
+%% some equivalent combination \whizzy@asrelax that is unliky to appear 
+%% by chance.
+
+\def \whizzy@asrelax {\relax\whizzy@ignore\whizzy@empty\relax}
+\let \errorstopmode \whizzy@asrelax
+\let \scrollmode \whizzy@asrelax
+\let \batchmode \whizzy@asrelax
+
+%% A few patches are unsafe and conditionally applied (dynamic value)
+\newif \ifwhizzy@tricks  \whizzy@trickstrue
+
+%% Special effects for advi (static value)
+\newif \ifwhizzy@advi
+\@ifundefined {WhizzyLevel}
+  {\whizzy@advifalse}
+  {\ifx \WhizzyLevel2\whizzy@advitrue\fi}
+
+
+%% \documentclass should be redefined to skip to \begin{document} 
+%% and resumpe. No space must be there, emacs should check that.
+
+%% Right before dumping
+\def \whizzy@documentclass
+   {\begingroup \let \do \@makeother \dospecials \whizzy@skip}
+
+\begingroup
+\catcode `\[ 1 \catcode `\] 2
+\catcode `\{ 12 \catcode `\} 12
+\catcode `| 0 \catcode`\\ 12
+|global |long |def |whizzy@skip #1\begin{document}[|whizzy@resume]
+|endgroup
+
+%% This will only be run is the document is complete (not a slice)
+%% We put a few here
+
+\newif \ifwhizzy@latexmode
+\whizzy@latexmodefalse
+\def \whizzy@fulldocumenthook {}
+\def \whizzy@resume
+  {\endgroup 
+   \message {[WhizzyTeX is resuming in LaTeX mode]}%
+   \whizzy@latexmodetrue
+   \whizzy@fulldocumenthook
+   \relax
+   \let \documentclass \latex@documentclass
+   \begin{document}}
+
+%% \document is going to be redefined so that it dumps a format, 
+%% So we save the old value
+
+\let \latex@document \document
+
+%% The value after dump will do as before, after executing some hooks
+
+\def \whizzy@document {\aftergroup \whizzy@begindocumenthook \latex@document}
+\def \whizzy@begindocumenthook {}
+%% This will fire after resume, rather use AtBeforeWhizzyDump
+\def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
+\def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
+
+%% Patch for loading aux files. 
+
+\def \whizzy@newl@bel #1#2#3{\global \@namedef {#1@#2}{#3}}
+\def \whizzy@loadauxhook {}
+\def \whizzy@loadaux 
+ {\begingroup
+    \@floatplacement \@dblfloatplacement \makeatletter \let \@writefile
+     \@gobbletwo \global \let \@multiplelabels \relax 
+     \whizzy@loadauxhook
+     \@input {\jobname .aux}%
+     \global \let \whizzy@multiplelabels \@multiplelabels
+     \global \let \@newl@bel \whizzy@newl@bel
+     \AtBeginDocument {\global \let  \@multiplelabels
+     \whizzy@multiplelabels}%
+  \endgroup}
+
+%% Some stuff must be done after all packages and macros but before
+%% .aux are loaded
+
+\def \whizzy@beforeauxhook {}
+
+%% Some stuff must after all macros and .aux are loaded, but before dumping
+
+\def \whizzy@beforedumphook {}
+
+%% We can now redefine \document to add a few work and hooks and dump the
+%% format. 
+
+\def \document 
+  {\endgroup
+   \whizzy@beforeauxhook
+   \makeatletter
+   \IfFileExists{\WHIZZYCONFIGDIR/whizzy.sty}%
+        {\@input {\WHIZZYCONFIGDIR/whizzy.sty}}{}%
+   \IfFileExists{\WHIZZYHOME/.whizzytex/whizzy.sty}%
+        {\@input {\WHIZZYHOME/.whizzytex/whizzy.sty}}{}%
+   \IfFileExists{whizzy.sty}{\@input {whizzy.sty}}{}%
+   \makeatother
+   \begingroup \def \@currenvir {document}%
+   \whizzy@loadaux
+   \endgroup
+   \whizzy@beforedumphook
+   \let \latex@documentclass \documentclass
+   \let \documentclass \whizzy@documentclass
+   \let \document \latex@document
+   \dump}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 2: Robust stuff hooks on the core engine
+
+%% put a hook everypagehook to be run at everypage, 
+%% but extendable it has been placed
+
+\g@addto@macro \whizzy@beforedumphook
+   {\g@addto@macro \@begindvi
+       {\g@addto@macro \@begindvi {\whizzy@everypage}}}
+\def \whizzy@everypage {\whizzy@everypagehook}
+\def \whizzy@everypagehook {}
+
+%% How to print whizzy nice boxes
+\let \whizzy@fbox \fbox
+
+\def \WhizzyCursorColor{yellow}
+\g@addto@macro \whizzy@beforeauxhook
+   {\@ifundefined {Whizzysafe}
+       {% Package color  may take options, load only if notloaded...
+        % Was \AtBeginDocument, but should rather load these macros 
+        % before dump...
+        \AtBeforeWhizzyDump {\@ifundefined {colorbox}{\usepackage{color}}{}}%
+        \def \whizzy@fbox {\colorbox {\WhizzyCursorColor}}}
+       {\let \whizzy@fbox \fbox \whizzy@tricksfalse}}
+
+%% Macros for dumping sections in \whizzy@pag  (\jobname.pag)
+%% Only done when in full document mode (not in a slice)
+
+%% To print a nice blank or a test page
+\def \WhizzyTeX {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
+\def \WhizzyEmptyPage
+{%\@ifundefined{slide}{}{\slide}%
+\par\noindent \ifwhizzy@advi \else \let \whizzy@fbox \fbox\fi
+\whizzy@fbox {\hsize=0.9\hsize\relax
+\vbox {\huge \bigskip \centering \bf Welcome to \WhizzyTeX!\\[0.5em]
+\large {\rm (version \whizzy@version)} \\[1em] 
+\Large This is an empty slice \\[1em] 
+\LARGE Move forward or backward \\
+in the source document \\
+to slice!\par \bigskip}}%
+%\@ifundefined{slide}{}{\endslide}%
+}
+
+\def \WhizzytexInput #1{%
+\message {[WhizzyTeX is dumping positions in _whizzy_#1.pag]}%
+\newwrite \whizzy@pag
+\immediate \openout \whizzy@pag _whizzy_#1.pag\relax
+\whizzy@putmarks
+\WhizzyStart
+\latex@iinput {#1\WhizzyExt}%
+}
+
+%% Macros to dump section numbers
+
+%% The difference between real and virtual line numbers
+% global variable
+\global \def \whizzy@linediff {0}
+% tempcount
+\newcount \whizzy@count
+% compute source lineno into whizzy@count
+\def \whizzy@makelineno 
+   {\whizzy@count \inputlineno 
+    \advance \whizzy@count by \whizzy@linediff\relax}
+\def \whizzy@setlinediff #1{\global \xdef \whizzy@linediff {#1}%
+   \message{^^J##line+=\whizzy@linediff^^J}}
+\def \whizzy@addtolineno 
+   {\advance \whizzy@count by \whizzy@linediff
+    \whizzy@setlinediff {\the \whizzy@count}}
+\def \whizzy@setlineno
+   {\advance \whizzy@count by -\inputlineno
+    \whizzy@setlinediff {\the \whizzy@count}}
+% Export tex versions
+\def \Addtolineno {\afterassignment \whizzy@addtolineno \whizzy@count}
+\def \Setlineno  {\afterassignment \whizzy@setlineno \whizzy@count}
+% Export latex versions
+\def \AddtoLineno #1{\Addtolineno #1\relax}
+\def \SetLineno #1{\Setlineno #1\relax}
+\def \whizzy@thelineno {\whizzy@makelineno \the \whizzy@count}
+
+%% The current file (see below)
+\edef \whizzy@curfile {\jobname \WhizzyExt}
+
+\newif \ifwhizzy@appendix \whizzy@appendixfalse
+\AtBeginDocument 
+  {\@ifundefined {appendix}{}
+     {\g@addto@macro \appendix {\whizzy@appendixtrue}}}
+
+\def \whizzy@markon #1#2{%
+  \expandafter \let \expandafter \@do \csname #1\endcsname
+  \expandafter \let \csname whizzy@#1\endcsname \@do
+  \def \@do {\whizzy@mark {#2}\csname whizzy@#1\endcsname}%
+  \expandafter \let \csname #1\endcsname \@do
+}
+\def \whizzy@markafter #1#2{%
+  \expandafter \let \expandafter \@do \csname #1\endcsname
+  \expandafter \let \csname whizzy@#1\endcsname \@do
+  \def \@do {\csname whizzy@#1\endcsname\whizzy@mark {#2}}%
+  \expandafter \let \csname #1\endcsname \@do
+}
+\def \whizzy@putmarks {%
+  \@ifundefined{c@chapter}{}{\whizzy@markon {chapter}{chapter}}%
+  \@ifundefined{c@section}{}{%
+    \whizzy@markon {section}{section}%
+    \whizzy@markon {subsection}{subsection}%
+    \whizzy@markon {subsubsection}{subsubsection}%
+  }%
+  \AtEndDocument {\whizzy@mark{end}}%
+  %\whizzy@markafter {@outputpage}{page}%
+}
+\def \whizzy@mark #1{%
+  \begingroup
+   \filename@parse {\whizzy@curfile}%
+   \xdef \whizzy@Curfile 
+     {\whizzy@curfile \@ifundefined {filename@ext}{.tex}{}}%
+   \whizzy@makelineno
+   \immediate \write \whizzy@pag
+   {\whizzy@Curfile:\the\whizzy@count:#1@\the\c@page.%
+    \@ifundefined{c@chapter}{}{\the\c@chapter.}%
+    \@ifundefined{c@section}{}{\the\c@section.\the\c@subsection.%
+    \ifwhizzy@appendix 1\else 0\fi}.}%
+  \endgroup
+}
+
+\def \whizzy@navigate@banner #1{%
+   \par
+    \vbox {\Large \bf \par
+    \whizzy@outputline {0}{\whizzy@local}%
+    \ifx #1A\setbox 0\centerline {\lower 1em\hbox {\small Move-to}}%
+    \ht0 0em \dp0 0em \box0\par
+    \whizzy@outputline {0}{\whizzy@local}\fi
+    \ifx #1B\vskip 0.2em \hrule height 0.1em \vskip 0.2em\fi
+    \noindent {Previous-Slice}\hfill {Next-Slice}%
+    \ifx #1A\vskip 0.2em \hrule height 0.1em \vskip 0.2em\fi
+    \whizzy@outputline {0}{\whizzy@local}%
+    \par
+   }}
+%\AtBeginDocument {\whizzy@navigate@banner A}
+%\AtEndDocument {\whizzy@navigate@banner B}
+
+\edef \whizzy@local {\jobname \WhizzyExt}
+\def \WhizzySlice #1.#2.#3.#4.{%
+   %\whizzy@navigate@banner A\relax
+   \ifcase #4\or\appendix\fi
+   \setcounter{page}{#1}%
+   \setcounter{section}{#2}\setcounter{subsection}{#3}}
+\def \Whizzy@chapter #1.#2.#3.#4.#5.{%
+   %\whizzy@navigate@banner A\relax
+   \ifcase #5\or \appendix\fi
+   \setcounter{page}{#1}\setcounter{chapter}{#2}%
+   \setcounter{section}{#3}\setcounter{subsection}{#4}}
+\def \Whizzy@file {%
+   \@ifundefined {whizzy@\whizzy@local @}{}
+     {\edef \@do {\csname whizzy@\whizzy@local @\endcsname}%
+      \expandafter \WhizzySlice \@do\relax}}
+\@ifundefined {c@chapter}{}{\let \WhizzySlice \Whizzy@chapter}
+
+
+% What does this do??? only if not fulldocument 
+
+\global \@specialpagefalse
+
+
+%% In Master mode, we must also compute the current file.
+%% We maintain this in \whizzy@curfile by putting a hook on input commands
+%% Note: LateX should do this itself!
+
+%% Keeping the current file up to date (needed for master mode sections)
+
+%% Those will be redefined 
+
+\let \latex@iinput \@iinput
+\let \latex@input@ \@input@
+
+\AtBeginDocument 
+   {\let \@iinput \whizzy@iinput
+    \let \@input@ \whizzy@input@}
+
+%% Parsing file names to get a uniform representation....
+
+\def \whizzy@tex {tex}
+\def \whizzy@setfile #1{\xdef \whizzy@curfile {#1}}
+\def \whizzy@setnorm #1{%
+  \begingroup 
+     \filename@parse {#1}%
+     \xdef \whizzy@curfile
+       {\filename@area\filename@base
+        \@ifundefined {filename@ext}{}
+           {\ifx \filename@ext \whizzy@tex \else .\filename@ext\fi}}%
+  \endgroup
+}
+% We could interprepret the absence of file name as the master file name
+
+%% Two commands must be redefined, so we share there code
+\def \whizzy@reposition #1#2{%
+   \whizzy@setfile{#1}\whizzy@setlinediff{#2}\whizzy@writelineno}
+\def \whizzy@iinput 
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@linediff}}%
+    \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@iinput}}
+\def \whizzy@input@
+   {\edef \whizzy@tmp {{\whizzy@curfile}{\whizzy@linediff}}%
+    \expandafter \whizzy@input \expandafter{\whizzy@tmp}{\latex@input@}}
+
+%% Note the use of a function to work with recursive inputs: we cannot 
+%% open groups around the \input to save the name of current file to reset
+%% it at the end. The function call just save the name over \input{...}
+
+\def \whizzy@input #1#2#3{%
+   \IfFileExists{#3}
+      {\whizzy@setnorm{#3}%
+       %% To be fix: \whizzy@curfile may be have an extension
+       \immediate \write \@mainaux 
+           {\string \gdef \string \whizzy @\whizzy@curfile @%
+               {\the\c@page.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
+                \@ifundefined{c@section}{}%
+                    {\the\c@section.\the\c@subsection.}}}%
+           % could be removed if unsafe
+          \whizzy@outputline {1}{\whizzy@curfile}%
+      }{}%
+    #2{#3}%
+    \ifwhizzy@advi \expandafter \whizzy@reposition #1\fi
+}
+\def \SourceFile #1{%
+   \ifwhizzy@advi \whizzy@setfile {#1}\whizzy@writelineno \fi}
+
+%% Print a header when the slice is mastered 
+%% (we put a \whizzy@writelineno  hook for advi. 
+
+\@ifundefined {whizzy@master}
+  {\edef \whizzy@master {\jobname \WhizzyExt}}{}
+
+\def \whizzy@fill 
+  {%\if \vmode\leavevmode\fi
+   \leaders \hrule height 0.15em \hfill \kern \z@}
+\def \whizzy@banner #1{%
+  \whizzy@outputline {0}{\whizzy@local}%
+  \whizzy@setfile {\whizzy@master}%
+   \vbox
+    {\whizzy@outputline {0}{\whizzy@master}%
+     \whizzy@outputline {0}{\whizzy@master}%
+     #1%
+     \whizzy@outputline {0}{\whizzy@master}}%
+     \whizzy@setfile {\whizzy@local}\par
+     \whizzy@outputline {0}{\whizzy@local}%
+   }
+\def \whizzy@master@banner {\whizzy@banner {\noindent
+     {\LARGE\bf \whizzy@fill\space
+       Mastered by \whizzy@master\space \whizzy@fill}}}
+\def \whizzy@outputmaster {\whizzy@master@banner}
+\def \whizzy@master@end{\par \bigskip \whizzy@master@banner \par}
+
+
+\def \WhizzyMaster #1{%
+  \def \whizzy@local {#1}%
+  \par \whizzy@master@banner \par\bigskip
+  \AtEndDocument {\whizzy@master@end}%\Whizzy@file
+}
+
+%%% Not necessary, but will make .idx file at every global run, and
+%%% will not erase it when slicing.
+
+\let \latex@makeindex \makeindex
+\def \makeindex 
+ {\g@addto@macro \whizzy@fulldocumenthook {\latex@makeindex}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Second 3: optional, less robust stuff, could be turned off
+%% May make a slice not compiling
+
+%% Patch for overlays, still in use? see advi trick
+
+\newcommand {\WhizzySlide}[2][]
+   {\let \overlay \whizzy@@overlay
+    \def \whizzy@line{#2}\def \whizzy@layer{#1}}
+
+\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay 1\fi}
+\g@addto@macro \whizzy@beforedumphook
+  {\@ifundefined {overlay}{}{\let \whizzy@overlay \overlay}}
+
+
+%% To show where the cursor is, we pick caracter code ^^A
+%% This will break any mode that uses ^^A
+
+\g@addto@macro \whizzy@beforedumphook
+  {\AtBeginDocument {\whizzy@cursor}}%
+\def \whizzy@cursor
+  {\ifwhizzy@tricks \whizzy@activeA \whizzy@defA \fi}
+
+%% The following seem to work in fragile commands such as index
+%% Otherwise \whizzy@do should not be defined
+% \AtBeginDocument 
+%   {\let \latex@sanitize \@sanitize
+%    \def \@sanitize {\latex@sanitize \catcode `\^^A 9}}
+\let \whizzy@do \whizzy@empty
+%% Why was the \catcode \^^A 2?
+% \def \whizzy@A
+%    {\def \whizzy@do{\catcode `\^^A 2\whizzy@markbegin}\ifinner
+%     \ifmmode \else \let \whizzy@empty {}\fi \fi \whizzy@do}
+\def \whizzy@A
+   {\let \whizzy@do \whizzy@markbegin
+    \ifinner \ifmmode \else \let \whizzy@do \whizzy@empty\fi \fi \whizzy@do}
+\let \whizzy@AAA \whizzy@A
+\def \whizzy@activeA {\catcode `\^^A \active}
+\begingroup
+\whizzy@activeA
+\gdef \whizzy@defA {\def ^^A{\whizzy@AAA}}
+\endgroup
+\def \whizzy@markend 
+   {\bgroup
+      \setbox1 \hbox
+         {\whizzy@fbox {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}%
+      \wd1 \wd0 \dp1 0em \ht1 0em \box1
+    \egroup} 
+
+\newskip \whizzy@tmpskip
+
+\def \whizzy@markbegin
+  {\whizzy@start@here
+   %% Added 
+   \ifmmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
+   \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
+      \ifvmode
+        \nobreak
+        \begingroup
+        \whizzy@tmpskip \prevdepth 
+        \nointerlineskip
+        \hbox {\setbox0 \vbox {\setbox0 \hbox {\strut\space}\whizzy@markend}%
+               \dp0=0pt\ht0=0pt \vbox{\box0}}%
+        \prevdepth \whizzy@tmpskip 
+        \endgroup
+        \nobreak
+      \fi
+   \fi \fi
+  }
+
+%% whizzy aux information for whizzy extentions, should be set here
+%% so that several extension can share the same 
+%% Write auxilliary infor in .waux  but read it in .raux 
+%% The script is supposed to move the former into the later 
+%% so as to be stable in presence of errors. 
+
+\AtBeginDocument 
+ {\ifwhizzy@latexmode \else \@input {\jobname .raux}\fi 
+  \newwrite \whizzy@out \immediate \openout \whizzy@out \jobname.waux
+  \def \whizzy@aux #1{\immediate \write \whizzy@out {#1}}%
+ }
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 4: independent cool, robust stuff
+
+\let \whizzy@tt \texttt
+\long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
+\newcommand{\Meaning}
+  {\par \medskip \hrule \smallskip \begingroup \hsize 0.75\hsize
+       \vbox \bgroup \whizzy@tt \bgroup \makeatletter \@Meaning}
+\newcommand{\xMeaning}[1]
+  {\expandafter \Meaning \csname \string#1\endcsname}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 5: advi stuff
+
+%%% Macros for dumping lines number, putting cursor, etc. 
+
+\let \WhizzySkip \relax
+\let \WhizzyStart \relax
+\let \WhizzyLine \whizzy@ignore
+\let \WhizzyLinePoint \whizzy@ignore
+\let \WhizzyEnvlimit \whizzy@outputline
+\let \WhizzyEnvlimit \whizzy@outputline
+\newcommand \whizzy@ignore@oii[3][]{}
+\def \WhizzyInsideEnvironment{\whizzy@ignore@oii}
+\def \whizzy@outputline #1#2{}%
+\let \whizzy@start@here \whizzy@empty
+
+
+%% We stop here if no support for moving to cursor
+\ifx \WhizzyLevel 0\expandafter \endinput \fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% In PDF line numbers are not recognize.
+
+\edef\whizzy@quote{\string"}
+\def \whizzy@putlink #1{%
+    \@ifundefined{new@pdflink}%
+      {\special {html:<A name=\whizzy@quote #1\whizzy@quote>}%
+       \special {html:</A>}}%
+      {\new@pdflink{#1}}%
+}
+
+\def \whizzy@writelineno
+   {\ifhmode \unskip \fi
+    \whizzy@makelineno
+    \xdef \whizzy@lastparno {\the\whizzy@count}%
+    \whizzy@outputline {\the\whizzy@count}{\whizzy@curfile}}
+\def \whizzy@pageno {0}
+\def \whizzy@lastpageno {0}
+\def \whizzy@writelastpage
+  {\whizzy@outputline {\whizzy@lastpageno}{\whizzy@curfile}%
+   \whizzy@makelineno
+   \xdef \whizzy@lastpageno {\whizzy@pageno}%
+   \xdef \whizzy@pageno {\the\whizzy@count}%
+}
+\g@addto@macro \whizzy@everypagehook {\whizzy@writelastpage}
+\def \whizzy@lineno@display 
+   {\whizzy@writelineno \aftergroup \whizzy@writelineno}
+
+% To insert the mark ``around'' the current line number
+
+\def \whizzy@start@here
+   {\whizzy@putlink{Start-Document}%
+    \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
+               \whizzy@curfile]}%
+    \whizzy@makelineno
+    \global \let \whizzy@checkline \relax
+    \global \let \whizzy@@checkline \relax
+    \global \let \whizzy@check@line \relax
+    \global \let \begin \whizzy@begin
+    \global \let \whizzy@start@here \relax
+    }
+\let \latex@@par \@@par
+\let \whizzy@checkline \relax
+\def \whizzy@@par 
+  {\whizzy@checkline \whizzy@writelineno \latex@@par}
+\let \whizzy@catcode \relax
+\let \whizzy@starthere \whizzy@start@here
+\def \whizzy@@check@limit 
+  {\ifx \whizzy@curfile \whizzy@local
+     \ifnum \inputlineno>\whizzy@line \whizzy@starthere \fi
+   \fi}
+\def \whizzy@@checkline {%
+   \ifx \whizzy@curfile \whizzy@local
+      \ifnum \inputlineno>\whizzy@linelimit
+         \ifnum \inputlineno>\whizzy@line \whizzy@starthere 
+         \else 
+            \let \whizzy@checkline \whizzy@@check@limit
+            \global \let \whizzy@@checkline \whizzy@@check@limit
+            \edef \@tmp {\noexpand \whizzy@check@line  \the\everymath}%
+            \expandafter \everymath \expandafter {\@tmp}%
+         \fi
+      \fi
+   \fi
+}
+\let \whizzy@begin \begin
+\def \whizzy@@begin {\whizzy@checkline \whizzy@begin}
+\def \whizzy@check@line {\whizzy@checkline \aftergroup\whizzy@checkline}
+%% In display mode, to still ignorespaces after display. 
+%% hence \aftergroup \ignorespaces. However, spaces would still ignored when
+%% the display ends with \eqno or \lqeno.  
+\let \latex@eqno \eqno
+\let \latex@leqno \leqno
+\def \aftergroup@ignorespaces  {\aftergroup \ignorespaces}
+\def \whizzy@eqno {\expandafter \latex@eqno \aftergroup@ignorespaces}
+\def \whizzy@leqno {\expandafter \latex@leqno \aftergroup@ignorespaces}
+\def \whizzy@check@line@ {\whizzy@checkline
+ \aftergroup\whizzy@checkline \aftergroup\ignorespaces
+ \let \leqno \whizzy@leqno \let \eqno \whizzy@eqno}
+%%
+\def \whizzy@line{}
+\def \whizzy@nopar {\let \@@par \latex@@par \let \par \@@par}
+\def \WhizzySkip {\ifwhizzy@tricks \whizzy@nopar \fi}
+\def \WhizzyStart {\ifwhizzy@tricks \whizzy@par \whizzy@writelineno \fi}
+
+
+\let  \latex@footnotetext \@footnotetext
+\long \def \whizzy@footnotetext #1{\latex@footnotetext
+ {\ifwhizzy@tricks \whizzy@writelineno #1\whizzy@writelineno\else #1\fi}}
+
+\def \whizzy@par {\let \@@par \whizzy@@par \let \par \@@par
+                  \let \@footnotetext \whizzy@footnotetext}
+\def \whizzy@@display 
+ {\whizzy@lineno@display \let \halign \whizzy@halign \whizzy@check@line@}
+
+\def \WhizzyLine #1{% 
+  \def \whizzy@line{#1}%
+  \bgroup \count0 #1\advance\count0 by -20\relax
+  \global \edef \whizzy@linelimit {\the \count0}\egroup%
+  \let \whizzy@checkline \whizzy@@checkline
+  \whizzy@par
+  \expandafter \everydisplay
+         \expandafter {\the \everydisplay \whizzy@display}%
+  \let \whizzy@display \whizzy@@display
+  \let \begin \whizzy@@begin%
+}
+\def \WhizzyLinePoint
+   {\global \let \whizzy@starthere \relax\WhizzyLine}
+
+%%% ^^A should only act when visible: this should move point to the first
+%%% page where ^^A is visible. 
+\AtBeginDocument
+  {\@ifundefined{overlay}{}
+      {\def \whizzy@AAA{\ifnum \c@overlay=0\whizzy@A\fi}}}
+
+%%% Hack because \whizzy@lineno@display generates $$\hbox{}\halign
+%%% which is not correct. The \hbox cannot be removed.
+%%% The other option is to remove lineno at beginning of display
+%%% might be better.
+
+\let \latex@halign \halign
+\def \whizzy@endhalign {\egroup $$}
+\def \whizzy@halign {\ifmmode 
+ \vcenter \bgroup \everydisplay{}\let \halign \latex@halign 
+  \abovedisplayskip 0em $$\aftergroup  \whizzy@endhalign \fi
+  \latex@halign} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 6: Could be in packages.
+
+\def \WhizzyEnvlimit #1#2{\expandafter \def \csname wiz@#1@#2\endcsname}
+\newcount \whizzy@envno
+\def \whizzy@envlimit@waux {\whizzy@makelineno \whizzy@aux {\string 
+      \WhizzyEnvlimit {\@currenvir}{\thewhizzy@envno}{\the \whizzy@count}}}
+\def \whizzy@relet #1#2{\expandafter 
+    \let \csname #1\expandafter \endcsname \csname #2\endcsname}
+\def \whizzy@envselect #1#2#3#4{\@temptokena {#2}\@temptokena
+    \expandafter {\the \expandafter
+    \@temptokena \expandafter \whizzy@envinout
+       \expandafter {\csname #3\expandafter \endcsname \expandafter}%
+       \expandafter {\csname #4\endcsname}}%
+  \expandafter \edef \csname #1\endcsname {\the \@temptokena}}
+
+\def \WhizzyInsideEnvironment #1{%
+  \whizzy@relet {out@#1}{#1}\whizzy@relet {endout@#1}{end#1}%
+  \whizzy@envselect{#1}{%
+    \global \advance \whizzy@envno by \@ne 
+    \edef \thewhizzy@envno{\the\whizzy@envno}%
+    \let \whizzy@envinout \@secondoftwo
+    \expandafter \let \expandafter \@aux
+       \csname wiz@#1@\the\whizzy@envno\endcsname
+    \ifx \@aux \relax \else
+      \whizzy@makelineno
+      \ifnum \whizzy@line<\the\whizzy@count \else
+        \ifnum \whizzy@line<\@aux \let \whizzy@envinout \@firstoftwo
+    \fi \fi \fi}{in@#1}{out@#1}%
+  \whizzy@envselect{end#1}{\whizzy@envlimit@waux}{endin@#1}{endout@#1}%
+  \newenvironment{in@#1}}
+
+%% We stop here if no support for Active-DVI
+\ifx \WhizzyLevel 1\expandafter \endinput \fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 7: This asumes advi
+
+%%% These use advi special tricks
+%%% \jobname should be the current file, instead. It is stored somewhere?
+\def \whizzy@outputline #1#2{%
+   \ifvmode \nobreak\fi\special {line: #1 #2 }\ifvmode \nobreak\fi
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Should I do that -- load advi.sty if not loaded? 
+%%% Provides floating table of contents
+
+\IfFileExists{advi.sty}{\usepackage{advi}}{}%
+
+%%% For whizzy-edition
+
+\def \advi@edit@file {\whizzy@curfile}
+\let \advi@edit@makelineno \whizzy@makelineno
+\def \advi@edit@line {\the\whizzy@count}
+
+%%% overlays
+
+\makeatother
+\endinput
+
+% whizzytex.sty ends here

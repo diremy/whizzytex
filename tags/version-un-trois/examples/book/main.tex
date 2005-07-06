@@ -1,0 +1,49 @@
+\documentclass{book}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}[chapter]
+
+
+\begin{document}
+
+\chapter{A}
+
+\label{A}
+
+\section{One}
+\label{Aone}
+
+\begin{theorem}
+\label{A1}
+This is section \ref{Aone} of chapter \ref {A}. 
+\end{theorem}
+
+\section{Two}
+\label{Atwo}
+
+\begin{theorem}
+\label{A2}
+Section \ref{Bone} of chapter \ref {B} follows
+(See Theorem \ref{B1})
+\end{theorem}
+
+
+\chapter{B}
+\label{B}
+
+\section{One}
+\label{Bone}
+\begin{theorem}
+\label{B1}
+This is section \ref{Bone} of chapter \ref {B}. 
+\end{theorem}
+
+\section{Two}
+\label{Btwo}
+
+\begin{theorem}
+\label{B2}
+Section \ref{Aone} of chapter \ref {A} follows (see Theorem \ref{A1}).
+\end{theorem}
+
+\end{document}

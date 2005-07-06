@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+            "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<html>
+<head>
+
+<META http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<META name="keywords" 
+ content="computers, software, typesetting, latex, 
+          emacs, wysiwyg, incremental, previewing">
+<META name="description" content="Emacs Incremental Latex Previewing">
+
+
+<TITLE>Whizzytex</TITLE>
+</head>
+<body bgcolor=white>
+
+<H1 align=left><font color=blue>WhizzyTeX</font></H1>
+
+<!--h1 align=right>
+<i>
+<font color=blue>Wh</font>at
+<font color=blue>i</font>
+<font color=blue>z</font>ee
+i<font color=blue>z</font> what 
+<font color=blue>y</font>ou
+<font color=blue>TeX</font></i>
+</h1-->
+
+<table width="100%">
+<tr valign=top>
+<td align=center>
+<a href="animation.html">
+<img src="activedvi009.gif" alt="Active-DVI in action">
+</a>
+</td>
+<td align=center>
+<a href="animation.html">
+<img src="emacs009.gif" alt="Emacs in action">
+</a>
+</td>
+<td align=right>
+<h2 align=right><i>
+An <font color=blue>Emacs</font>  minor mode for<br>
+<font color=blue>incremental viewing of <br>
+LaTeX documents</font>. </i>
+</h2>
+</td>
+</tr>
+<tr>
+<td colspan=2 align=center><a href="animation.html">Start mini demo</a></td>
+</tr>
+</table>
+
+<p> <font color=blue>WhizzyTeX</font> provides a minor mode for
+Emacs or XEmacs, a (bash) shell-script daemon and some LaTeX macros.  It
+works under Unix with <tt>gv</tt> and <tt>xdvi</tt> viewers, but the
+<a href="http://pauillac.inria.fr/advi/">Active-DVI</a> viewer will provided
+much better visual effects and will offer more functionalities. 
+
+<h2 align=center>
+<img src="http://pauillac.inria.fr/~remy/hot.gif" alt="New">
+&nbsp;&nbsp;
+<a href="whizzytex.html#edit"><it>WhizzyEditing</it></a>
+&nbsp;&nbsp;
+<a href="whizzytex.html#pdf"><it>Mode for PDF (with xpdf)</it></a>
+&nbsp;&nbsp;
+<img src="http://pauillac.inria.fr/~remy/hot.gif" alt="New">
+</h2>
+
+<h2>Versions</h2>
+
+The major release version is 
+<a href="whizzytex-1.2.0.tgz">whizzytex-1.2.0.tgz</a>
+(see <a href="Announce">Announce</a>).
+
+<br>
+The <a href="VERSION">current stable version</a> is
+<a href="whizzytex-1.2.3.tgz">whizzytex-1.2.3.tgz</a>
+(see <a href="CHANGES">CHANGES</a>).
+It is also available as a redhat source package 
+<a href="whizzytex-1.2.3-1.src.rpm">
+whizzytex-1.2.3-1.src.rpm</a>.
+
+
+
+
+<br><br><em> There is also a <a href="whizzytex-xxx.tgz">working version</a>
+(see <a href="DATE">last update<A>), which you should only use if you
+wish to test or experiment with new features. In particular, this may
+contain serious bugs.
+<p>
+Some <a href=older.html>older versions</a> are still available. 
+</em>
+
+<h2>Requirements</h2> <font color=blue>WhizzyTeX</font> runs on Unix-based
+platforms (you may still see the <a href="FAQ.html#cygwin">FAQ</a> for
+<i>unsupported</i> use with Cygwin).  It requires LaTeX, Bash, either Emacs
+or XEmacs, and at least one viewer, which could be DVI-based such as
+<tt>xdvi</tt> or <tt>advi</tt> (Active-DVI) or Postscript-based such as
+<tt>gv</tt> provided you also have a DVI to Postsctipt converter such as
+<tt>dvips</tt>).  However, the advanced features of WhizzyTeX only works for
+<a href="http://pauillac.inria.fr/activedvi/">Active-DVI</a> previewer,
+version 1.6.0 or higher.
+
+<H2>Documentation</h2>
+
+Installation and user manual are available in 
+<a href="whizzytex.html">HTML</a>,
+<a href="manual.ps">PS</a>, or
+<a href="manual.dvi">DVI</a> formats. 
+Most of the documentation is also available as online Emacs help 
+(via help for the function <tt>whizzytex-mode</tt> and following hyper-links). 
+
+<p>
+See also the <a href="FAQ.html">FAQ</a>.
+
+<p>
+Send <a href="FAQ.html#isitabug">bugs</a> to 
+<A HREF="mailto:whizzytex-bugs@pauillac.inria.fr">
+<tt>whizzytex-bugs@pauillac.inria.fr</tt></A>
+
+<p>
+Join the <a href="https://sympa-rocq.inria.fr/wws/info/whizzytex">users'
+mailing list</a>. 
+
+<h2>Disclaimer</h2>
+
+<font color=blue>WhizzyTeX</font> is still under development and may contain dangerous bugs.
+You may wish to save copies of the file (and of the whole directory you
+are working in) before WhizzyTeX-ing.
+
+
+<h2>Viewers</h2>
+
+Both <tt>xdvi</tt> (for viewing DVI) and <tt>gv</tt> (for viewing
+Postscript) are likely to be installed by default.  <font color=blue>WhizzyTeX</font> should
+correctly work with both of them (<tt>xdvi</tt> is faster, but does not
+correctly render colors and Postscript).  However, when reloading a file,
+both of then first clean the page, and redraw online. Even though
+<tt>xdvi</tt> is quite fast, this produces a flashing effect that may be
+annoying or worse make you feel a little unconfortable.
+
+Thus, we <strong>highly  recommend</strong>  the use of 
+<a href="http://pauillac.inria.fr/activedvi/">Active-DVI</a>,
+a DVI viewer written in <a href="http://pauillac.inria.fr/ocaml">OCaml</a>.
+
+<!--
+<p><em> Alternatively, there is a 
+<a href="gv-3.5.8-patched.tgz">patched version</a> 
+of <code>gv</code> (<a href="gv-3.5.8.tgz">version 3.5.8</a>)
+written by <a href="http://para.inria.fr/~lefessan">Fabrice
+Le Fessant</a> that inhibits flashing by drawing pages in a pixmap and
+flushing the page all at once.  Then, call <code>gv</code>  with the option
+<code>-nopixmap</code>.  </em> 
+-->
+
+<h2><a href="http://pauillac.inria.fr/advi/">Active-DVI</a></h2>
+
+<p> Active-DVI redraws a page in a background pixmap, and only display the
+completely formatted output. This avoids flashing, even on slow computers.
+
+<p> Furthermore, <font color=blue>WhizzyTeX</font> can take advantage of some more advances
+capabilities of Active-DVI and enable more features. For instance, it will
+then automatically turn pages of the viewer to display the page containing
+the cursor in Emacs, or conversely, adjust the Emacs cursor to the source
+file position when you click in the viewer window.
+
+<p> In addition, Active-DVI also offers facilities for presentations that
+goes beyong the simple viewing of a file, and it can be advantageously used
+for talks with annimations.
+
+
+
+
+<h2>Copyright</h2>
+
+<font color=blue>WhizzyTeX</font> is Copyright (C) 2001, 2002 INRIA and distributed under the
+<a href="GPL">GNU General Public License</a>. See the enclosed file <a
+href="COPYING">COPYING</a>. 
+
+
+<h2>Acknowledgements</h2>
+
+<a href="http://www.cis.upenn.edu/~bcpierce/">Benjamin Pierce</a> gave me
+the idea of writting <font color=blue>WhizzyTeX</font>.  He and many users
+have made interesting suggestions or provided useful feedback and should all
+be thanked.
+
+Sven Luther and Junichi Uekawa, Debian maintainers of the WhizzyTeX package,
+have contributed to its early popularization and helped improving its
+packaging.
+
+Some people who made more significant contributions
+may be listed in the <a href="CHANGES">CHANGES</a> log file or other
+source files.  
+
+<h2>Author</h2>
+
+<font size="+1">
+<A HREF="http://cristal.inria.fr/~remy">Didier Remy</A>
+</font>
+<br>
+<br>
+
+<hr>
+<em>
+Last-modified: "2002-03-09 15:52:40 remy"
+</em>
+</body>

@@ -1,0 +1,68 @@
+%; whizzy chapter
+
+\documentclass{article}
+
+\usepackage {main}
+
+\newenvironment{drawer}[1]{\subsection{#1}}{}
+\title {Advanced example}
+\begin{document}
+\maketitle
+\begin{abstract}
+This self-demonstrating example illustrate advanced uses of {WhizzyTeX}
+customization. To see the demo, run WhizzyTeX on this file and move the
+cursor in and out environments. You may also do so by \emph{clicking}
+on subsection headers.
+\end{abstract}
+
+\section{Drawers}
+
+This illustrates how to use the cursor position to change the behavior of
+environments. This document should compiled with plain latex, so
+customization is defined in local file \verb"whizzy.sty" that it
+automatically loaded by WhizzyTeX.
+
+\begin{drawer}{Changing the behavior inside environments}
+To modify the behavior when the cursor is inside an environment, it
+sufficies to use the command \verb"\WhizzyInsideEnvironment" 
+in place of \verb"\renewenvironment". 
+\begin{itemize}
+\item This is the simplest example. 
+\item The old behavior become is used when the cursor is outside, and bound
+to \verb"\out@itemize" and \verb"\endout@itemize". 
+\end{itemize}
+The environments can be embedded as show here with \verb"itemize" inside
+\verb"drawer". 
+The example \verb"drawer" shows how to modify the environment outside,
+rather than inside: 
+\begin{enumerate}
+\item pick the old definition;
+\item redefine the behavoir outside;
+\item define the new behavior inside to be the previous behavior outside.
+\end{enumerate}
+\end{drawer}
+
+\begin{drawer}{Special environments}
+This example uses the \verb"exercise" environment for proofs.
+The behavior inside is to flip a boolean that make postpone the proof to an
+appendix. In this case the end of the environment command is replaced
+by \verb"endnow-proof", hence, 
+\verb"\whizzy@envlimit@waux" which is otherwise added automatically by
+\verb"\WhizzyInsideEnvironment", must be called explicitly here.
+\begin{theorem}
+All theorems are true.
+\end{theorem}
+\begin{proof}{}
+Otherwise, they would not be called theorems. 
+\end{proof}
+\begin{lemma}
+This is a lemma. 
+\end{lemma}
+\begin{proof}{}
+The proof is similar.
+\end{proof}
+\end{drawer}
+
+
+
+\end{document}

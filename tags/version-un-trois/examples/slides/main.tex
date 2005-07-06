@@ -1,0 +1,200 @@
+%; whizzy slide  -advi "advi -html Start-Document"
+%; whizzy slide  -ps "gv -nowatch -a4 -magstep -2 -geometry 735x505+-150+-100"
+
+
+% All the previous spool options are possible move the line first to
+% make it active type ^C-^S to start or stop the spool mode. 
+
+%% This file uses seminar mode and uses the overlay mode.
+%% May not be installed on all LaTeX environments
+
+\documentclass [semlayer,semcolor,landscape]{seminar}
+
+% Load any package or define any  macro here
+
+\slideframe {none}
+\usepackage{color}
+\newcommand{\headings}[1]{\subsection* {\centerline {\textcolor{blue}{#1}}}}
+\def \subpar #1{\par\medskip {\textcolor{blue}{\bf #1}}}
+
+%% Next line must be uncomment to see overlay special effects
+%\usepackage {advi}
+\usepackage {pst-node}
+
+% Do not define any macros except on a per slide basis
+
+\begin{document}
+\pagestyle {empty}
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+
+\null
+\vfil
+\begin{center}
+\huge \bf \color{red}
+
+{\textcolor{blue}{Emacs mode}} \\
+for incremental display of \\ 
+{\color{blue} latex slides} \\
+
+{\textcolor {green}{\large (and other documents)}}
+
+\end{center}
+\vfil
+\null
+\end{slide}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+
+\headings {Principle}
+ 
+\subpar {Emacs is watching you} typing and moving in the buffer attach
+to the source file in keep saving the region (slide, section, or subsection)
+your are in  into a spooler file. 
+
+\subpar {A shell-script is watching the spooler file}
+and keep recompiling it as soon as it is refreshed.
+
+\vfill
+\subpar {\Large Warning!}
+\begin{quote}
+\large
+The content of this file is not to be taken as documentation.
+See documentation at url \verb"http://pauillac.inria.fr/~remy"
+\end{quote}
+
+\end{slide}
+\begin{slide}%
+\headings {Emacs hacks}
+
+Besides administrative business, the main trick is to use 
+\verb"post-command-hook" to make emacs watching if anything has changed. 
+
+It uses \verb"buffer-modified-tick" to tell if any editing has actually
+occurred, and compare the point position with the (remembered) position of
+the region being displayed to see if saving should occur. 
+
+Last, it uses \verb"sit-for" to delay savings until idleness or a
+significant number of editing changes. 
+
+\end{slide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+\headings {TeX hacks}
+
+The only TeX hack to build a format file so as to avoid reloading the whole
+macros at each compilation. This is entirely transparent, that is, the
+source file does not have to understand this.
+
+The hack is to redefine \verb"\documentclass" which in turn  redefines
+\verb"\document" to execute \verb"\dump" (after redefining \verb"\document"
+to its old value and \verb"\documentclass" so that it skips everything till
+\verb"\document". This is quite robust, and worth with my preferred macros
+package \verb"localmacros" as well. 
+
+\end{slide}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+\headings {Unix hacks}
+
+Mainly, a unix shell-script is watching the spooler file.  It recompiles the
+format file whenever the source file has changed (its unix date) and
+recompiles the spooler file whenever it has changed (its first line
+containing a time-stamp).
+
+If the file has been recompiled successfully, it triggers the previewer
+(ghostscript or xdvi) so that it rereads the dvi or ps file. Otherwises, it
+cat the log (hence into the \verb"*TeX-shell*" buffer where it has been
+launched). 
+
+\end{slide}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+\headings {Interaction}
+
+Emacs launches the deamon (passing the mode and command for displaying)
+and turn itself into spooling mode. 
+
+Emacs kills the deamon when turn off. 
+
+The mode also automatically turns off when the deamon has been killed
+(its pid-lock-file is non-existent). 
+
+The deamon commit suicides whenever the previewer has been killed. 
+
+So the mode can as eaily be turned off from emacs or by exiting the
+previewer. 
+
+\end{slide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide}
+\headings {Modes}
+
+\subpar {Slide}
+
+In slide mode, the separator the \verb"\begin {slide}"
+(so the text between two slides is displayed after the current slide). 
+
+\subpar {File}
+
+In file mode, the separators are sectioning units (chapter, section, or
+subsection). 
+
+An improvement could be to maintain the numbering of sections
+consistent, or even to keep the enclosing sections displayed. 
+
+\end{slide}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{slide} 
+\headings {Try it yourself}
+
+\ldots{} by moving the cursor over this slide.  
+
+\begin{quote}\em \color{red}
+This will only work if you use \verb"gv" or \verb"advi" and
+require package \verb"advi" in the header of this file
+\end{quote}
+
+\makeatletter 
+\expandafter \let \expandafter \foo \csname whizzy@layer\endcsname
+\makeatother
+
+{\color{blue}
+\ifx \foo \relax
+All overlays 
+\else
+Only overlays below or equal to \foo 
+\fi} are now shown
+
+This always appear.  %\overlay 0
+
+
+{\overlay 1 
+[This will appear in overlay 1 and more] 
+}
+
+{\overlay 2 
+[This should appear in overlay 2 and more 
+
+\qquad {\overlay 3 [ And this in overlay 3 and more (if any...)] } 
+ 
+and overlay 2 continues until here]
+}
+
+
+This again always appear and ends the slide.
+
+%\hspace {2em}\ovalnode[fillstyle=solid,fillcolor=blue]{B}{bbb}
+
+\end{slide}
+\end{document}
+
+
+\end{document}

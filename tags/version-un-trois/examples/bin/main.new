@@ -1,0 +1,68 @@
+\SourceFile{main.ltx}%; whizzy -ext .tex -mkslice make -mkfile "make files" -trace
+
+\documentclass{article}
+
+\begin{document}
+
+For illustration, this is using inlined GPIC macros.
+
+Here we use a simple make files: 
+\begin{quote}
+\begin{verbatim}
+SOURCES = main.tex
+PRODUCED = $(patsubst %.ltx, %.tex, $(SOURCES))
+
+files: $(PRODUCED)
+	echo $(PRODUCED)
+
+%.tex: %.new
+	gpic -t < $< > $@
+
+
+%.tex: %.ltx
+	gpic -t < $< > $@
+\end{verbatim}
+\end{quote}
+The command \verb"make files" will produce all files from source files. 
+
+Here is a drawing that need preprocessing:
+\expandafter\ifx\csname graph\endcsname\relax \csname newbox\endcsname\graph\fi
+\expandafter\ifx\csname graphtemp\endcsname\relax \csname newdimen\endcsname\graphtemp\fi
+\setbox\graph=\vtop{\vskip 0pt\hbox{%
+    \special{pn 8}%
+    \special{pa 0 1500}%
+    \special{pa 1350 1500}%
+    \special{pa 1350 0}%
+    \special{pa 0 0}%
+    \special{pa 0 1500}%
+    \special{da 0.050}%
+    \graphtemp=\baselineskip\multiply\graphtemp by -1\divide\graphtemp by 2
+    \advance\graphtemp by .5ex\advance\graphtemp by 0.000in
+    \rlap{\kern 0.675in\lower\graphtemp\hbox to 0pt{\hss {Generic structures}\hss}}%
+    \special{ar 650 350 400 150 0 6.28319}%
+    \graphtemp=.5ex\advance\graphtemp by 0.350in
+    \rlap{\kern 0.650in\lower\graphtemp\hbox to 0pt{\hss {Monoid}\hss}}%
+    \special{ar 650 1000 375 150 0 6.28319}%
+    \graphtemp=.5ex\advance\graphtemp by 1.000in
+    \rlap{\kern 0.650in\lower\graphtemp\hbox to 0pt{\hss {Group}\hss}}%
+    \special{pa 650 500}%
+    \special{pa 650 850}%
+    \special{fp}%
+    \special{sh 1.000}%
+    \special{pa 675 750}%
+    \special{pa 650 850}%
+    \special{pa 625 750}%
+    \special{pa 675 750}%
+    \special{fp}%
+    \hbox{\vrule depth1.500in width0pt height 0pt}%
+    \kern 1.350in
+  }%
+}%
+\Setlineno
+45
+$$
+\box\graph
+$$
+End of the drawing.
+
+\end{document}
