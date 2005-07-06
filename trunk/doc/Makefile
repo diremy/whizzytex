@@ -2,6 +2,7 @@ HEVEA = hevea -exec xxdate.exe
 HVAOPT = -fix -nosymb
 # HVAOPT = -charset iso-8859-1 -fix -nosymb
 
+DOCSOURCES=manual.tex manual.sty caml.eps version.tex Makefile
 DOCFORMATS=dvi ps pdf html info
 all: FILES
 
@@ -9,6 +10,7 @@ FILES: $(addprefix whizzytex., dvi ps pdf html info) Makefile
 	cd ..; \
 	ls $(addprefix doc/whizzytex., dvi ps pdf html info) \
 	   doc/whizzytex00?.gif doc/whizzytex.info-* \
+	   $(addprefix doc/, $(DOCSOURCES)) \
 	> doc/$@
 
 manual.hva: manual.sty

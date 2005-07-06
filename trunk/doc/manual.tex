@@ -1,3 +1,28 @@
+% manual.tex --- WhizzyTeX, a wysiwyg environment for TeX
+%
+%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
+%
+%  Author         : Didier Remy <Didier.Remy@inria.fr>
+%  Version        : 1.2.2
+%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
+%  Web Site       : http://pauillac.inria.fr/whizzytex
+% 
+%  WhizzyTeX is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2, or (at your option)
+%  any later version.
+%  
+%  WhizzyTeX is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details 
+%  (enclosed in the file GPL).
+%  
+%  See the file COPYING enclosed with the distribution.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  File manual.tex (WhizzyTeX documentation source file)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \documentclass[12pt]{article}
 
 \input {version}
@@ -75,19 +100,26 @@ move or resize objects visually.
 %HEVEA\hypertarget{install}{}
 
 \section {Installation}
+
+\subsection {Requirements}
+
 {\whizzy} is designed for \lst"Unix" plateforms\footnote{It has 
 been reported to successfully work on Windows under Cygwin---See the 
 \href{FAQ.html}{FAQ}.}.
 
-To use {\whizzy}, you need {\tt Emacs} or {\tt XEmacs}, {\tt latex2e}, and
-{\tt bash} installed, and at least one DVI or Postscript previewer, such as
-{\tt advi}, {\tt xdvi}, or {\tt dvips} combined with {\tt gv}. 
+To use {\whizzy}, you need {\tt Emacs} or {\tt XEmacs}, some standard 
+{\tt latex} distribution, 
+{\tt bash}, and at least one DVI, Postscript or PDF previewer, such as
+{\tt advi}, {\tt xdvi}, or {\tt dvips} combined with {\tt gv}, or 
+\texttt {xpdf}.
 
-{\whizzy} has been developed under Linux Redhat 7.2 but has not been
-extensively tested on other platforms. However, {\LaTeX} and Emacs are quite
-portable and possible compatibility problem with the bash shell-script
-should be minor and easily fixable.
+{\whizzy} has been developed under Linux but has not been extensively tested
+on other platforms. However, {\LaTeX} and Emacs are quite portable and
+possible compatibility problem with the bash shell-script should be minor
+and easily fixable. Hence {\whizzy} should work with all distributions of
+\texttt{latex} that are compliant to the standard. 
 
+\subsection {Get the source}
 Get the source {\tt whizzytex-\version.tgz} 
 from the \href{http://pauillac.inria.fr/whizzytex}{distribution}, 
 uncompress and untar it in some working directory, as follows:
@@ -101,7 +133,7 @@ cd whizzytex-\version
 Then, the installation can be automatic (default or customized), or manual.
 
 
-\paragraph{Warning!}
+\subsection{Warning!}
 Many Linux installations make \lst"xdvi" a shell-script that erroneously
 end with the line \lst#xdvi.bin "$@"# instead of 
 \lst#exec xdvi.bin "$@"#. The later is needed to preserve the process 
@@ -116,7 +148,6 @@ is so common we provide a script to check your configuration with the command
 \end{tt}
 \end{quote}
 By default, this check is performed by automatic installation below.
-
 
 \subsection {Automatic installation}
 
@@ -738,6 +769,12 @@ to be used instead of {\whizzy} own default values.
 \label{configuration}
 \label {File-configuration}
 
+{\whizzy} allows for inlined customization in the source file, as described
+below. While this mecanism is quit convenient for short and simple
+customization (such as selecting the output format and previewer or
+sectioning), it is harsh and \emph{depreciated} for advanced customization,
+for which you should prefer local customozation files (see Section~\ref
+{sec/local-custom}). 
 
 A configuration line is one that starts with regexp prefix ``\lst"^%; +"''
 followed by a configuration keyword.  If two configuration lines have the same
@@ -784,7 +821,7 @@ determines the way the document is sliced
 
 \item[\arg{viewer}]\indent\\
 is the type of viewer and can only be one of 
-\lst"-advi", \lst"-xdvi", or \lst"-ps" (see section~\ref{types})
+\lst"-advi", \lst"-xdvi", \lst"-ps", or \lst"-pdf" (see section~\ref{types})
 
 \item[\texttt{-display} \arg{display}]\indent\\
 specifies which X display to show the DVI previewer in,
@@ -957,15 +994,17 @@ mode, with an appropriate regexp.)
 See help for \lst"whizzy-viewers".
 
 The previewer types can have three possible values:
-{\tt -ps}, {\tt -dvi}, or {\tt -advi}. 
+{\tt -advi}, {\tt -dvi}, {\tt -ps}, or {\tt -pdf}. 
 
 The previewer type should agree with the previewer command in several ways:
 \begin {itemize}
 
 \item
-They tell whizzytex whether to use signal {\tt SIGHUP} (with {\tt -ps})
-or {\tt SIGUSR1}  ({\tt -dvi} and {\tt -advi}) to tell the previewer to
-reload the file
+They tell how to trigger reload on the previewer. 
+This may signal the previewer with signal \texttt{SIGHUP} for \texttt{-ps}
+or {\tt SIGUSR1} for \texttt{-dvi} and \texttt{-advi}, or to establish the 
+previewer as a remote server with \texttt{-pdf}.
+
 
 In particular, if you write a front-hand shell-script \lst"viewer" to the
 call previewer,  and want to use \lst"viewer" as the previewer, you should 
@@ -973,11 +1012,15 @@ arrange for \lst"viewer" to understand these signals (and forward them to the
 previewer). The simplest way is to hand your script with an exec command
 calling the \lst"gv", \lst"dvi" or \lst"advi".
 
-
+Also, the option \texttt{-pdf} assumes \texttt{xpdf} remote server 
+(launched with the whizzytex process id as name) and its reload protocol. 
+Thus, if you wish to use another previewer, you also need to cutomize the
+variable \texttt{RELOAD} of the shell-script. 
 
 \item
 They tell whizzytex whether to process the slice to 
-Postscript (with {\tt -ps}) or to DVI format (with {\tt -dvi} and {\tt -advi}). 
+Postscript (with {\tt -ps}) or to DVI format (with {\tt -dvi} and {\tt
+-advi} or directly generate \texttt{pdf} output with \texttt{pdflatex}.
 
 \item
 Moreover, {\tt -advi} requires the previewer to 
@@ -1070,6 +1113,7 @@ same page layout.
 
 %HEVEA\hypertarget{custom}{}
 \subsection{System, user, and local customization} %
+\label{sec/local-custom}
 
 {\whizzy} is a three-part engine, with Emacs, Latex, and the glue
 Bash-script running altogether. Some of the parameters can be adjusted at
@@ -1174,10 +1218,19 @@ To use your own command as a previewer, you must choose either type
 accept \lst"SIGUSR1" (for \lst"-dvi") signal or \lst"SIGHUP" (for \lst"-ps") 
 signal and respond by reloading the file.
 
-\subsection{Viewing with acroread}
+%HEVEA\hypertarget{pdf}{}
+\subsection{Viewing with \texttt{xpdf}}
 
-This does not work because they is no simple way to tell
-\lst"acroread" to reload its file in batch. 
+
+{\whizzy} now works with \lst"pdf" using the \lst"xpdf" previewer
+and its remote server capabilities to reload the file and jump to the
+cursor position (this does not work because they is no simple way to tell
+\lst"acroread" to reload its file in batch). You must choose \lst"-pdf" 
+as previewer type, which will also set other variables so as to compile the
+document with pdflatex instead of latex. You must leave the default
+previewer command, i.e. enter \lst"-pdf ." and not \lst"-pdf xpdf" (or else
+understand the internals of the \lst"whizzytex" script) because
+other options need to be passed to \lst"xpdf".
 
 \section{Whizzy Effects}
 

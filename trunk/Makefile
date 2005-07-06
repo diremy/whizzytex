@@ -99,7 +99,7 @@ ifdef EMACSDIR
 	mkdir -p $(DESTDIR)$(EMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(EMACSDIR)
 	echo $(DESTDIR)$(EMACSDIR)/whizzytex.el >> Manager.installed
-	rm -f $(DESTDIR)/$(EMACSDIR)/whizzytex.elc
+	rm -f $(DESTDIR)$(EMACSDIR)/whizzytex.elc
 ifdef EMACS
 	$(INSTALLR) $(TMP)/$(EMACS)/whizzytex.elc $(DESTDIR)$(EMACSDIR)
 	echo $(DESTDIR)$(EMACSDIR)/whizzytex.elc >> Manager.installed
@@ -109,7 +109,7 @@ ifdef XEMACSDIR
 	mkdir -p $(DESTDIR)$(XEMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(XEMACSDIR)
 	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.el >> Manager.installed
-	rm -f $(DESTDIR)/$(XEMACSDIR)/whizzytex.elc
+	rm -f $(DESTDIR)$(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
 	cp $(TMP)/$(XEMACS)/whizzytex.elc $(DESTDIR)$(XEMACSDIR)
 	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.elc >> Manager.installed
@@ -122,8 +122,8 @@ endif
 	$(INSTALLR) $(SRC)/whizzytex.sty $(DESTDIR)$(LATEXDIR)
 	echo $(DESTDIR)$(LATEXDIR)/whizzytex.sty >> Manager.installed
 	mkdir -p $(DESTDIR)$(DOCDIR) 
-	$(INSTALLR) doc/manual.html COPYING GPL INSTALL $(DESTDIR)$(DOCDIR)
-	for i in manual.html COPYING GPL INSTALL; \
+	$(INSTALLR) doc/whizzytex.html COPYING GPL INSTALL $(DESTDIR)$(DOCDIR)
+	for i in doc/whizzytex.html COPYING GPL INSTALL; \
 	 do echo $(DOCDIR)/$$i; done >> Manager.installed
 
 where:

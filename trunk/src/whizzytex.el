@@ -3,7 +3,7 @@
 ;; Copyright (C) 2001, 2002, 2003, 2004 INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.2.0
+;; Version        : 1.2.3
 ;; Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 ;; Web Site       : http://pauillac.inria.fr/whizzytex
 ;; 
@@ -60,7 +60,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.2.0"
+(defconst whizzytex-version "1.2.3"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -107,6 +107,7 @@ default options.")
   '(
     ("-advi" "advi -html Start-Document") ("-dvi" "xdvi")
     ("-ps" "gv")
+    ("-pdf" "xpdf")
    )
   "*Alist defining accepted previewers and their default configuration.
 
@@ -123,7 +124,7 @@ Each element of the alist is of the form
 
 where
 
-  <type> can only be \"-advi\", \"-xdvi\", or \"-ps\"
+  <type> can only be \"-advi\", \"-dvi\", \"-ps\", or \"-pdf\"
 
   <command>
 
@@ -151,6 +152,13 @@ Moreover, <type> and <default-command> should agree in the following way:
 
     tells whizzytex to produce Postscript files (using dvips) and to use
     signal SIGHUP to tell the previewer to reload the file. Example is gv.
+
+  -pdf
+
+    tells whizzytex to produce PDF files (using pdflatex) and to use
+    xpdf to preview them and xpdf -reload to reload the file. 
+    Currently, no other option if left for the previewer.
+
 
 In addition -advi tell whizzytex to tell latex to dump source line number
 and file name information into the DVI file as additional \\special commands
@@ -314,6 +322,10 @@ persistent, and hidden when the error disapears.")
 ;; Xemacs compatibility
 
 (defun whizzy-sit-for (seconds &optional milliseconds display)
+  ;; Emacs on Mac OS 10 does not allow milliseconds greater than 2000!
+  (if milliseconds
+      (setq seconds (+ seconds (/ milliseconds 1000))
+            milliseconds (mod milliseconds 1000)))
   (sit-for seconds milliseconds display))
 
 (defvar whizzy-xemacsp (string-match "XEmacs" emacs-version)
@@ -406,7 +418,6 @@ in format.")
 
 (defconst whizzy-slicing-mode 19)
 (defconst whizzy-view-mode 20)
-
 (defconst whizzy-counters 21)
 (defconst whizzy-layers 22)
 (defconst whizzy-log-buffer 23)
@@ -452,7 +463,7 @@ Used to trace section and reset counters at the beginning of a slice.")
 
 (defvar whizzy-section-counters-alist nil
   "Structure mapping source file sections to LaTeX counters.
-Its csr is tha alist. Its car is  a pointer to the list used for last update.")
+Its cdr is the alist. Its car is  a pointer to the list used for last update.")
 (make-variable-buffer-local 'whizzy-section-counters-alist)
 
 (defvar whizzy-line-section-alist nil
@@ -549,6 +560,14 @@ alist is not empty, and nil otherwise."
     )
 
 (defun whizzy-read-sections (&optional arg)
+  "Read, build and set sections-counters mappings.
+
+Mappings are read form file _whizzy_BASEFILENAME.pag
+Each line is an entry, whose fields are separated by a COLON.
+FILENAME : LINENUMBER : SECTIONNING @ S0.S1.S2.S3
+where S0 is chapter, S1 is section, etc.
+Entries are sorted per source-file and set to the whizzy variable
+`whizzy-counters'."
   (if (or (whizzy-get whizzy-counters) arg)
       (save-excursion
         (set-buffer (whizzy-get whizzy-master-buffer))
@@ -559,9 +578,10 @@ alist is not empty, and nil otherwise."
               (save-excursion
                 (set-buffer (get-buffer-create "*load*"))
                 (insert-file-contents filename)
-                (while (re-search-forward
-                        "^\\(.*\\):\\([0-9][0-9]*\\):\\(.*\\)\@\\(\\([^.]*\\).*\\)$"
-                        (point-max) 'move)
+                (while
+                    (re-search-forward
+                     "^\\(.*\\):\\([0-9][0-9]*\\):\\(.*\\)\@\\(\\([^.]*\\).*\\)$"
+                     (point-max) 'move)
                   (let ((new
                          (cons (match-string 1)
                                (cons (string-to-number (match-string 2))
@@ -570,10 +590,19 @@ alist is not empty, and nil otherwise."
                                             (string-to-number (match-string 5))
                                             (match-string 4))
                                            )))))
-                    (if (or (null last) (equal (car last) (car new))) nil
-                      (setq all
-                            (cons (cons (car new) (cdr (cddr last))) all)))
-                    (setq all (cons (setq last new) all))))
+                    (if (or 
+                         ;; no previous entry
+                         (null last) 
+                         ;; same file 
+                         (equal (car last) (car new)))
+                        ;; do nothing
+                        nil
+                      ;; otherwise, we have switch files, we add an entry to 
+                      ;; the current, taking the current section 
+                      ;; of  previous file. 
+                      (setq all (cons (cons (car new) (cdr last)) all)))
+                    (setq all (cons (setq last new) all)))
+                  )
                 (erase-buffer))
             (message "File %s not found" filename))
           ;; (setq all (nreverse all))
@@ -1166,6 +1195,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
                    (setq word (cdr (whizzy-section-counters t)))
                    )
                 (setq word (cdr (whizzy-section-counters t))))
+              ;; (message "Word-1 %S" word)
               (goto-char next)
               (if (and
                    (or (re-search-forward whizzy-begin (point-max) t)
@@ -1206,6 +1236,8 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
                                           (cddr (car before))))
                             (setq before (cdr before)))
                           ))
+                    ;; (message "Word-2 %S" word)
+
                     
                     ;; end of enlargment code
                     (goto-char here)
@@ -1236,6 +1268,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
   (let* ((this (whizzy-current-time))
          (start (whizzy-get whizzy-slice-start))
          )
+    ;; (message "set-time: %S (this=%S start=%S)" arg this start)
     (if arg
         (if (= start 0) nil
           (whizzy-set whizzy-slice-start 0)
@@ -1404,6 +1437,7 @@ mode, otherwise. This is necessary to keep log files when WhizzyTeX fails
 during initialization."
   (interactive)
   (let ((debug (not (whizzy-get whizzy-debug))))
+    (whizzy-set whizzy-debug debug)
     (if whizzytex-mode
         (whizzy-call (if debug "trace on" "trace off"))
     (whizzytex-mode 16))))
@@ -1511,10 +1545,15 @@ during initialization."
                       (whizzy-slice layer)
                       (setq whizzy-last-tick tick)
                       ))
-                    (setq error nil))
+                (setq error nil))
             (if (and error whizzytex-mode)
-                (progn
-                  (message "*** Fatal Error while slicing. Mode turned off")
+                (if (whizzy-get whizzy-debug)
+                    (progn
+                      (message
+                       "*** Fatal Error while slicing. Entering debugger")
+                      (debug))
+                  (message "*** Fatal Error while slicing. Mode turned off.
+    (Rerun with WhizzyTeX debug-mode on to produce an Emacs backtrace.)")
                   (whizzy-mode-off)))
             )))))
 
@@ -1623,7 +1662,7 @@ The following variables can be customized:
   "*Keymap used in `whizzytex-mode'.")
 
 (defvar whizzy-bad-extensions
-  '("log" "aux" "bib" "dvi" "ps" "fmt" "waux" "wdvi")
+  '("log" "aux" "bib" "dvi" "ps" "pdf" "fmt" "waux" "wdvi")
     "List of forbidden extension (used internally).")
 
 (defvar whizzy-configuration-alist nil
@@ -1674,9 +1713,9 @@ These can be defined with `whizzy-add-configuration'.
                 (message "Setup failed. Turning mode off")
                 (whizzy-mode-off))
             (if (and (buffer-modified-p)
-                     (if (equal whizzy-save-buffers 'ask)
-                         (y-or-n-p "Save buffer? "))
-                     whizzy-save-buffers)
+                     (if (or (equal whizzy-save-buffers 'ask)
+                             (not (file-exists-p buffer-file-name)))
+                         (y-or-n-p "Save buffer? ")))
                 (save-buffer))
             (whizzy-setup-mode (whizzy-get whizzy-slicing-mode))
             (whizzy-create-slice-overlays)
@@ -1737,8 +1776,10 @@ These can be defined with `whizzy-add-configuration'.
                            (s (and p (process-status p))))
                       (or (equal s 'run) (equal s 'stop)))
                     (whizzy-kill t))
-                (or (file-readable-p filename)
-                  (error "File %s not readable" filename))
+                (if (file-exists-p filename)
+                    (or (file-readable-p filename)
+                        (error "File \"%s\" not readable!" filename))
+                  (error "File \"%s\" does not exists!" filename))
                 ;; file-accessible-directory-p ?
                 (or (file-exists-p subdir) (make-directory subdir))
                 (or (file-exists-p output) (make-directory output))
@@ -1834,7 +1875,7 @@ If ARG turn mode off even if apparently allready off.
     (let ((mode nil)
           (regexp whizzy-select-mode-regexp-alist))
       (if (re-search-forward
-           "^ *\\\\documentclass[^{}\n]*{\\([a-zA-Z]+\\)}"
+           "^ *\\\\documentclass[^{}]*{\\([a-zA-Z]+\\)}"
            (point-max) t)
           (setq mode (assoc (match-string 1) whizzy-class-mode-alist)))
       (if (consp mode)
@@ -2006,7 +2047,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
      (string-match "\\([a-z]+ +\\)?-" string)
      (progn
        (setq start (- (match-end 0) 1))
-       (if (string-match "\\(-a?dvi\\|-ps\\)\\b *" string start)
+       (if (string-match "\\(-a?dvi\\|-ps\\|-pdf\\)\\b *" string start)
            (progn
              (setq tmp-view (cons (match-string 1 string) tmp-view))
              (setq start (match-end 0)))
@@ -2276,7 +2317,7 @@ nil means do not guess.
       ;; check that master is running whizzytex
       (unwind-protect
           (save-excursion
-            ;; to avoid looping, don't leave whizztex-mode nil
+            ;; to avoid looping, don't leave whizzytex-mode nil
             (unless whizzytex-mode (setq whizzytex-mode 'installing))
             (set-buffer master-buffer)
             (or whizzytex-mode
@@ -2344,13 +2385,26 @@ nil means do not guess.
 The path is absolute if REGEXP starts with a /, otherwise, it is relative 
 to the default directory. 
 
-CONFIG may be a function, treated as a hook to run when whizztex-mode 
+CONFIG may be a function, treated as a hook to run when whizzytex-mode 
 is activated (see `whizzy-hook-alist'), or a pair of a configuration
 keyword and a string (see `whizzy-configuration-alist').
-
 The new configuration is added ahead of the alist. Hence, the order in
 which configuration are added is significant. The most selective REGEXP 
 must be added last. 
+
+For example, 
+
+    (whizzy-add-configuration \"main\\.tex\"
+      '(lambda () (whizzy-customize \"\\\\large\")))
+
+will add the pair (\"main\.tex\" . (lambda () (whizzy-customize \"\\\\large\"))
+ahead of `whizzy-hook-alist', while
+
+    (whizzy-add-configuration \"draft\\.tex\"
+      '((whizzy . \"section\")))
+
+will add the pair (\"draft\.tex\" . '((whizzy . \"section\")))
+ahead of `whizzy-configuration-alist'. 
 "
   (if (string-match "^/" regexp) nil
     (setq regexp 
@@ -2430,6 +2484,7 @@ a CONS means read configuration in current directory unless already read.
                        whizzy-configuration-alist)))
            )))
    ))
+
 (defun whizzy-explode-filename (arg)
   (let ((filename
          (or (and (stringp arg) (expand-file-name arg))
@@ -2674,11 +2729,13 @@ Otherwise, output is kept as long as the window is visible
 
 (defun whizzy-shrink-output (pos)
   (if (and whizzy-shrink-output (whizzy-get whizzy-initialized)
-           (window-live-p (whizzy-get whizzy-process-window)))
-      (delete-region (point-min) pos)))
+           (or (window-live-p (whizzy-get whizzy-process-window))
+               (> (point-max) 16000)))
+      (delete-region (point-min) pos)
+    ))
 
 (defvar whizzy-latex-error-regexp
-  "^\\(! Missing \\|! Undefined \\|! LaTeX Error:\\|Runaway argument?\\)")
+  "^\\(! Missing \\|! Undefined \\|! LaTeX Error:\\|! Package \\|Runaway argument?\\)")
 
 
 (defun whizzy-check-errors ()
@@ -2692,13 +2749,16 @@ Otherwise, output is kept as long as the window is visible
         (setq source-buffer (current-buffer)))
     (set-buffer shell-buffer)
     (goto-char (point-max))
-    (if (re-search-backward "<Recompilation failed>" (point-min) 'move)
+    (if (re-search-backward
+         "<[^\n]*\\(compilation\\|formating\\) failed>" 
+         (point-min) 'move)
         (whizzy-shrink-output (point)))
     (setq beg (point))
     (if (re-search-forward
          "^l\\.\\([1-9][0-9]*\\) \\([^\n]*\\)" (point-max) 'move)
         (progn
           (setq error-begin (string-to-int (match-string 1)))
+          (setq shell-moveto (point))
           (setq line-string
                 (buffer-substring
                  (max (match-beginning 2) (- (match-end 2) 36))
@@ -2712,9 +2772,12 @@ Otherwise, output is kept as long as the window is visible
           (if (re-search-backward whizzy-latex-error-regexp
                                   (point-min) t)
               (setq shell-moveto (match-beginning 0))
-            (setq shell-moveto 0))
-          ))
-    (if shell-moveto (unwind-protect (goto-char shell-moveto)))
+            (setq shell-moveto (point))
+            ))
+      (setq shell-moveto 0)
+      )
+    (if shell-moveto
+        (unwind-protect (goto-char shell-moveto)))
     (if (not error-begin)
         (whizzy-delete-error-overlay)
       (set-buffer source-buffer)
@@ -2843,6 +2906,7 @@ Toggle if ARG is ommitted."
         (or whizzytex-mode (whizzy-get whizzy-active-buffer))) ;
       (let* ((buf (current-buffer))
              (shell  (whizzy-get whizzy-process-buffer))
+             (pos)
              (window (whizzy-get whizzy-process-window))
              (window-alive
               (and window
@@ -2863,14 +2927,19 @@ Toggle if ARG is ommitted."
                     (if whizzy-status (whizzy-set whizzy-process-window nil))
                     (delete-window window)
                     (bury-buffer shell)))
+            
             (if (equal buf (whizzy-get whizzy-active-buffer))
                 (save-selected-window
+                  (set-buffer shell)
+                  ;; select-window may change the buffer's position
+                  (setq pos (point))
                   (if window-alive (select-window window)
                     (setq height (* (/ height 3) 2))
                     (split-window-vertically  height)
                     (select-window (next-window))
                     (switch-to-buffer shell t)
                     )
+                  (goto-char pos)
                   (setq window (selected-window))
                   (setq resize
                         (- (window-height)
@@ -3203,17 +3272,20 @@ Log file name is obtain from suffix by removing leading character."
                
                ))
         ))))
-  
+
 (defun whizzy-filter-output (s)
-  (let ((from 0) (l (length s)))
-    (while (and from (< from l) (whizzy-get whizzy-running)
-                (string-match "^[<#]" s from))
+  (let ((commands (split-string s "[\n]")) command)
+    (while commands
+      (setq command (car commands) commands (cdr commands))
       (save-current-buffer
         (cond
-         ((string-match "^<Compilation succeeded>" s from)
-          (setq from (match-end 0))
+         ((null command) (message "NIL COMMAND"))
+         ;; nop, but most frequent command
+         ((string-equal "<Waiting>" command))
+         ;; cleanup
+         ((string-equal "<Compilation succeeded>" command)
           (goto-char (point-max))
-          (whizzy-shrink-output (- (point) l))
+          (whizzy-shrink-output (point)) ;; (- (point) (length command)) ? 
           (if (whizzy-set-active-buffer)
               (progn
                 (whizzy-delete-error-overlay)
@@ -3223,53 +3295,40 @@ Log file name is obtain from suffix by removing leading character."
                 ))
           )
          ;; those do not 
-         ((string-match "^<Continuing>" s from)
-          (setq from (match-end 0))
-          (whizzy-check-errors)
-          (and (whizzy-set-active-buffer) (whizzy-auto-show 1))
-          )
-         ((string-match "^<Reformatting failed>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Continuing>" command))
+         ;; (whizzy-check-errors)
+         ;; (and (whizzy-set-active-buffer) (whizzy-auto-show 1))
+         ;; )
+         ((string-equal "<Reformatting failed>" command)
           (whizzy-error whizzy-format-error)
           (whizzy-auto-show 1))
-         ((string-match "^<Continuing with the old format>" s from)
-          (setq from (match-end 0))
-          )
-         ((string-match "^<Reformatting succeeded>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Reformatting succeeded>" command)
           (whizzy-error whizzy-format-error t)
           )
-         ((string-match "^<Whole document recompilation failed>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Whole document recompilation failed>" command)
           (whizzy-error whizzy-tex-error)
           )
-         ((string-match "^<Whole document updated>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Whole document updated>" command)
           (whizzy-error whizzy-tex-error t)
           )
-         ((string-match "^<Pages and sections updated>" s from)
-          (setq from (match-end 0))
-          (whizzy-read-sections t))
-         ((string-match "^<Recompiling>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Pages and sections updated>" command)
+          (whizzy-read-sections t)
+          )
+         ((string-equal "<Recompiling>" command)
           (whizzy-set whizzy-slice-fed nil)
           (whizzy-set-time nil)
           )
-         ((string-match "^<Reformating>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Reformating>" command)
           (whizzy-running-message whizzy-reformat-message)
           )
-         ((string-match "^<Recompiling whole document>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Recompiling whole document>" command)
           (whizzy-running-message whizzy-recompile-message)
           )
-         ((string-match "^<Recompilation failed>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Recompilation failed>" command)
           (whizzy-error whizzy-slice-error)
           (whizzy-set-time t)
           )
-         ((string-match "^<Error in Line \\([^\n]*\\) *>" s from)
-          (setq from (match-end 0))
+         ((string-match "^<Error in Line \\([^\n]*\\) *>" command)
           (beginning-of-line)
           (goto-char (point-max))
           (previous-line 1)
@@ -3278,14 +3337,12 @@ Log file name is obtain from suffix by removing leading character."
                 (whizzy-show-wdiff (match-string 1 s))
                 (whizzy-auto-show 1)))
           )
-         ((string-match "\#line \\([0-9][0-9]*\\)" s from)
-          (setq from (match-end 0))
+         ((string-match "^\#line \\([0-9][0-9]*\\)" command)
           (whizzy-goto-line s)
           )
 
          ((string-match
-           "<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\"\\[\\([^]]*\\)\\] #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(moveto\\|resizetop\\|resizebot\\) \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
-          (setq from (match-end 0))
+           "^<edit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\"\\[\\([^]]*\\)\\] #\\([0-9]*\\) @\\([^ \t\n]*\\) \\(moveto\\|resizetop\\|resizebot\\) \\(-?[0-9.]*\\|\\*\\),\\(-?[0-9.]*\\|\\*\\)>" s)
           (if (whizzy-set-active-buffer)
               (whizzy-edit
                (match-string 1 s)
@@ -3299,27 +3356,28 @@ Log file name is obtain from suffix by removing leading character."
                 (t 'moveto))
                (match-string 7 s)
                (match-string 8 s)
-               )))
-         ((string-match "<Fatal error>" s from)
-          (setq from (match-end 0))
+               ))
+          )
+         ((string-equal "<Fatal error>" command)
           (if (whizzy-set-active-buffer)
               (progn
                 (whizzy-mode-off)
                 (whizzy-show-interaction t)))
-          (message "External Fatal error. WhizzyTeX Mode switched off. ")
+          (message "External Fatal error. WhizzyTeX Mode switched off.")
           )
-         ((string-match "<Initialization failed>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Initialization failed>" command)
           (let ((file (concat (whizzy-get whizzy-output-dir)
                               "initialization")))
             (and (file-writable-p file)
                  (write-region (point-min) (point-max) file)))
-          (and (whizzy-set-active-buffer) (whizzy-show-interaction t))
+          (whizzy-check-errors)
+          (and (whizzy-set-active-buffer)
+               (whizzy-show-interaction t)
+               )
           (whizzy-mode-off 'master)
           (message "Initialization failed")
           )
-         ((string-match "<Initialization succeeded, entering loop>" s from)
-          (setq from (match-end 0))
+         ((string-equal "<Initialization succeeded, entering loop>" command)
           (let ((file (concat (whizzy-get whizzy-output-dir)
                               "initialization")))
             (and (file-writable-p file)
@@ -3332,15 +3390,31 @@ Log file name is obtain from suffix by removing leading character."
                 (sit-for 2)
                 (where-is 'whizzy-toggle-debug)))
           )
-         ((string-match "<Quitting>" s from) 
-          (setq from (match-end 0))
+         ((string-equal "<Quitting>" command) 
           ;; (if (whizzy-set-active-buffer) (whizzy-mode-off))
           (whizzy-mode-off 'master)
           (message "Mode switched off externally")
           )
-         (t (setq from nil))
+         ((string-match "<Viewlog>\\(.*\\)" command)
+          (let (;; (line (match-string 1)) 
+                (file
+                 (expand-file-name "texlog" (whizzy-get whizzy-output-dir))))
+            (unless (not (file-readable-p file))
+              (goto-char (point-max))
+              (if (search-backward "<Viewlog>")
+                  (delete-region (match-beginning 0) (match-end 0))
+                ;; (message "NOT FOUND")
+                )
+              ;; (whizzy-shrink-output (point))
+              (insert-file-contents file)
+              (goto-char (point-max))
+              (whizzy-check-errors)
+              (and (whizzy-set-active-buffer) (whizzy-auto-show 1))
+              )))
+         ;; Watch it
+         ;; ((string-equal "<Continuing with the old format>" command))
+         ;; (t (message "UNMATCHED: %s" command))
          )
-        (if from (setq from (+ from 1)))
         )
       )))
 

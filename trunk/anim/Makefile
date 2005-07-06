@@ -12,7 +12,7 @@ activedvi.tex:
 	ln -s animation.tex $@
 
 
-activedvi.gif: animation.tex ../manual.sty animation.hva activedvi.tex Makefile
+activedvi.gif: animation.tex animation.sty animation.hva activedvi.tex Makefile
 	rm -f $*00*.gif
 	hevea $*.tex
 	imagen $*

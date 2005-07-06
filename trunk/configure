@@ -130,40 +130,40 @@ while : ; do
 ##
   -initex) ## <command>                         # initex
         ## Set the latex command to INITEX
-        initex=$2; shift;;
+        initex="$2"; shift;;
 ##
   -latex) ## <command>                          # latex
         ## Set the latex command to LATEX
-        latex=$2; shift;;
+        latex="$2"; shift;;
 ##
   -format) ## <name>                            # latex
         ## Set the name of the format (.fmt suffix removed) 
-        format=$2; shift;;
+        format="$2"; shift;;
 ##
   -fmt) ## <name>                               # fmt
         ## Set the name of the format extension
-        fmt=$2; shift;;
+        fmt="$2"; shift;;
 ##
   -bibtex) ## <command>                         # bibtex
         ## Set the default command for BIBTEX
-        bibtex=$2; shift;;
+        bibtex="$2"; shift;;
 ##
   -advi) ## false|<command>                     # advi
         ## Set the Advi-like previewer command name; false means do not use 
         ## advi-like previewer at all (default if  the command is not found)
-        advi=$2; shift;;
+        advi="$2"; shift;;
 ##
   -multiple) ## true|<command>                  # multiple
         ## Tell if advi-like previewer can view multiple files. 
-        multiple=$2; shift;;
+        multiple="$2"; shift;;
 ##
   -xdvi) ## false|<command>                     # xdvi
         ## Idem but for xdvi-like previewer command name 
-        advi=$2; shift;;
+        xdvi="$2"; shift;;
 ##
   -gv) ## false|<command>                       # gv
         ## Idem but for gv-like previewer command name set to to GV
-        gv=$2; shift;;
+        gv="$2"; shift;;
 ##
   -dvips) ## <command>                          # dvips
         ## Set the DVI-to-Postcript-converter command name
@@ -171,7 +171,7 @@ while : ; do
 ##
   -configfile|--configfile) ## <file>           # /etc/whizzytex/whizzytex.conf
         ## Set the system configuration file (full path)
-        configfile=$2; shift;;
+        configfile="$2"; shift;;
 ##
   -help|--help) ##
 ##
@@ -448,13 +448,14 @@ if test -z "$fmt"; then fmt=fmt; fi
 
 echo -n "Running LATEX=$latex... "
 if [ -n "$latex" ]; then
-  if $latex '&dummy' dummy.tex > latex.log && test -f dummy.dvi
+  # was: $latex '&dummy' dummy.tex
+  if $latex "&$format" dummy.tex > latex.log && test -f dummy.dvi
   then echo ok
   else
     error "
     Command failed:
 
-      $latex '&$format' dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
+      $latex "'"&'$format'"'" dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
 
     $latex installation seem to have problems. 
     See dummy.tex and latex.log
@@ -469,6 +470,20 @@ output FMT $fmt
 
 findcommand "$advi" false >/dev/null || advi=''
 findcommand "$xdvi" false >/dev/null || xdvi=''
+
+# Should we try to fix it and call xdvi.bin directly? 
+# probably not, because the wrappe xdvi is use to setup graphical parameters
+
+# xdvipath=$(which xdvi)
+# if test -x "$xdvipath.bin"
+# then 
+#   if grep -e ^"$xdvipath".bin $(which "$xdvipath") 2>&1 >/dev/null && \
+#      ! grep -e ^"$xdvipath".bin $(which "$xdvipath") 2>&1 >/dev/null 
+#   then
+#     warning "$xdvi command, \ie. $xdvipath, seems to call $xdvipath.bin
+# without exec. Using $xdvi.bin instead."
+
+
 if findcommand "$gv" false >/dev/null 
  then
    if findcommand "$dvips" >/dev/null 

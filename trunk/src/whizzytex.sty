@@ -3,7 +3,7 @@
 %  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.2.0
+%  Version        : 1.2.3
 %  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 %  Web Site       : http://pauillac.inria.fr/whizzytex
 % 
@@ -27,13 +27,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-%% Enforce nonstopmode, forever
-\nonstopmode
-\let \errorstopmode \relax
-\let \scrollmode \relax
-\let \batchmode \relax
-
-\def \whizzy@version {1.2.0}
+\def \whizzy@version {1.2.3}
 
 %% The best to remove problem with hyperref.
 %% Because hyperref does not behave well when precompiled in a format
@@ -46,14 +40,28 @@
 \def \whizzy@empty {}
 \def \whizzy@ignore #1{}
 
+%% Enforce nonstopmode, forever
+\nonstopmode
+
+%% We must prevent any change, hence make change of mode behaves as \relax.
+%% However, \hyperref test on \scrollmode, which if it expands to \relax
+%% may accidentally capture another \relax. Hence, we must not use \relax, but
+%% some equivalent combination \whizzy@asrelax that is unliky to appear 
+%% by chance.
+
+\def \whizzy@asrelax {\relax\whizzy@ignore\whizzy@empty\relax}
+\let \errorstopmode \whizzy@asrelax
+\let \scrollmode \whizzy@asrelax
+\let \batchmode \whizzy@asrelax
+
 %% A few patches are unsafe and conditionally applied (dynamic value)
 \newif \ifwhizzy@tricks  \whizzy@trickstrue
 
 %% Special effects for advi (static value)
 \newif \ifwhizzy@advi
-\@ifundefined {WhizzyAdvi}
+\@ifundefined {WhizzyLevel}
   {\whizzy@advifalse}
-  {\ifx \WhizzyAdvi1\whizzy@advitrue\fi}
+  {\ifx \WhizzyLevel2\whizzy@advitrue\fi}
 
 
 %% \documentclass should be redefined to skip to \begin{document} 
@@ -94,7 +102,9 @@
 
 \def \whizzy@document {\aftergroup \whizzy@begindocumenthook \latex@document}
 \def \whizzy@begindocumenthook {}
+%% This will fire after resume, rather use AtBeforeWhizzyDump
 \def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
+\def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
 
 %% Patch for loading aux files. 
 
@@ -161,9 +171,10 @@
 \def \WhizzyCursorColor{yellow}
 \g@addto@macro \whizzy@beforeauxhook
    {\@ifundefined {Whizzysafe}
-       {% Package color  may take options, load only if unloaded...
-        \AtBeginDocument
-          {\@ifundefined {colorbox}{\usepackage{color}}{}}%
+       {% Package color  may take options, load only if notloaded...
+        % Was \AtBeginDocument, but should rather load these macros 
+        % before dump...
+        \AtBeforeWhizzyDump {\@ifundefined {colorbox}{\usepackage{color}}{}}%
         \def \whizzy@fbox {\colorbox {\WhizzyCursorColor}}}
        {\let \whizzy@fbox \fbox \whizzy@tricksfalse}}
 
@@ -418,12 +429,7 @@ to slice!\par \bigskip}}%
 
 \def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay 1\fi}
 \g@addto@macro \whizzy@beforedumphook
-  {\@ifundefined {overlay}{}%
-      {\let \whizzy@overlay \overlay
-%        \let \overlay \whizzy@@overlay
-%        \g@addto@macro \whizzy@fulldocumenthook
-%            {\let \overlay \whizzy@overlay}%
-       }}
+  {\@ifundefined {overlay}{}{\let \whizzy@overlay \overlay}}
 
 
 %% To show where the cursor is, we pick caracter code ^^A
@@ -497,54 +503,45 @@ to slice!\par \bigskip}}%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 4: independent cool, robust stuff
 
-% Do not remenber why this... \whizzy@active should be better
-%\AtBeginDocument {\catcode `\^^A \active}
-
 \let \whizzy@tt \texttt
 \long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
 \newcommand{\Meaning}
   {\par \medskip \hrule \smallskip \begingroup \hsize 0.75\hsize
        \vbox \bgroup \whizzy@tt \bgroup \makeatletter \@Meaning}
-
-% \long \def \@Meaning #1{\string #1=\meaning #1\egroup}
-% \newcommand{\Meaning}
-%   {\par  \medskip \hrule \smallskip
-%        \vbox \bgroup \hsize 0.75\hsize \tt \makeatletter \@Meaning}
+\newcommand{\xMeaning}[1]
+  {\expandafter \Meaning \csname \string#1\endcsname}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 5: advi stuff
 
 %%% Macros for dumping lines number, putting cursor, etc. 
 
-\ifwhizzy@advi
-
-\let \advi@continue@advi \relax
-
-\else
-
-
 \let \WhizzySkip \relax
 \let \WhizzyStart \relax
 \let \WhizzyLine \whizzy@ignore
 \let \WhizzyLinePoint \whizzy@ignore
-\let \whizzy@start@here \whizzy@empty
-\def \whizzy@outputline #1#2{}
 \let \WhizzyEnvlimit \whizzy@outputline
 \let \WhizzyEnvlimit \whizzy@outputline
 \newcommand \whizzy@ignore@oii[3][]{}
 \def \WhizzyInsideEnvironment{\whizzy@ignore@oii}
+\def \whizzy@outputline #1#2{}%
+\let \whizzy@start@here \whizzy@empty
 
-% Do not read after \fi
-\let \advi@continue@advi \endinput%
-\fi
-\advi@continue@advi
 
-%% These use advi special tricks
+%% We stop here if no support for moving to cursor
+\ifx \WhizzyLevel 0\expandafter \endinput \fi
 
-% \jobname should be the current file, instead. It is stored somewhere?
-\def \whizzy@outputline #1#2{%
-   \ifvmode \nobreak\fi\special {line: #1 #2 }\ifvmode \nobreak\fi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% In PDF line numbers are not recognize.
+
+\edef\whizzy@quote{\string"}
+\def \whizzy@putlink #1{%
+    \@ifundefined{new@pdflink}%
+      {\special {html:<A name=\whizzy@quote #1\whizzy@quote>}%
+       \special {html:</A>}}%
+      {\new@pdflink{#1}}%
 }
+
 \def \whizzy@writelineno
    {\ifhmode \unskip \fi
     \whizzy@makelineno
@@ -559,21 +556,16 @@ to slice!\par \bigskip}}%
    \xdef \whizzy@pageno {\the\whizzy@count}%
 }
 \g@addto@macro \whizzy@everypagehook {\whizzy@writelastpage}
-
-
 \def \whizzy@lineno@display 
    {\whizzy@writelineno \aftergroup \whizzy@writelineno}
 
 % To insert the mark ``around'' the current line number
-\edef\whizzy@quote{\string"}
+
 \def \whizzy@start@here
-   {%\ifhmode \unskip \fi
-    \special {html:<A name=\whizzy@quote Start-Document\whizzy@quote>}%
-    \special {html:</A>}%
-    %\ifhmode \hskip \lastskip \fi
-    \whizzy@makelineno
+   {\whizzy@putlink{Start-Document}%
     \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
                \whizzy@curfile]}%
+    \whizzy@makelineno
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
     \global \let \whizzy@check@line \relax
@@ -665,19 +657,6 @@ to slice!\par \bigskip}}%
   \abovedisplayskip 0em $$\aftergroup  \whizzy@endhalign \fi
   \latex@halign} 
 
-%%% Should I do that -- load advi.sty if not loaded? 
-%%% Provides floating table of contents
-
-\IfFileExists{advi.sty}{\usepackage{advi}}{}%
-
-%%% For whizzy-edition
-
-\def \advi@edit@file {\whizzy@curfile}
-\let \advi@edit@makelineno \whizzy@makelineno
-\def \advi@edit@line {\the\whizzy@count}
-
-%%% overlays
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 6: Could be in packages.
 
@@ -709,6 +688,33 @@ to slice!\par \bigskip}}%
     \fi \fi \fi}{in@#1}{out@#1}%
   \whizzy@envselect{end#1}{\whizzy@envlimit@waux}{endin@#1}{endout@#1}%
   \newenvironment{in@#1}}
+
+%% We stop here if no support for Active-DVI
+\ifx \WhizzyLevel 1\expandafter \endinput \fi
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Section 7: This asumes advi
+
+%%% These use advi special tricks
+%%% \jobname should be the current file, instead. It is stored somewhere?
+\def \whizzy@outputline #1#2{%
+   \ifvmode \nobreak\fi\special {line: #1 #2 }\ifvmode \nobreak\fi
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Should I do that -- load advi.sty if not loaded? 
+%%% Provides floating table of contents
+
+\IfFileExists{advi.sty}{\usepackage{advi}}{}%
+
+%%% For whizzy-edition
+
+\def \advi@edit@file {\whizzy@curfile}
+\let \advi@edit@makelineno \whizzy@makelineno
+\def \advi@edit@line {\the\whizzy@count}
+
+%%% overlays
 
 \makeatother
 \endinput

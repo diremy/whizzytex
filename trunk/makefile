@@ -3,7 +3,7 @@ TEX=$(HOME)/lib/tex
 # Stable version
 RELEASE=1.2.0
 # Current version
-VERSION=1.2.0
+VERSION=1.2.3
 # rpm release version
 Release=1
 # YAP version
@@ -28,11 +28,11 @@ TARPRODUCED =  INSTALL VERSION
 
 TARDIRS = examples 
 
-TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS) \
+TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
 
 XXXPORTS = CHANGES index.html animation.html \
-	   FAQ.html manual.dvi doc/manual.html FAQ \
+	   FAQ.html doc/whizzytex.dvi doc/whizzytex.html FAQ \
 	   whizzytex-yap-$(YAPVERSION).tgz
 
 EXPORTS = index.html animation.html older.html Announce \
@@ -102,7 +102,7 @@ activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
 	cd anim; make $@
 	cp anim/$*{,009}.gif .
 
-INSTALL.txt: doc/manual.html
+INSTALL.txt: doc/whizzytex.html
 	lynx -dump $< | sed -f INSTALL.sed > $@
 
 
@@ -111,15 +111,15 @@ VERSION: makefile
 	echo $(RELEASE) > RELEASE
 	echo $(VERSION) > $@
 
-FILES: $(TARFILES) makefile 
+FILES: $(TARFILES) doc/FILES makefile 
+	touch VERSION $(TAG)
 	make smallclean
 	(echo FILES; echo $(TAG); \
-	 tar zcvf /dev/null $(TARFILES) $(cat doc/FILES)) \
+	 tar zcvf /dev/null $(TARFILES) $(shell cat doc/FILES)) \
 	  | grep -v CVS | grep -v '/$$' > $@
 
 $(NAME).tgz: FILES makefile
 	mkdir $(NAME)
-	touch VERSION $(TAG)
 	tar cf - `cat FILES`| (cd $(NAME) && tar xf -)
 	tar zcvf $@ $(NAME)
 	rm -r $(NAME)
@@ -165,8 +165,8 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 	if grep -e '\*\*' log; then rm -f ../$@; false; fi 
 
 
-Export: $(EXPORTS) xxxport DATE
-	rcp $(EXPORTS) $(cat doc/FILES) $(PAUILLAC)
+Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
+	rcp $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(PAUILLAC)
 	rcp VERSION $(PAUILLAC)/whizzytex.version
 	mv $(NAME).tgz archive
 
@@ -174,18 +174,18 @@ Release: Export
 	cp Announce archive/Announce-$(RELEASE)
 	rcp Announce $(PAUILLAC)
 
-xxxport: $(EXPORTS) pack $(RPMNAME).src.rpm
+xxxport: $(EXPORTS) pack 
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
 	rcp $(XXXPORTS) `cat doc/FILES` whizzytex-xxx.tgz DATE \
-	  $(RPMNAME).src.rpm $(PAUILLAC)
+	  $(PAUILLAC)
 
 smallclean:
 	cd doc; $(MAKE) clean
 	cd examples; $(MAKE) superclean
 
 clean:: smallclean
-	rm -rf doc/{*~,.#*,#*#} manual.{aux,log} doc/_whizzy_manual*
+	rm -rf doc/{*~,.#*,#*#,*.aux,*.log} doc/_whizzy_manual*
 	rm -f FAQ.{aux,log,haux,hlog,toc,htoc}
 	rm -rf $(PACKDIR)
 
@@ -197,8 +197,9 @@ superclean:: clean
 REDHAT=/usr/src/redhat
 RPMINPUTFILES= $(NAME).tgz whizzytex-makefile.patch
 
-$(RPMNAME).src.rpm: 
-$(RPMNAME).noarch.rpm: $(RPMFILES)
+$(RPMNAME).src.rpm: $(RPMNAME).noarch.rpm
+
+$(RPMNAME).noarch.rpm: $(RPMINPUTFILES)
 	cp $(RPMINPUTFILES) /usr/src/redhat/SOURCES/
 	rpmbuild -ba whizzytex.spec
 	cp \

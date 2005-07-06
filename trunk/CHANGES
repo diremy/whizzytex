@@ -5,21 +5,21 @@ Emacs-mode:
 
 Shell-script: 
 
- * write in .waux and read in .raux to be stable in face of errors
-
 LaTeX macros:
 
- * set default hyperref option to hypertex (not best, but better than nothing)
- * write in .waux and read in .raux to be stable in face of errors
-
 Installation/Documentation:
-
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
 
+ - version 1.2.3
+ * whizzy-toggle-debug not set whizzy-debug 
+ * changed communication from whizzytex back to emacs.
+ * added support for -pdf xpdf mode.
+ * enter Emacs-debugger on fatal error when called in debug-mode.
+ * change whizzy-sit-for for compatibility with Emacs on mac-os-10
  - version 1.2.0 
  * fixed ^ in middle of whizzy-mode-regexp-alist
  * test for the file associated to the buffer already exists.
@@ -35,6 +35,11 @@ Emacs-mode:
 
 Shell-script: 
 
+ - version 1.2.3
+ * fix configure and checkconfig to allow -initex 'tex -ini'
+ * changed communication from whizzytex back to emacs.
+ * added support for -pdf xpdf mode.
+ * write in .waux and read in .raux to be stable in face of errors
  - version 1.2.0 
  * diplay VERSION number with option -version and command info.
  * allow spaces in directory names (not in the filename itself).
@@ -48,6 +53,11 @@ Shell-script:
 
 LaTeX macros:
 
+ - version 1.2.3
+ * some changes to allow anchors with pdftex driver.
+ * fixed the problem with the new hypertex package (\scrollmode). 
+ * set default hyperref option to hypertex (not best, but better than nothing)
+ * write in .waux and read in .raux to be stable in face of errors
  - version 1.2.0 
  * fixed display of cursor in vmode.
  * small slice can be automatically enlarged to fit some number of pages.
@@ -58,6 +68,10 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ - version 1.2.3
+ * Export sources of the documentation
+ * Update customozation with -pdf option (and a few changes)
+ * timeout option to ./checkconfig (in case fonts need to be rebuilt).
  - version 1.2.0 
  * configuration, customization
  * added a redhat noarch.rpm (spec file provided by Jakuv Narebski)

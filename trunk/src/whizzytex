@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/bin/bash 
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002, 20043, 2004 Didier Rémy
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.2.0
+#  Version        : 1.2.3
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -26,15 +26,15 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.2.0"
+VERSION="1.2.3"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
 
-# Translatin DVI to Postscript
+# Translating DVI to Postscript
 DVIPS=dvips
 
-# Translatin DVI to DVI, may be set to DVICOPY
+# Translating DVI to DVI, may be set to dvicopy
 DVICOPY=mv
 
 # Default LaTeX implementation
@@ -64,6 +64,7 @@ LIMIT=20
 # Signals telling gv and xdvi/advi to refresh
 SIGDVI=SIGUSR1
 SIGPS=SIGHUP
+SIGPDF=SIGCONT
 
 # Option to read command, could be use to send timeout, in case, whizzytex 
 # should watch other files that those controlled by emacs
@@ -100,7 +101,10 @@ VIEWCOMMAND=advi
 NEWFILES=newfile
 MULTIPLE=true
 DUPLEX=false
-ADVI=0
+LEVEL=0
+
+# default
+RELOAD=sigreload
 
 while true
 do
@@ -128,13 +132,14 @@ do
    -watch) NEWFILES=newfiles;;
    -dvi)
        VIEW=wdvi;
+       MULTIPLE=false;
        case "$2" in
        .) VIEWCOMMAND=xdvi;;
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
    -advi)
-       ADVI=1
+       LEVEL=2
        VIEW=wdvi;
        case "$2" in
        .) VIEWCOMMAND=advi;;
@@ -143,9 +148,28 @@ do
        shift;;
    -ps)
        VIEW=ps
+       MULTIPLE=false;
        case "$2" in
        .) VIEWCOMMAND=gv;;
        *) VIEWCOMMAND="$2";;
+       esac
+       shift;;
+   -pdf)
+       LEVEL=1
+       DVI=pdf
+       VIEW=wpdf
+       MULTIPLE=false;
+       LATEX=pdflatex
+       INITEX=pdfinitex
+       FORMAT=pdflatex
+       FMT=fmt
+       DUPLEX=false
+       RELOAD=xpdfreload
+       VIEWCOMMAND="xpdf -remote $$"
+       case "$2" in
+       .|xpdf) ;;
+       *) warning "Use an xpdf like viewwer, or redefine RELOAD."
+          VIEWCOMMAND="$2";;
        esac
        shift;;
    -display)
@@ -177,6 +201,7 @@ where <option> is
     -advi <advi-like previewer command> 
     -dvi <dvi-like previewer command> 
     -ps <Postscript previewer command> 
+    -pdf xpdf
     -display <X display> 
     -version 
   ' 1>&2
@@ -268,7 +293,10 @@ log () {
 texlog () { 
   if [ -f "$OUTPUT/$1" ] 
   then
-    sed -n -e '/^#/p' -e '/^!/,$p' "$OUTPUT/$1" | head -$TEXERRORAROUND 
+    sed -n -e '/^#/p' -e '/^!/,$p' "$OUTPUT/$1" | head -$TEXERRORAROUND | \
+    cat > $OUTPUT/texlog
+    shift
+    echo '<Viewlog>' "$@"
   fi
   false; 
 }
@@ -331,16 +359,19 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyAdvi'"$ADVI"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 ############################################################################
 # BEGIN sections
 
 makebibtex () {
-  $BIBTEX $NAME 1>"$OUTPUT/bibtex"
-  [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
-  true
+  if $BIBTEX $NAME 1>"$OUTPUT/bibtex"
+  then : 
+    [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+  else
+    echo '<bibtex failed: see log in' "$OUTPUT/bibtex" '>'
+  fi 
 }
 
 batchmarks () {
@@ -526,6 +557,10 @@ case $VIEW in
     preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
     SIG=$SIGDVI
     ;;   
+  wpdf)
+    preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
+    SIG=$SIGPDF
+    ;;   
 esac
 
 newfiles () {
@@ -570,8 +605,10 @@ process () {
      then 
        :
      else
-       texlog slice
-       [ -f $WHIZZY.last ] && echo 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' ' 
+       if [ -f $WHIZZY.last ] 
+       then texlog slice 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' '
+       else texlog slice
+       fi
      fi
      echo '<Continuing>'
      false
@@ -607,10 +644,6 @@ if $NEWFILES; then preprocess && process; fi
 
 rm -f "$TMP"/ID
 
-case $ADVI in
-  1) ;;
-  0) MULTIPLE=false;;
-esac
 if $MULTIPLE
 then
    # we are going to launch $NAME.$VIEW as a secondary file
@@ -626,19 +659,20 @@ fi
  echo '# End of command' ) >> "$OUTPUT"/command
 
 {
-  echo $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW "$OUTPUT"/view 
   $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW 2>"$OUTPUT"/view &
   echo $! >> "$TMP"/pids
   ID=$!
   echo $ID > "$TMP"/ID
   wait $ID && quit || fatal 'Viewing process terminated abnormally'
-
   } &
 
-checkviewer () {
-  kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
+sigreload () {
+   kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
 }
-
+xpdfreload () {
+   $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document
+   $VIEWCOMMAND -reload
+}
 whole () {
    echo '<Recompiling whole document>'
    if batchmarks </dev/null >"$LOG"
@@ -720,7 +754,7 @@ do
 #    elif [ $WHIZZY.$FMT -ot $NAME$EXT ]
 #    then reformat
   elif $NEWFILES && preprocess || $PROCESS
-  then process && checkviewer
+  then process && $RELOAD
   else
      echo '<Waiting>'
      read $READOPTION COMMAND REST
@@ -732,7 +766,7 @@ do
            on) AUTORECOMPILE=true;;
            off) AUTORECOMPILE=false;;
          esac;;
-       reslice) process && checkviewer ;;
+       reslice) process && $RELOAD ;;
        whole) checkMKfile $REST; whole $DOMAKS;;
        bibtex) makebibtex;;
        viewps-slice) viewps true;;
@@ -747,10 +781,11 @@ do
         INITEX=$INITEX
         LATEX=$LATEX
         FORMAT=$FORMAT
+        MULTIPLE=$MULTIPLE
         DUPLEX=$DUPLEX
         VIEW=$VIEW
         VIEWCOMMAND=$VIEWCOMMAND
-        ADVI=$ADVI
+        LEVEL=$LEVEL
 
         BASENAME=$BASENAME
         EXT=$EXT

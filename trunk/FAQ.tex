@@ -37,16 +37,24 @@ compiles and previews with the \emph{latex}, \emph{previewer}
 and \emph{options} used in {\WhizzyTeX}?
 (In recent versions of {\WhizzyTeX} you may see the previewer's command from 
 \texttt{Emacs} using the menu \texttt{View log...} and selecting
-\texttt{command}.) You may also check the latex log files (\texttt{format}, and
+\texttt{command}.) 
+
+You may also check the latex log files (\texttt{format}, and
 \texttt{latex}, \texttt{slice}). In particular, \texttt{format} will show
 you the version of \texttt{whizzytex.sty} that has been loaded. Loading an
 old version will likely not work! (You may also check the Emacs version of
 whizzytex (from the \texttt{Help} entry of \texttt{Whizzy} menu). 
 
-In addition, in \texttt{advi} mode (when option \texttt{-advi} is used), the
-package \texttt{advi} is implicitly loaded. So you may also try to latex
-your source with the package \texttt{advi} explicitly loaded before all
-other packages, since some errors may be indirectly due to this
+Since the latex \texttt{color} package is implicitly loaded, you 
+should also check the compatibility with this package by 
+by explicitly including \verb"\usepackage{color}" right before the
+\verb"\begin{document}" (because whizzytex would load this package last) 
+and checking that it still compiles with \emph{latex}.
+
+In \texttt{advi} mode (when option \texttt{-advi} is used), the
+\texttt{advi} package is also implicitly loaded. So you should then also try
+to latex your source with the package \texttt{advi} explicitly loaded before
+all other packages, since some errors may be indirectly due to this
 \texttt{advi} and not to {\WhizzyTeX} itself---then send your bug report
 to \href{http://pauillac.inria.fr/advi/}{Active-DVI}.
 
@@ -70,11 +78,11 @@ Fixed refers to last stable version.
 \begin {enumerate}
 
 \item
-{\WhizzyTeX} uses hard links and does not on file systems that do not
-support them, such as VFAT. 
+{\WhizzyTeX} uses hard links and hence does not work on file systems that do
+not support them, such as VFAT.
 
 \item
-Its has been reported with versions that sometimes the cursor jumps to the
+It has been reported with old versions that sometimes the cursor jumps to the
 end of the buffer while typing fast, and the mark is left a few characters
 before where the point was when the cursor jumped.
 
@@ -202,6 +210,12 @@ accordingly. See the README and INSTAL file coming with his
 \href{\yaptgz}{\texttt{\yaptgz}} patch, 
 \emph {coming with absolutely no warranty}. 
 
+See also the detailed
+\ahref {http://home.imf.au.dk/hellmund/whizzy.html}
+{installation guide} written by
+%\ahref {http://home.imf.au.dk/hellmund}
+{Gunnar Hellmund}.
+
 \section{Using Virtual Fonts with Active-DVI}
 
 \href{http://pauillac.inria.fr/advi/}{Active-DVI}
@@ -216,5 +230,34 @@ In {\WhizzyTeX}, this can be done automatically by passing the option
         DVICOPY=dvicopy
 \end{verbatim}
 in \texttt{.whizzytexrc} configuration file in the working directory.
+
+\section{Known bogus latex packages}
+
+\subsection{ieee.cls [2000/01/11]}
+
+This package introduced a bug in the redefinition of \verb"\@xfloaf" 
+that makes it incompatible with the \texttt{color} package
+
+To fix it, your must redefine it as follows:
+{\small
+\begin{verbatim}
+\def\@xfloat#1#2{\ifhmode \@bsphack\@floatpenalty -\@Mii\else
+    \@floatpenalty-\@Miii\fi\def\@captype{#1}\ifinner
+      \@parmoderr\@floatpenalty\z@
+     \else\@next\@currbox\@freelist{\@tempcnta\csname ftype@#1\endcsname
+       \multiply\@tempcnta\@xxxii\advance\@tempcnta\sixt@@n
+       \@tfor \@tempa :=#2\do
+                        {\if\@tempa h\advance\@tempcnta \@ne\fi
+                         \if\@tempa t\advance\@tempcnta \tw@\fi
+                         \if\@tempa b\advance\@tempcnta 4\relax\fi
+                         \if\@tempa p\advance\@tempcnta 8\relax\fi
+         }\global\count\@currbox\@tempcnta}\@fltovf\fi
+    \global\setbox\@currbox \color@vbox \normalcolor \vbox\bgroup
+    \def\baselinestretch{1}\small\normalsize
+    \hsize\columnwidth \@parboxrestore}
+\end{verbatim}}
+
+
+
 
 \end{document}

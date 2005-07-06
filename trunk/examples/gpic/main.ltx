@@ -1,5 +1,5 @@
-%; whizzy -ext .tex -mkslice "../bin/mkgpic -slice" -mkfile "../bin/mkgpic -file"
-%; whizzy -ext .tex -mkslice "make" -mkfile "make files"
+%%; whizzy -ext .tex -mkslice "../bin/mkgpic -slice" -mkfile "../bin/mkgpic -file"
+%%; whizzy -ext .tex -mkslice "make" -mkfile "make files"
 
 \documentclass{article}
 
@@ -29,27 +29,31 @@ number will tell WhizzyTeX to use that number for the current input line.
 Since \lst"\inputlineno" is readable only, we instead compute the difference
 and take that difference into account when printing line numbers. 
 
-Since the preprocessor changes the name of the file, it should also insert
-a command \lst"\SourceFile{main.ltx}" (or \lst"\SourceFile{subfile.ltx}")
-at the beginning of the file. This is done by the script
-\lst"../bin/mkgpic". 
+Since the preprocessor changes the name of the file, it should also insert a
+command \lst"\SourceFile{main.ltx}" (or \lst"\SourceFile{subfile.ltx}") at
+the beginning of the file.
 
-Thus the following line:
-\begin{quote}\small
-\begin{verbatim}
-%; whizzy -ext .tex -mkslice "../bin/mkgpic -slice" -mkfile "../bin/mkgpic -file"
-\end{verbatim}
-\end{quote}
-None the specification of the extension \lst".tex", while the default value
-is to take the extension of the master file, which would be \lst".ltx". 
+The simplest way is to use a local configuration script file
+\lst"whizzy.sh", as can be found in this directory. 
 
-We can also the command make. For simplicity, we let make call
-\lst"mkgpic". 
+The script redefines \texttt{MKFILE} and \texttt{MKSLICE}. 
+It also set the extension of processed files \texttt{.tex} 
+and use the extension \texttt{.ltx} to source files. This should be used
+rather than the converse, since the extension \texttt{.tex} has higher
+priority than \texttt{.ltx} and indeed, the preprocessed file should always
+be used when available.
+
+We could also use the command \lst"make" to do the preprocessing: 
+
+We can also the command make. For brievity, we assume that 
+the commands \texttt{mkfile} and \texttt{mkslice} 
+call \texttt{gpicmkfile} and \texttt{gpicmkslice} of file
+\texttt{whizzy.sh}. 
 \begin{quote}
 \begin{verbatim}
 SOURCES = main.ltx subfile.ltx
 TEXFILES = $(patsubst %.ltx, %.tex, $(SOURCES))
-GPIC=../bin/mkgpic
+GPIC=whizzygpic
 
 main.dvi: $(TEXFILES)
 	latex main.tex
@@ -59,16 +63,25 @@ files: $(TEXFILES)
 # to force recompilation even if same date (second is not precise enough)
 .force:
 _whizzy_%.tex: _whizzy_%.new .force
-	$(GPIC) -slice $@
+	mkslice $@
 
 %.tex: %.ltx
-	$(GPIC) -file $<
+	mkfile $<
 
 clean:
 	rm -f *.{tex,log,aux,dvi}
 \end{verbatim}
 \end{quote}
-All files should be processed before starting.
+Then
+\begin{quote}\small
+\begin{verbatim}
+%; whizzy -ext .tex -mkslice "make" -mkfile "make"
+\end{verbatim}
+\end{quote}
+In fact, all files, should have been at least processed once with 
+\lst"make files". 
+
+
 
 \subsection* {Other uses of preprocessing}
 
