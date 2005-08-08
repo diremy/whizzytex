@@ -348,18 +348,48 @@ persistent, and hidden when the error disapears.")
 
 ;; More variables
 
-(defconst whizzy-file-prefix "_whizzy_")
-;; (defvar whizzy-speed-string "?")
-;; (defvar whizzy-error-string nil)
-(defvar whizzytex-mode-line-string
-  (list " Whizzy" 
-        '(:eval (whizzy-get whizzy-error-string)) 
-        "." 
-        '(:eval (whizzy-get whizzy-speed-string))))
-;; those two should rather be part of the status--- to be fixed XXX
-(make-variable-buffer-local 'whizzy-speed-string)
-(make-variable-buffer-local 'whizzy-error-string)
+(string-match "foo" "afoobar")
 
+(defmacro whizzy-get-error-string () 'whizzy-error-string)
+(defmacro whizzy-set-error-string (arg) 
+        (list 'setq 'whizzy-error-string arg))
+
+(defconst whizzy-file-prefix "_whizzy_")
+(cond
+ ((= 0 (string-match "20.*" emacs-version))
+  (defvar whizzy-speed-string "?")
+  (defvar whizzy-error-string nil)
+  (defmacro whizzy-get-error-string () 'whizzy-error-string)
+  (defmacro whizzy-get-speed-string () 'whizzy-speed-string)
+  (defmacro whizzy-set-error-string (arg) 
+        (list 'setq 'whizzy-error-string arg))
+  (defmacro whizzy-set-speed-string (arg) 
+        (list 'setq 'whizzy-speed-string arg))
+  ;; those two should rather be part of the status--- to be fixed XXX
+  (make-variable-buffer-local 'whizzy-speed-string)
+  (make-variable-buffer-local 'whizzy-error-string)
+  (defvar whizzytex-mode-line-string
+    (list " Whizzy" 
+          'whizzy-error-string 
+          "." 
+          'whizzy-speed-string)))
+ (t
+  (defconst whizzy-error-string 27)
+  (defconst whizzy-speed-string 28)
+  (defmacro whizzy-get-error-string () 
+        (list 'whizzy-get 'whizzy-error-string))
+  (defmacro whizzy-get-speed-string () 
+        (list 'whizzy-get 'whizzy-speed-string))
+  (defmacro whizzy-set-error-string (arg) 
+        (list 'whizzy-set 'whizzy-error-string arg))
+  (defmacro whizzy-set-speed-string (arg) 
+        (list 'whizzy-set 'whizzy-speed-string arg))
+  (defvar whizzytex-mode-line-string
+    (list " Whizzy" 
+          '(:eval (whizzy-get whizzy-error-string)) 
+          "." 
+          '(:eval (whizzy-get whizzy-speed-string))))
+  ))
 ;; A vector of whizzytex parameters, shared between all buffers related to the
 ;; same session. This variable is made buffer local, but its content is
 ;; shared between all related buffers.
@@ -425,8 +455,8 @@ in format.")
 (defconst whizzy-configuration-loaded 26)
 (defconst whizzy-debug 25)
 (defconst whizzy-initialized 26)
-(defconst whizzy-error-string 27)
-(defconst whizzy-speed-string 28)
+; (defconst whizzy-error-string 27)
+; (defconst whizzy-speed-string 28)
 
 (defconst whizzy-length 30)
 (defun whizzy-get (f)
@@ -1146,7 +1176,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
 
 (defun whizzy-slice (layer)
   (if (> (whizzy-get whizzy-slice-time) 0)
-      (whizzy-set whizzy-speed-string
+      (whizzy-set-speed-string
             (int-to-string (/ (whizzy-get whizzy-slice-time) 100))))
   (if (equal (whizzy-get whizzy-slicing-mode) 'none) ; no slice
       (whizzy-write-slice (point-min) (point-max))
@@ -1352,12 +1382,12 @@ a sequence of editing while slicing could be distracting or annoying."
     (error "WhizzyTeX is not on"))
    ((equal whizzytex-mode t)
     (remove-hook  'post-command-hook 'whizzy-observe-changes t)
-    (whizzy-set whizzy-speed-string "Z")
+    (whizzy-set-speed-string "Z")
     (force-mode-line-update)
     (setq whizzytex-mode 'suspended))
    ((equal whizzytex-mode 'suspended)
     (add-hook 'post-command-hook 'whizzy-observe-changes t t)
-    (whizzy-set whizzy-speed-string "?")
+    (whizzy-set-speed-string "?")
     (force-mode-line-update)
     (setq whizzytex-mode t))
    (t
@@ -3193,10 +3223,11 @@ Log file name is obtain from suffix by removing leading character."
   (save-excursion
     (if (whizzy-set-active-buffer)
         (let ((string (or (assoc mes whizzy-error-name-alist) nil)))
-          (if (equal (whizzy-get whizzy-error-string) string) nil
-            (whizzy-set whizzy-error-string string)
-            (force-mode-line-update))
-          ))))
+            (if (equal (whizzy-get-error-string) string) nil
+              (whizzy-set-error-string string)
+              (force-mode-line-update))
+            )
+          )))
 
 (defun whizzy-error (error &optional clean)
   (let ((old (whizzy-get whizzy-running)))
