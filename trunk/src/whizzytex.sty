@@ -122,6 +122,9 @@
      \whizzy@multiplelabels}%
   \endgroup}
 
+%% Patch for reusing labels counters froms the master file.
+
+
 %% Some stuff must be done after all packages and macros but before
 %% .aux are loaded
 
@@ -507,7 +510,8 @@ to slice!\par \bigskip}}%
 \long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
 \newcommand{\Meaning}
   {\par \medskip \hrule \smallskip \begingroup \hsize 0.75\hsize
-       \vbox \bgroup \whizzy@tt \bgroup \makeatletter \@Meaning}
+       \vbox \bgroup \def \ttdefault{cmtt}\whizzy@tt \bgroup \makeatletter
+       \@Meaning} 
 \newcommand{\xMeaning}[1]
   {\expandafter \Meaning \csname \string#1\endcsname}
 
@@ -715,6 +719,117 @@ to slice!\par \bigskip}}%
 \def \advi@edit@line {\the\whizzy@count}
 
 %%% overlays
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EXPERIMENTAL FEATURES
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% BEGIN Experimental feature: adjustement of labels.
+%%%% To deactivate this feature, comment the last line of this section
+
+\let \whizzy@latex@label \label
+\let \whizzy@latex@refstepcounter \refstepcounter
+
+\def \whizzy@refstepcounter #1{%
+  \whizzy@latex@refstepcounter {#1}%
+  \expandafter \ifx \csname whizzy@c@#1\endcsname \whizzy@empty
+    \let \whizzy@currentcounter \relax 
+    \let \label \whizzy@latex@label
+  \else
+    \expandafter \ifx \csname whizzy@c@#1\endcsname \relax
+      \expandafter \def \csname whizzy@c@#1\endcsname {0}%
+    \fi
+    \edef \whizzy@currentcounter {#1}%
+    \let \label \whizzy@label
+  \fi
+}
+
+\def \whizzy@skipto@relax #1\relax{}
+\def \whizzy@setrefcount #1{%
+  %% Using 999 instead of 1 could overflow...
+  \afterassignment \whizzy@skipto@relax \whizzy@count 1#1\relax
+  \ifnum \whizzy@count=1\relax
+     %%% We encode and error: #1 is not an arrabic number
+     \whizzy@count=999\relax
+  \else
+    \afterassignment \whizzy@skipto@relax \whizzy@count 0#1\relax
+    \message {COUNT #1 => \the\whizzy@count}
+  \fi
+}
+
+%% So as to work with hyperref...
+\def \whizzy@firstofany #1#2\relax{#1}
+\def \whizzy@setref #1{%
+  \edef \@tmp {\expandafter \whizzy@firstofany #1\relax}%
+  \expandafter \whizzy@setrefcount {\@tmp}\relax
+}
+
+%% Should only appear in 
+\def \WhizzyAdjustCounter #1#2{%
+  \expandafter \edef \csname whizzy@c@#1\endcsname {#2}%
+  \addtocounter {#1}{#2}%
+}
+
+\def \whizzy@label #1{%
+  \ifx \whizzy@currentcounter \relax\else
+    \expandafter \ifx \csname r@#1\endcsname \relax \else
+      \expandafter \ifx
+             \csname whizzy@c@\whizzy@currentcounter\endcsname \relax \else 
+        \expandafter \ifx \csname whizzy@c@\whizzy@currentcounter\endcsname 
+                \whizzy@empty \else 
+          \whizzy@count 0\relax
+          \expandafter \whizzy@setref \csname r@#1\endcsname%
+          %% We skip the error case (the label is not an arabic number)
+          \ifnum \whizzy@count=999\else
+            \advance \whizzy@count -\value{\whizzy@currentcounter}\relax
+            %% Next line could be removed -- it adjusts the counter
+            %% for the rest of first run of the slice
+            %% should be inneffective in most future runs.
+            \addtocounter {\whizzy@currentcounter}{\the\whizzy@count}%
+            \expandafter \advance \expandafter \whizzy@count 
+                  \csname whizzy@c@\whizzy@currentcounter\endcsname 
+            \expandafter \gdef
+               \csname whizzy@c@\whizzy@currentcounter\endcsname {}%
+            \ifnum \whizzy@count=0\else
+                \@bsphack \whizzy@aux
+                     {\string \WhizzyAdjustCounter
+                         {\whizzy@currentcounter}{\the\whizzy@count}}%
+                \@esphack
+            \fi 
+          \fi
+        \fi 
+      \fi
+    \fi 
+    \let \whizzy@currentcounter \relax%
+    \let \label \whizzy@latex@label 
+  \fi
+  \whizzy@latex@label {#1}%
+}
+
+
+
+%% We desactivate adjustment of a some counters, you may deactivate more
+
+\def \whizzy@noadjust #1{\@namedef {whizzy@c@#1}{}}
+
+\whizzy@noadjust{page}
+\whizzy@noadjust{part}
+\whizzy@noadjust{chapter}
+\whizzy@noadjust{section}
+\whizzy@noadjust{subsection}
+\whizzy@noadjust{subsubsection}
+\whizzy@noadjust{subsection}
+
+%% Just comment this line to deactivate this feature completely
+%\let \caption \whizzy@caption
+\AtBeginDocument
+  {\ifwhizzy@latexmode \else \let \refstepcounter \whizzy@refstepcounter\fi}
+
+%%%% To deactivate, just comment the previous line
+%%%% END Experimental feature: adjustement of labels.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \makeatother
 \endinput

@@ -348,23 +348,37 @@ persistent, and hidden when the error disapears.")
 
 ;; More variables
 
-(string-match "foo" "afoobar")
-
-(defmacro whizzy-get-error-string () 'whizzy-error-string)
-(defmacro whizzy-set-error-string (arg) 
-        (list 'setq 'whizzy-error-string arg))
-
 (defconst whizzy-file-prefix "_whizzy_")
+
+;; In older versions of Emacs, line-mode-string may not do arbitrary 
+;; computations. Hence error and speed cannot be shared between all buffers 
+;; of a sesssion.
+
+(eval-when-compile
+ (cond
+  ((equal 0 (string-match "20.*" emacs-version))
+   (defmacro whizzy-get-error-string () 'whizzy-error-string)
+   (defmacro whizzy-get-speed-string () 'whizzy-speed-string)
+   (defmacro whizzy-set-error-string (arg) 
+     (list 'setq 'whizzy-error-string arg))
+   (defmacro whizzy-set-speed-string (arg) 
+     (list 'setq 'whizzy-speed-string arg))
+   )
+  (t
+   (defmacro whizzy-get-error-string () 
+     (list 'whizzy-get 'whizzy-error-string))
+   (defmacro whizzy-get-speed-string () 
+     (list 'whizzy-get 'whizzy-speed-string))
+   (defmacro whizzy-set-error-string (arg) 
+     (list 'whizzy-set 'whizzy-error-string arg))
+   (defmacro whizzy-set-speed-string (arg) 
+     (list 'whizzy-set 'whizzy-speed-string arg))
+   )))
+
 (cond
- ((= 0 (string-match "20.*" emacs-version))
+ ((equal 0 (string-match "20.*" emacs-version))
   (defvar whizzy-speed-string "?")
   (defvar whizzy-error-string nil)
-  (defmacro whizzy-get-error-string () 'whizzy-error-string)
-  (defmacro whizzy-get-speed-string () 'whizzy-speed-string)
-  (defmacro whizzy-set-error-string (arg) 
-        (list 'setq 'whizzy-error-string arg))
-  (defmacro whizzy-set-speed-string (arg) 
-        (list 'setq 'whizzy-speed-string arg))
   ;; those two should rather be part of the status--- to be fixed XXX
   (make-variable-buffer-local 'whizzy-speed-string)
   (make-variable-buffer-local 'whizzy-error-string)
@@ -376,20 +390,15 @@ persistent, and hidden when the error disapears.")
  (t
   (defconst whizzy-error-string 27)
   (defconst whizzy-speed-string 28)
-  (defmacro whizzy-get-error-string () 
-        (list 'whizzy-get 'whizzy-error-string))
-  (defmacro whizzy-get-speed-string () 
-        (list 'whizzy-get 'whizzy-speed-string))
-  (defmacro whizzy-set-error-string (arg) 
-        (list 'whizzy-set 'whizzy-error-string arg))
-  (defmacro whizzy-set-speed-string (arg) 
-        (list 'whizzy-set 'whizzy-speed-string arg))
   (defvar whizzytex-mode-line-string
     (list " Whizzy" 
           '(:eval (whizzy-get whizzy-error-string)) 
           "." 
           '(:eval (whizzy-get whizzy-speed-string))))
   ))
+
+
+
 ;; A vector of whizzytex parameters, shared between all buffers related to the
 ;; same session. This variable is made buffer local, but its content is
 ;; shared between all related buffers.
@@ -805,10 +814,11 @@ Entries are sorted per source-file and set to the whizzy variable
      ((< (skip-chars-backward "[][(){]" (- (point) 1)) 0) 'symbol)
      ((re-search-backward "[^ \t\n][ \t\n]*\n\\=" (- (point) 200) t)
       (forward-char 1) 'par)
-     (t 'unknow)
+     (t 'unknonw)
      )))
 
 (defun whizzy-backward-safe ()
+  "Tell if backward contex is safe and returns type of backward context."
   (save-excursion
     (if  (whizzy-dimen-p) nil
       (whizzy-backward-space)
@@ -818,7 +828,7 @@ Entries are sorted per source-file and set to the whizzy variable
          ((equal back 'math) t)
          ((equal back 'par) t)
          ((equal back 'param) nil)
-         ((equal back 'script) 'script)
+         ((equal back 'script) 'script) 
          ((equal back 'symbol) t)
          ((equal back 'letter)
           (skip-syntax-backward "w")
@@ -856,35 +866,45 @@ Entries are sorted per source-file and set to the whizzy variable
        ((equal (point) whizzy-last-slice-begin))
        ;; useless if in comment...
        ((whizzy-in-comment-p))
-       ;; (that maybe arguments of  \label, \cite, \begin, \end etc.)
+       ;; do not put cursor in arguments of  \label, \cite, \begin, \end etc.
        ((whizzy-in-fragile-arg-p))
        ;; do not put cursor between args
        ((whizzy-between-args-p))
-       ;; difficult case: commands
+       ;; difficult case: commands..
        (t
+        ;; move one char if cursor slash or letter
         (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
         (setq back (whizzy-backward-atom))
         ;; (message "[%S]" back)
         (cond
+         ;; show cursor when entering math
          ((equal back 'math) (point))
+         ;; show cursor at beginning of par
          ((equal back 'par)
           (skip-chars-forward " \t\n") (point))
          ((equal back 'script)
           (cond
            ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
+            ;; show protected cursor at sub/superscript
             (list (cons (match-beginning 1) "{")
                   (cons (match-end 1) "}")))
-           ((looking-at "[_^][ \t]*{") (match-end 0))
+           ((looking-at "[_^][ \t]*{")
+            ;; show unprotected cursor at protected sub/superscript
+            (match-end 0))
            ))
+         ;; do not put cursor on  unprotected args
          ((equal back 'arg))
          ((or (equal back 'command) (equal back 'letter))
           (let ((tmp (whizzy-backward-safe)))
             (cond
              ((and (equal tmp 'script)
                    (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
+              ;; show protected cursor on commands or single letter in scripts
               (list (cons (match-beginning 0)
                           "{") (cons (match-end 0) "}")))
-             (tmp (point))
+             (tmp
+              ;; show cursor if backward context is safe
+              (point))
              )))
          ))
        ))))
@@ -3220,6 +3240,7 @@ Log file name is obtain from suffix by removing leading character."
 ))
 
 (defun whizzy-running-message (mes)
+  ;; mes must be an integer
   (save-excursion
     (if (whizzy-set-active-buffer)
         (let ((string (or (assoc mes whizzy-error-name-alist) nil)))
@@ -3231,9 +3252,12 @@ Log file name is obtain from suffix by removing leading character."
 
 (defun whizzy-error (error &optional clean)
   (let ((old (whizzy-get whizzy-running)))
+    ;; old may be nil or an integer
     (if old
+        ;; here, old must be an integer
         (let ((new (if clean (if (= error old) (max 0 (- old 1)) old)
                      (max old error))))
+          ;; here, new  must be an integer
           (whizzy-set whizzy-running new)
           (whizzy-running-message new)
           )))) 
