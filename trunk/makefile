@@ -11,8 +11,8 @@ YAPVERSION=1.1.3-1.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
-PAUILLAC=pauillac:/net/pauillac/infosystems/www/whizzytex
-BASEURL=http://pauillac.inria.fr/whizzytex/
+PAUILLAC=yquem:/net/yquem/infosystems/www/cristal/cristal/whizzytex
+# BASEURL=http://pauillac.inria.fr/whizzytex/
 
 RPMNAME=whizzytex-$(VERSION)-$(Release)
 
@@ -71,7 +71,7 @@ FAQ: FAQ.html
 	lynx -dump $< > $@
 
 FAQ.html: FAQ.tex doc/version.tex
-	hevea -o $@ -fix -nosymb -exec xxdate.exe $<
+	hevea -o $@ -fix -exec xxdate.exe $<
 
 index.html: index.htm makefile
 	rm -f index.html

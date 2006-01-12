@@ -72,13 +72,13 @@ $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
 	sed -e '1s|^#!/bin/bash *$$|#!$(BASH)|' \
 	    -e 's|^PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
 	    -e 's|^MULTIPLE=.*|MULTIPLE=$(MULTIPLE)|' \
-	    -e 's|^DVIPS=.*|DVIPS=$(DVIPS)|' \
+	    -e 's|^DVIPS=.*|DVIPS="$(DVIPS)"|' \
 	    -e 's|^CONFIGFILE=.*|CONFIGFILE=$(CONFIGFILE)|' \
-	    -e 's|^INITEX=.*|INITEX=$(INITEX)|' \
-	    -e 's|^LATEX=.*|LATEX=$(LATEX)|' \
-	    -e 's|^FORMAT=.*|FORMAT=$(FORMAT)|' \
+	    -e 's|^INITEX=.*|INITEX="$(INITEX)"|' \
+	    -e 's|^LATEX=.*|LATEX="$(LATEX)"|' \
+	    -e 's|^FORMAT=.*|FORMAT="$(FORMAT)"|' \
 	    -e 's|^FMT=.*|FMT=$(FMT)|' \
-	    -e 's|^BIBTEX=.*|BIBTEX=$(BIBTEX)|' \
+	    -e 's|^BIBTEX=.*|BIBTEX="$(BIBTEX)"|' \
 	 <  $< > $@
 	chmod +x $@
 

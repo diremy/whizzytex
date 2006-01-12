@@ -418,7 +418,12 @@ output XEMACSDIR $xemacsdir
 message "Checking initex, latex and format"
 
 findcommand "$latex" true 1>/dev/null
-findcommand "$initex" true 1>/dev/null
+if findcommand "$initex" false 1>/dev/null
+then  :
+else 
+    warning "${initex} not found. Defaulting to '${latex} -ini'." 
+    initex="${latex} -ini"
+fi
 output LATEX "$latex"
 output INITEX "$initex"
 output BIBTEX "$bibtex"
@@ -450,7 +455,7 @@ if test -z "$format"
 then error "Cannot run $initex with any of the formats: $formats"
 fi
 if test -z "$fmt"
-then fmt=$(initex '&stroumf' 2>&1 \
+then fmt=$(echo | $initex '&stroumf' '\batchmode' 2>&1 \
        | sed -n -e 's%^.*the format `stroumf.\([a-z][a-z]*\)'"'.*"'%\1%p')
 fi
 if test -z "$fmt"; then fmt=fmt; fi

@@ -3,11 +3,20 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * Added backward compatibility of linemode with older versions. 
+
 Shell-script: 
 
 LaTeX macros:
 
+ * Fix \label to work with hyperref...
+ * Experimental auto-adjustment of counters (using \label).
+
 Installation/Documentation:
+
+ * ./configure default initex to 'latex -ini' if not found.
+ * Fixed quotation of command names in script during installation
+ * HTML should now be generated with hevea 1.08
 
 SINCE LAST RELEASE:
 ===================

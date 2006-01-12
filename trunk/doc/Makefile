@@ -1,6 +1,5 @@
 HEVEA = hevea -exec xxdate.exe 
-HVAOPT = -fix -nosymb
-# HVAOPT = -charset iso-8859-1 -fix -nosymb
+HVAOPT = -fix 
 
 DOCSOURCES=manual.tex manual.sty caml.eps version.tex Makefile
 DOCFORMATS=dvi ps pdf html info

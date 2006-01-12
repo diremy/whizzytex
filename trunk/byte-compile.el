@@ -14,3 +14,23 @@
   (defalias 'call-with-transparent-undo 'funcall)
 ) 
 (byte-compile-file "whizzytex.el")
+
+(cond
+ ((equal 0 (string-match "20.*" emacs-version))
+  (defmacro whizzy-get-error-string () 'whizzy-error-string)
+  (defmacro whizzy-get-speed-string () 'whizzy-speed-string)
+  (defmacro whizzy-set-error-string (arg) 
+    (list 'setq 'whizzy-error-string arg))
+  (defmacro whizzy-set-speed-string (arg) 
+    (list 'setq 'whizzy-speed-string arg))
+  )
+ (t
+  (defmacro whizzy-get-error-string () 
+    (list 'whizzy-get 'whizzy-error-string))
+  (defmacro whizzy-get-speed-string () 
+    (list 'whizzy-get 'whizzy-speed-string))
+  (defmacro whizzy-set-error-string (arg) 
+    (list 'whizzy-set 'whizzy-error-string arg))
+  (defmacro whizzy-set-speed-string (arg) 
+    (list 'whizzy-set 'whizzy-speed-string arg))
+))
