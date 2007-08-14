@@ -38,7 +38,7 @@ DVIPS=dvips
 DVICOPY=mv
 
 # Default LaTeX implementation
-INITEX=initex
+INITEX="latex -ini"
 LATEX=latex
 LATEXCOMMANDS=
 FORMAT=latex

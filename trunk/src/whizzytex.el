@@ -1432,11 +1432,11 @@ Suspend WhizzyTeX if `whizzytex-mode' is t and set it to 'suspended.
 Resume WhizzyTeX if `whizzytex-mode' is 'suspended and set it to t.
 Otherwise, it raises an error.
 
-Optional ARG, is ignored. 
+If ARG is 0 and mode is suspended, just slice once and leave mode suspended.
 
 This only stop slicing and does not kill WhizzyTeX.  It can be useful to do
 a sequence of editing while slicing could be distracting or annoying."
-  (interactive "P")
+  (interactive "p")
   (cond
    ((null whizzytex-mode)
     (error "WhizzyTeX is not on"))
@@ -1446,13 +1446,19 @@ a sequence of editing while slicing could be distracting or annoying."
     (force-mode-line-update)
     (setq whizzytex-mode 'suspended))
    ((equal whizzytex-mode 'suspended)
-    (add-hook 'post-command-hook 'whizzy-observe-changes t t)
-    (whizzy-set-speed-string "?")
-    (force-mode-line-update)
-    (setq whizzytex-mode t))
+    (if (= arg 0) (whizzy-observe-changes t t)
+      (add-hook 'post-command-hook 'whizzy-observe-changes t t)
+      (whizzy-set-speed-string "?")
+      (force-mode-line-update)
+      (setq whizzytex-mode t)))
    (t
     (error "Unknown whizzytex-mode %S" whizzytex-mode)))
   )
+
+(defun whizzy-suspended-slice ()
+  (interactive)
+  (whizzy-observe-changes t t) 
+)
 
 (defvar whizzy-load-factor 0.6
   "Control the interval between slicing as a factor of the slicing REAL time.
@@ -4033,6 +4039,7 @@ It should accept the following arguments
     ( [?\C-c ?\C-s] . whizzy-change-mode)
     ( [?\C-c ?\C-r] . whizzy-reformat)
     ( [?\C-c ?\C-z] . whizzy-suspend)
+    ( [?\C-c ?\C-a] . whizzy-suspended-slice)
     ( [?\C-c ?\C-d] . whizzy-duplex)
     ( [?\C-c ?\C-=] . whizzy-customize)
     ( [?\C-c ?\C-1] . whizzy-view-log)

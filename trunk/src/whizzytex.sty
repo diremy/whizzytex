@@ -823,10 +823,12 @@ to slice!\par \bigskip}}%
   \expandafter \whizzy@setrefcount {\@tmp}\relax
 }
 
-%% Should only appear in 
+%% Should only appear 
 \def \WhizzyAdjustCounter #1#2{%
   \expandafter \edef \csname whizzy@c@#1\endcsname {#2}%
-  \addtocounter {#1}{#2}%
+    %% Ignore rather than an error if counter is not defined. 
+    \expandafter \ifx \csname r@#1\endcsname \relax \else
+    \addtocounter {#1}{#2}\fi
 }
 
 \def \whizzy@label #1{%
