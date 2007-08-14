@@ -1,9 +1,9 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
-;; Copyright (C) 2001, 2002, 2003, 2004 INRIA.
+;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006 INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.2.3
+;; Version        : 1.3.0
 ;; Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 ;; Web Site       : http://pauillac.inria.fr/whizzytex
 ;; 
@@ -60,7 +60,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.2.3"
+(defconst whizzytex-version "1.3.0"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -217,6 +217,9 @@ not be printed  in the current slice.")
 
 (make-variable-buffer-local 'whizzy-point-visible)
 
+(defvar whizzy-point nil)
+(make-variable-buffer-local 'whizzy-point)
+
 (defvar whizzy-paragraph-regexp "\n *\n *\n"
   "*Regexp for paragraph mode.")
 (make-variable-buffer-local 'whizzy-paragraph-regexp)
@@ -267,6 +270,7 @@ not according to the value of this variable."
    '(
      (letter .  "\\\\begin{letter}")
      (slide . "\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
+     (frame . "\\\\begin *{frame}[^\n]*\\|\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (subsubsection
       .  "\\\\\\(\\(s\\(ubs\\(ub\\|\\)\\|\\)ection\\)\\|chapter\\|part\\)\\b[^{]*{")
      (subsection
@@ -290,6 +294,7 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
 
 (defvar whizzy-class-mode-alist
   (list
+    (cons "beamer" 'frame)
     (cons "seminar" 'slide)
     (cons "letter"  'letter)
     (cons "article" 'section)
@@ -301,6 +306,7 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
 
 (defvar whizzy-select-mode-regexp-alist
   (list
+    (cons "^ *\\\\begin *{frame}" 'frame )
     (cons "^ *\\\\begin *{slide}" 'slide )
     (cons "^ *\\\\begin *{letter}" 'letter )
     (cons "^ *\\\\\\(part\\)" 'chapter)
@@ -726,12 +732,15 @@ Entries are sorted per source-file and set to the whizzy variable
     (looking-at "[ \t]")
     )))
 
-(defun whizzy-backward-word ()
-  (let ((here (point)))
-    (or (and (skip-syntax-backward "w.")
-             (looking-at "\\(\\sw\\|\\s.\\)"))
-        (progn (goto-char here) nil))
-    ))
+;; (defun whizzy-backward-word ()
+;;   (let ((here (point)))
+;;     (or (and (skip-syntax-backward "w.") 
+;;              (prog1 t
+;;                (while (or (skip-chars-backward  "--")
+;;                           (skip-syntax-backward "w."))))
+;;              (looking-at "\\(\\sw\\|\\s.\\)"))
+;;         (progn (goto-char here) nil))
+;;         ))
 
 (defun whizzy-backward-command ()
   (let ((here (point)) begin)
@@ -818,7 +827,7 @@ Entries are sorted per source-file and set to the whizzy variable
      )))
 
 (defun whizzy-backward-safe ()
-  "Tell if backward contex is safe and returns type of backward context."
+  "Tell if backward context is safe and returns type of backward context."
   (save-excursion
     (if  (whizzy-dimen-p) nil
       (whizzy-backward-space)
@@ -856,58 +865,71 @@ Entries are sorted per source-file and set to the whizzy variable
 
 ;; replaces whizzy-show-position
 
+
 (defun whizzy-show-point ()
   (save-excursion
     (if (looking-at "[ \t]\\|^[ \t]*$") (whizzy-backward-space))
-    (let ((back))
-      (cond
-       ;; do not put cursor inside fragile args
-       ;; unless at the beginning of document
-       ((equal (point) whizzy-last-slice-begin))
-       ;; useless if in comment...
-       ((whizzy-in-comment-p))
-       ;; do not put cursor in arguments of  \label, \cite, \begin, \end etc.
-       ((whizzy-in-fragile-arg-p))
-       ;; do not put cursor between args
-       ((whizzy-between-args-p))
-       ;; difficult case: commands..
-       (t
-        ;; move one char if cursor slash or letter
-        (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
-        (setq back (whizzy-backward-atom))
-        ;; (message "[%S]" back)
-        (cond
-         ;; show cursor when entering math
-         ((equal back 'math) (point))
-         ;; show cursor at beginning of par
-         ((equal back 'par)
-          (skip-chars-forward " \t\n") (point))
-         ((equal back 'script)
-          (cond
-           ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
-            ;; show protected cursor at sub/superscript
-            (list (cons (match-beginning 1) "{")
-                  (cons (match-end 1) "}")))
-           ((looking-at "[_^][ \t]*{")
-            ;; show unprotected cursor at protected sub/superscript
-            (match-end 0))
-           ))
-         ;; do not put cursor on  unprotected args
-         ((equal back 'arg))
-         ((or (equal back 'command) (equal back 'letter))
-          (let ((tmp (whizzy-backward-safe)))
+    (let
+        ((here (point)) (back)) 
+      (let
+          ((res
             (cond
-             ((and (equal tmp 'script)
-                   (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
-              ;; show protected cursor on commands or single letter in scripts
-              (list (cons (match-beginning 0)
-                          "{") (cons (match-end 0) "}")))
-             (tmp
-              ;; show cursor if backward context is safe
-              (point))
+             ;; do not put cursor inside fragile args
+             ;; unless at the beginning of document
+             ((equal (point) whizzy-last-slice-begin))
+             ;; useless if in comment...
+             ((whizzy-in-comment-p))
+             ;; do not put cursor in arguments of \label,\cite,\begin,\end,... 
+             ((whizzy-in-fragile-arg-p))
+             ;; do not put cursor between args
+             ((whizzy-between-args-p))
+             ;; difficult case: commands..
+             (t
+              ;; move one char if cursor is on slash or letter
+              (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
+              (setq back (whizzy-backward-atom))
+              ;; (message "[%S]" back)
+              (cond
+               ;; show cursor when entering math
+               ((equal back 'math) (point))
+               ;; show cursor at beginning of par
+               ((equal back 'par)
+                (skip-chars-forward " \t\n") (point))
+               ((equal back 'script)
+                (cond
+                 ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
+                  ;; show protected cursor at sub/superscript
+                  (list (cons (match-beginning 1) "{")
+                        (cons (match-end 1) "}")))
+                 ((looking-at "[_^][ \t]*{")
+                  ;; show unprotected cursor at protected sub/superscript
+                  (match-end 0))
+                 ))
+               ;; do not put cursor on  unprotected args
+               ((equal back 'arg)
+                ;; experimental
+                (goto-char here)
+                (if (looking-at "\\s.\\|\\sw\\sw") (point)))
+               ( (or (equal back 'command) (equal back 'letter))
+                 (let ((tmp (whizzy-backward-safe)))
+                   ;; (message "CONTEXT: 'command 'arg %S @ %d" tmp (point))
+                   (cond
+                    ((and (equal tmp 'script)
+                          (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
+                     ;; show protected cursor on commands or single letter
+                     ;; in scripts
+                     (list (cons (match-beginning 0)
+                                 "{") (cons (match-end 0) "}")))
+                    ((equal tmp 'arg) (point))
+                    (tmp
+                     ;; show cursor if backward context is safe
+                     (point))
+                    )))
+               ))
              )))
-         ))
-       ))))
+        (setq whizzy-point res)
+        res)
+      )))
 
 (defun whizzy-show-point-safer ()
   (save-excursion
@@ -938,6 +960,8 @@ Entries are sorted per source-file and set to the whizzy variable
        ))))
 
 (defun whizzy-test-show ()
+  "Show in Emacs buffer where marker is in saved file"
+  (interactive)
   (let ((there
          (if (functionp whizzy-point-visible)
              (funcall whizzy-point-visible)
@@ -946,6 +970,22 @@ Entries are sorted per source-file and set to the whizzy variable
       (if (consp there)
           (whizzy-overlay-region (car (car there)) (car (cadr there)))
       (whizzy-delete-error-overlay)))))
+
+(defvar whizzy-point-trace t
+  "Tells whether to display the Whizzy Cursor back into the Emacs buffer.")
+
+(defun whizzy-point-trace-overlay ()
+  "Display the Whizzy Cursor back into the Emacs buffer"
+  (interactive)
+  (cond 
+   ((not whizzy-point-trace) (whizzy-delete-point-overlay))
+   ((numberp whizzy-point)
+    (whizzy-overlay-point whizzy-point (+ whizzy-point 1)))
+   ((consp whizzy-point)
+   (whizzy-overlay-region (car (car whizzy-point)) (car (cadr whizzy-point))))
+   (t (whizzy-delete-point-overlay))
+   )
+)
 
 ; slicing
 
@@ -1153,7 +1193,7 @@ match those of the file")
                                ((stringp whizzy-slave) whizzy-slave)
                                ((consp whizzy-slave) (cdr whizzy-slave))
                                (t  (whizzy-get whizzy-filename))))
-                    command)
+                    (concat command " " args))
                     "\n")))
           ))))
 
@@ -1509,6 +1549,48 @@ during initialization."
   (interactive)
   (whizzy-call "reformat" 'filename))
 
+(defun whizzy-send-command (command &optional arg)
+  (whizzy-call
+   "viewer-command" 
+   (concat (if (or (null arg) (< arg 0) (= arg 1)) "" 
+             (number-to-string arg))
+           command)
+   ))
+
+;; (defun whizzy-send-key (arg)
+;;   (interactive "p")
+;;   (let ((command
+;;          (assoc (read-char)
+;;                 '((?p "p")
+;;                   (?  "p")
+;;                   (?n "n")
+;;                   (? "n")
+;;                   (?w "w")
+;;                   (? "w")
+;;                   ))))
+;;     (whizzy-send-command (cadr command) arg)))
+
+(defun whizzy-send-previous-page (arg)
+  (interactive "p")
+  (whizzy-send-command "p" arg))
+(defun whizzy-send-next-page (arg)
+  (interactive "p")
+  (whizzy-send-command "n" arg))
+(defun whizzy-send-switch-duplex (arg)
+  (interactive "P")
+  (if whizzytex-mode
+      (whizzy-send-command "w")
+    (whizzytex-mode arg)
+    ))
+
+(defun whizzy-send-goto-end (arg)
+  (interactive "p")
+  (whizzy-send-command "."))
+(defun whizzy-send-goto-home (arg)
+  (interactive "p")
+  (whizzy-send-command ","))
+
+
 (defun whizzy-recompile ()
   "Recompiles the whole document."
   (interactive)
@@ -1542,8 +1624,9 @@ during initialization."
         (let
             ((tick (buffer-modified-tick))
              (ticks (- (buffer-modified-tick) whizzy-last-tick))
-             (pos (point)) (layer) (tmp)
-             (error t))
+             (pos (point)) (layer) (tmp) (error t)
+             (case-fold-search)
+             )
           (unwind-protect
               (progn
                 (if (and
@@ -1593,6 +1676,7 @@ during initialization."
                     (progn
                       (whizzy-set whizzy-active-buffer (current-buffer))
                       (whizzy-slice layer)
+                      (whizzy-point-trace-overlay)
                       (setq whizzy-last-tick tick)
                       ))
                 (setq error nil))
@@ -1753,7 +1837,7 @@ These can be defined with `whizzy-add-configuration'.
 
 (defun whizzy-mode-on (&optional query)
   "See `whizzytex-mode' for meaning of QUERY"
-  (let ((mode-set))
+  (let ((case-fold-search) (mode-set))
     (if whizzytex-mode nil
       (or whizzy-status
           (setq whizzy-status (make-vector whizzy-length nil)))
@@ -1945,7 +2029,7 @@ If ARG turn mode off even if apparently allready off.
    ((null mode)
     (error "Mode should be a non-nil atom"))
 
-   ((member mode '(subsubsection subsection section chapter document none))
+   ((member mode '(subsubsection subsection section chapter document none frame))
     (whizzy-set whizzy-counters (or (whizzy-get whizzy-counters) t)))
 
    ((equal mode 'paragraph)
@@ -1957,7 +2041,7 @@ If ARG turn mode off even if apparently allready off.
                 whizzy-begin)))
     )
 
-   ((equal mode 'slide)
+   ((member mode '(slide))
     (whizzy-set whizzy-counters nil)
     (save-excursion
       (goto-char (point-min))
@@ -1969,7 +2053,8 @@ If ARG turn mode off even if apparently allready off.
    ((equal mode 'letter)
     (whizzy-set whizzy-counters nil))
    (t
-    (error "Ill-formed mode"))
+    (or (assoc mode whizzy-mode-regexp-alist)
+        (error "Ill-formed mode")))
    )
   (if (and (null whizzy-begin) (not (equal mode 'none)))
       (error "Ill-formed slicing mode or incomplete whizzy-mode-regexp-alist"))
@@ -2518,7 +2603,7 @@ a CONS means read configuration in current directory unless already read.
   (or
    (save-excursion
      (beginning-of-buffer)
-     (and (re-search-forward (concat "^%; *" regexp " +") 800 'move)
+     (and (re-search-forward (concat "^%; *" regexp " +") 1600 'move)
           (looking-at "\\([^\n]+[^ \n]\\) *\n")
           (match-string 1)))
    (cdr (whizzy-assoc-if
@@ -2871,6 +2956,10 @@ Otherwise, output is kept as long as the window is visible
 (make-variable-buffer-local 'whizzy-error-overlay)
 (put 'whizzy-error-overlay 'permanent-local t)
 
+(defvar whizzy-point-overlay nil)
+(make-variable-buffer-local 'whizzy-point-overlay)
+(put 'whizzy-point-overlay 'permanent-local t)
+
 (defun whizzy-jump-to-error ()
   (interactive)
   (let ((status  (whizzy-get whizzy-running))
@@ -2884,6 +2973,9 @@ Otherwise, output is kept as long as the window is visible
 (defun whizzy-delete-error-overlay ()
   (if whizzy-error-overlay (delete-overlay  whizzy-error-overlay))
 )
+(defun whizzy-delete-point-overlay ()
+  (if whizzy-point-overlay (delete-overlay  whizzy-point-overlay))
+)
 
 (defvar whizzy-error-face 'whizzy-error-face
   "*Face for error overlays.
@@ -2896,13 +2988,31 @@ face \(type \\[list-faces-display] for a list of existing faces).")
 
 (unless (facep whizzy-error-face)
   (defface whizzy-error-face
-    '((((class color)) (:background "Khaki")))
+    '((((class color)) (:background "orange")))
     "Face used for marking erros in in WhizzyTeX."
     :group 'whizzytex))
+
+(defvar whizzy-point-face 'whizzy-point-face)
+
+(unless (facep whizzy-point-face)
+  (defface whizzy-point-face
+    '((((class color)) (:background "yellow")))
+    "Face used for marking erros in in WhizzyTeX."
+    :group 'whizzytex)
+)
 
 ; (unless (facep whizzy-error-face)
 ;   (make-face 'whizzy-error-face)
 ;   (set-face-background 'whizzy-error-face "Khaki"))
+
+(defun whizzy-overlay-point (beg end)
+  (if (and whizzy-overlays (< beg end) (< end (point-max)))
+      (progn
+        (if  (not whizzy-point-overlay)
+          (setq whizzy-point-overlay (make-overlay 1 1)))
+        (overlay-put whizzy-point-overlay 'face whizzy-point-face)
+        (move-overlay whizzy-point-overlay beg end (current-buffer))
+        )))
 
 (defun whizzy-overlay-region (beg end)
   (if (and whizzy-overlays (< beg end) (< end (point-max)))
@@ -3329,7 +3439,8 @@ Log file name is obtain from suffix by removing leading character."
         ))))
 
 (defun whizzy-filter-output (s)
-  (let ((commands (split-string s "[\n]")) command)
+  (let ((case-fold-search)
+        (commands (split-string s "[\n]")) command)
     (while commands
       (setq command (car commands) commands (cdr commands))
       (save-current-buffer
@@ -3413,6 +3524,24 @@ Log file name is obtain from suffix by removing leading character."
                (match-string 8 s)
                ))
           )
+         ((string-match
+           "^<keyedit \"\\([^ \t\n\"]*\\)\" \"\\([^ \t\n\"]*\\)\"\\[\\([^]]*\\)\\] #\\([0-9]*\\) @\\([^ \t\n]*\\) \\([a-z]+\\)=\\([^,]*\\),\\([^,]*\\)>" s)
+          (if (whizzy-set-active-buffer)
+              (whizzy-edit
+               (match-string 1 s)
+               (match-string 2 s)
+               (match-string 3 s)
+               (match-string 4 s)
+               (match-string 5 s)
+               (cond
+                ((string-equal (match-string 6 s) "resizetop") 'resizetop)
+                ((string-equal (match-string 6 s) "resizebot") 'resizebot)
+                (t 'moveto))
+               (match-string 7 s)
+               (match-string 8 s)
+               ))
+          )
+
          ((string-equal "<Fatal error>" command)
           (if (whizzy-set-active-buffer)
               (progn
@@ -3451,7 +3580,7 @@ Log file name is obtain from suffix by removing leading character."
           (message "Mode switched off externally")
           )
          ((string-match "<Viewlog>\\(.*\\)" command)
-          (let (;; (line (match-string 1)) 
+          (let ( ;; (line (match-string 1)) 
                 (file
                  (expand-file-name "texlog" (whizzy-get whizzy-output-dir))))
             (unless (not (file-readable-p file))
@@ -3518,6 +3647,7 @@ This is a variable whose value should be a face.")
   "Move forward N slices (or backward if N is negative)."
   (interactive "p")
   (if whizzy-begin
+     (let ((case-fold-search))
       (let* ((begin-document "^[ \t]*\\\\begin{document}[ \t\n]*")
              (begin-regexp
               (concat "\\(" begin-document 
@@ -3563,7 +3693,7 @@ This is a variable whose value should be a face.")
         (goto-char here)
         (whizzy-move-slice-overlays beg end)
         (recenter 2)
-        )))
+        ))))
 
 (defun whizzy-previous-slice (n)
   "Move backward N slices (or forward if N is negative)."
@@ -3899,7 +4029,7 @@ It should accept the following arguments
   "Common default bindings")
 
 (defvar whizzy-short-bindings
-  `(( [?\C-c ?\C-w] . whizzytex-mode)
+  `(( [?\C-c ?w] . whizzytex-mode)
     ( [?\C-c ?\C-s] . whizzy-change-mode)
     ( [?\C-c ?\C-r] . whizzy-reformat)
     ( [?\C-c ?\C-z] . whizzy-suspend)
@@ -3907,6 +4037,9 @@ It should accept the following arguments
     ( [?\C-c ?\C-=] . whizzy-customize)
     ( [?\C-c ?\C-1] . whizzy-view-log)
     ( [?\C-c ?\C-j] . whizzy-jump-to-error)
+    ( [?\C-c ?\C-p] . whizzy-send-previous-page)
+    ( [?\C-c ?\C-n] . whizzy-send-next-page)
+    ( [?\C-c ?\C-w] . whizzy-send-switch-duplex)
     . ,whizzy-common-bindings)
   "Short bindings for WhizzyTeX"
   )

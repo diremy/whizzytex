@@ -1,10 +1,10 @@
 #!/bin/bash 
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
-#  Copyright (C) 2001, 2002, 20043, 2004 Didier Rémy
+#  Copyright (C) 2001, 2002, 20043, 2004, 2005, 2006 INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.2.3
+#  Version        : 1.3.0
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -26,7 +26,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.2.3"
+VERSION="1.3.0"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -40,6 +40,7 @@ DVICOPY=mv
 # Default LaTeX implementation
 INITEX=initex
 LATEX=latex
+LATEXCOMMANDS=
 FORMAT=latex
 FMT=fmt
 BIBTEX=bibtex
@@ -63,6 +64,8 @@ LIMIT=20
 
 # Signals telling gv and xdvi/advi to refresh
 SIGDVI=SIGUSR1
+SIGINPUTDVI=SIGUSR2
+SIGINPUT=SIGCONT
 SIGPS=SIGHUP
 SIGPDF=SIGCONT
 
@@ -98,6 +101,7 @@ VIEW=wdvi
 WAUX=waux
 RAUX=raux
 VIEWCOMMAND=advi
+NAVIGATION=true
 NEWFILES=newfile
 MULTIPLE=true
 DUPLEX=false
@@ -132,6 +136,7 @@ do
    -watch) NEWFILES=newfiles;;
    -dvi)
        VIEW=wdvi;
+       NAVIGATION=false;
        MULTIPLE=false;
        case "$2" in
        .) VIEWCOMMAND=xdvi;;
@@ -148,6 +153,7 @@ do
        shift;;
    -ps)
        VIEW=ps
+       NAVIGATION=false;
        MULTIPLE=false;
        case "$2" in
        .) VIEWCOMMAND=gv;;
@@ -158,6 +164,7 @@ do
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
+       NAVIGATION=false;
        MULTIPLE=false;
        LATEX=pdflatex
        INITEX=pdfinitex
@@ -359,7 +366,7 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" '\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" "$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 ############################################################################
@@ -556,6 +563,7 @@ case $VIEW in
   wdvi)
     preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
     SIG=$SIGDVI
+    SIGINPUT=$SIGINPUTDVI
     ;;   
   wpdf)
     preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
@@ -658,13 +666,26 @@ fi
  echo '2>'"$OUTPUT"/view; \
  echo '# End of command' ) >> "$OUTPUT"/command
 
+
+# Create a fifo and assign it to descriptor 3 in read-write mode.
+rm -f $INPUT/view.$$
+mkfifo $INPUT/view.$$
+exec 3<>$INPUT/view.$$
+rm $INPUT/view.$$
+
 {
-  $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW 2>"$OUTPUT"/view &
+  $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &
   echo $! >> "$TMP"/pids
   ID=$!
   echo $ID > "$TMP"/ID
   wait $ID && quit || fatal 'Viewing process terminated abnormally'
   } &
+
+sendcommand () {
+#    echo "$1" $SIGINPUT $ID
+    echo -n "$1" >&3 && kill -$SIGINPUT $ID \
+        || fatal 'Previewer cannot receive commands' $SIG
+}
 
 sigreload () {
    kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
@@ -766,6 +787,9 @@ do
            on) AUTORECOMPILE=true;;
            off) AUTORECOMPILE=false;;
          esac;;
+       viewer-command) 
+         if $NAVIGATION && [ -n "$REST" ]; then sendcommand $REST; fi;;
+       nextslice) process && $RELOAD ;;
        reslice) process && $RELOAD ;;
        whole) checkMKfile $REST; whole $DOMAKS;;
        bibtex) makebibtex;;

@@ -1,9 +1,9 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
-%  Copyright (C) 2001, 2002, 2003, 2004 Didier Rémy
+%  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006 INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.2.3
+%  Version        : 1.3.0
 %  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 %  Web Site       : http://pauillac.inria.fr/whizzytex
 % 
@@ -27,7 +27,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.2.3}
+\def \whizzy@version {1.3.0}
 
 %% The best to remove problem with hyperref.
 %% Because hyperref does not behave well when precompiled in a format
@@ -137,16 +137,22 @@
 %% We can now redefine \document to add a few work and hooks and dump the
 %% format. 
 
+\def \whizzy@loadconfig #1{%
+   \makeatletter
+   \IfFileExists{\WHIZZYCONFIGDIR/#1}%
+        {\@input {\WHIZZYCONFIGDIR/#1}}{}%
+   \IfFileExists{\WHIZZYHOME/.whizzytex/#1}%
+        {\@input {\WHIZZYHOME/.whizzytex/#1}}{}%
+   \IfFileExists{#1}{\@input {#1}}{}%
+   \makeatother
+}
+\def \whizzy@endinput
+   {\whizzy@loadconfig{whizzy.cfg}\makeatother \endinput}%
+
 \def \document 
   {\endgroup
    \whizzy@beforeauxhook
-   \makeatletter
-   \IfFileExists{\WHIZZYCONFIGDIR/whizzy.sty}%
-        {\@input {\WHIZZYCONFIGDIR/whizzy.sty}}{}%
-   \IfFileExists{\WHIZZYHOME/.whizzytex/whizzy.sty}%
-        {\@input {\WHIZZYHOME/.whizzytex/whizzy.sty}}{}%
-   \IfFileExists{whizzy.sty}{\@input {whizzy.sty}}{}%
-   \makeatother
+   \whizzy@loadconfig {whizzy.sty}%
    \begingroup \def \@currenvir {document}%
    \whizzy@loadaux
    \endgroup
@@ -167,6 +173,7 @@
        {\g@addto@macro \@begindvi {\whizzy@everypage}}}
 \def \whizzy@everypage {\whizzy@everypagehook}
 \def \whizzy@everypagehook {}
+\def \WhizzyAtEverypage {\g@addto@macro \whizzy@everypagehook}
 
 %% How to print whizzy nice boxes
 \let \whizzy@fbox \fbox
@@ -367,7 +374,8 @@ to slice!\par \bigskip}}%
       {\whizzy@setnorm{#3}%
        %% To be fix: \whizzy@curfile may be have an extension
        \immediate \write \@mainaux 
-           {\string \gdef \string \whizzy @\whizzy@curfile @%
+           {\string \expandafter \string \gdef
+             \string \csname \space whizzy@\whizzy@curfile @\string \endcsname%
                {\the\c@page.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
                 \@ifundefined{c@section}{}%
                     {\the\c@section.\the\c@subsection.}}}%
@@ -533,7 +541,7 @@ to slice!\par \bigskip}}%
 
 
 %% We stop here if no support for moving to cursor
-\ifx \WhizzyLevel 0\expandafter \endinput \fi
+\ifx \WhizzyLevel 0\expandafter \whizzy@endinput \fi
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% In PDF line numbers are not recognize.
@@ -694,7 +702,7 @@ to slice!\par \bigskip}}%
   \newenvironment{in@#1}}
 
 %% We stop here if no support for Active-DVI
-\ifx \WhizzyLevel 1\expandafter \endinput \fi
+\ifx \WhizzyLevel 1\expandafter \whizzy@endinput \fi
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 7: This asumes advi
@@ -720,6 +728,55 @@ to slice!\par \bigskip}}%
 
 %%% overlays
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PGF loads headers in before begin document
+
+%% \let \latex@ifl@aded \@ifl@aded
+%% \def\@ifl@aded#1#2{%
+%%   \expandafter\ifx\csname ver@#2.#1\endcsname\relax
+%%   %% next two lines added
+%%     \edef \tmp@patch {\csname\@currname.\@currext-after@patch\endcsname}%
+%%     \expandafter\let\csname\@currname.\@currext-h@@k\endcsname \tmp@patch
+%%     \expandafter\@secondoftwo
+%%   \else
+%%     \expandafter\@firstoftwo
+%%   \fi}
+
+%% \expandafter \def \csname pgf-dvips.sty-before@patch\endcsname{%
+%%   \let \default@pgfsys@defobject \pgfsys@defobject 
+%%   \let \default@pgfsys@useobject \pgfsys@useobject 
+%% }
+
+
+%% \def \whizzy@dvips {dvips.def}
+%% \expandafter \def \csname pgf.sty-after@patch\endcsname{%
+%%   \ifx \Gin@driver \whizzy@dvips
+%%    \def\pgfsys@defobject##1##2##3##4{%
+%%      \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+%%      {%
+%%        \pgfsysprotocol@setcurrentprotocol\@empty%
+%%        \pgfsysprotocol@bufferedtrue%
+%%        ##4%
+%%        \pgfsysprotocol@getcurrentprotocol\pgfsys@@temp%
+%%        \expandafter\global\expandafter\let\csname ##1\endcsname=\pgfsys@@temp%
+%%      }%
+%%      \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
+%%    }%
+%%    \def\pgfsys@useobject##1##2{%
+%%      \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
+%%      {%
+%%        \pgfsysprotocol@setcurrentprotocol\@empty%
+%%        \pgfsysprotocol@bufferedfalse%
+%%        ##2%
+%%        \expandafter\pgfsysprotocol@setcurrentprotocol\csname ##1\endcsname%
+%%        \pgfsysprotocol@invokecurrentprotocol%
+%%      }%
+%%      \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
+%%    }%
+%%    %%   \let \pgfsys@defobject \default@pgfsys@defobject 
+%%    %%   \let \pgfsys@useobject \default@pgfsys@useobject 
+%%  \fi
+%% }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EXPERIMENTAL FEATURES
@@ -831,7 +888,7 @@ to slice!\par \bigskip}}%
 %%%% END Experimental feature: adjustement of labels.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\makeatother
-\endinput
+
+\whizzy@endinput
 
 % whizzytex.sty ends here
