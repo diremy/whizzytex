@@ -508,7 +508,9 @@ Used to trace section and reset counters at the beginning of a slice.")
 
 (defvar whizzy-section-counters-alist nil
   "Structure mapping source file sections to LaTeX counters.
-Its cdr is the alist. Its car is  a pointer to the list used for last update.")
+It is file-dependent. Its cdr is the alist. 
+Its car retains the value of whizzy-counters at last update. 
+")
 (make-variable-buffer-local 'whizzy-section-counters-alist)
 
 (defvar whizzy-line-section-alist nil
@@ -544,6 +546,7 @@ Should be consistent with the file on disk.")
          (equal dir (substring path 0 ldir))
          (substring path ldir nil))))
 
+;; Fix the following for multiple files.
 (defun whizzy-section-counters (&optional arg)
   "Returns  counters at section ARG.
 Uses `whizzy-section-counters-alist' (and recompile it if needed).
@@ -552,8 +555,8 @@ it return counters at top of file.
 If ARG is nil, just recompiles it and return t if the 
 alist is not empty, and nil otherwise."
   (let ((all-counters (whizzy-get whizzy-counters)))
+    ;; Recompile if needed
     (unless (eq (car whizzy-section-counters-alist) all-counters)
-      ;; recompilation is needed
       (let* ((top-counters
               (and (consp all-counters)
                    (cdr (assoc (or (whizzy-relname (whizzy-get whizzy-dir)
@@ -567,6 +570,9 @@ alist is not empty, and nil otherwise."
         ;; do the join
         (while (and sections counters)
           (cond
+           ((null (caar counters)) 
+            (setq counters (cdr counters))
+           )
            ((= (caar sections) (caar counters))
             (let ((left (cdar sections)) (right (cdar counters)))
               (if (equal (string-match (car right) left) 1)
@@ -584,6 +590,7 @@ alist is not empty, and nil otherwise."
         (setq whizzy-section-counters-alist
               (cons all-counters (cons top all))))
         ))
+    ;; Process the query
     (let ((section-before (cddr whizzy-section-counters-alist))
           (section-after))
       (if arg
@@ -642,10 +649,13 @@ Entries are sorted per source-file and set to the whizzy variable
                          (equal (car last) (car new)))
                         ;; do nothing
                         nil
-                      ;; otherwise, we have switch files, we add an entry to 
+                      ;; otherwise, we have switched files, we add an entry to 
                       ;; the current, taking the current section 
                       ;; of  previous file. 
-                      (setq all (cons (cons (car new) (cdr last)) all)))
+                      ;; we set linenumber of the fake setion to nil
+                      (setq all 
+                            (cons (cons (car new) (cons nil (cddr last)))
+                                  all)))
                     (setq all (cons (setq last new) all)))
                   )
                 (erase-buffer))
@@ -1150,7 +1160,7 @@ match those of the file")
                            (funcall whizzy-point-visible)
                          (whizzy-show-point)))
                   ))
-        ;; (message "WWABD=%S word="%S"  whizzy-write-at-begin-document word)
+        ;; (message "WWABD=%S word=%S"  whizzy-write-at-begin-document word)
         (let ((line
                (if whizzy-line          ; (not whizzy-point-visible)
                    (concat
@@ -1285,7 +1295,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
                    (setq word (cdr (whizzy-section-counters t)))
                    )
                 (setq word (cdr (whizzy-section-counters t))))
-              ;; (message "Word-1 %S" word)
+              ;; (setq word-one word)
               (goto-char next)
               (if (and
                    (or (re-search-forward whizzy-begin (point-max) t)
@@ -1326,7 +1336,7 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
                                           (cddr (car before))))
                             (setq before (cdr before)))
                           ))
-                    ;; (message "Word-2 %S" word)
+                    ;; (message "Word-2 %S [Word-1 %S]" word word-one)
 
                     
                     ;; end of enlargment code

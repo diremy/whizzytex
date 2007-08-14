@@ -308,7 +308,7 @@ This file is a bash-shell script that should be executable.  There is not
 reason to have it visible from the executable path, since it should not be
 used but with {\whizzy}.
 
-The variable {\tt whizzytex-command-name} defined in {\tt whizzytex.el} 
+The variable {\tt whizzy-command-name} defined in {\tt whizzytex.el} 
 contains its full path (or just its name if visible from the executable
 path). 
 
@@ -323,7 +323,7 @@ script.
 This file are {\tt latex2e} macros. There is no reason to put this visible
 from {\LaTeX} path, since it should not be used but with {\whizzy}.
 
-Variable variable {\tt PACKAGE} defined in {\tt whizzytex} 
+Variable  {\tt PACKAGE} defined in {\tt whizzytex} 
 the full path (or just the name if the path is visible from {\LaTeX}. 
 
 Default value is \lst"/usr/local/share/whizzytex/latex/whizzytex.sty"
@@ -1038,6 +1038,45 @@ string will be passed as such to the {\whizzy} shell-script. Note that the
 name of the \lst"dvi" or postscript file will be appended to the previewer
 command.
 
+\subsection {Configuration via \texttt{whizzy.sh}}
+
+\label{configuration.sh}
+
+This is preferable to file-based configuration.
+File \texttt{whizzy.sh} is read by the script \texttt{whizzytex} after some
+defaults values (usually determined by the configuration) have being
+assigned to variables. Hence, it can be used to redefined those values. 
+
+Here are typical default values that can be redefined. 
+$$
+\begin{tabular}{>{\tt}l>{\tt}l>{\tt}ll}
+\rm \bf Variable & \rm \bf default value & \rm \bf other value
+& \bf Meaning
+\\[1ex]
+LATEX & latex & elatex & latex program 
+\\
+FORMAT & latex & elatex & format basefile name
+\\
+FMT & fmt & efmt & format extenstions
+\\
+DVICOPY & mv & dvicopy & transformation $f$\texttt{.dvi} file into $f$\texttt{.wdvi}
+\\
+BIBTEX & bibtex & ebibtex & bibtex  program
+\\
+MKSLICE & defaultmkslice & . & hook for preprocessing slices
+\\
+MKFILE & defaultmkfile & . & hook for preprocessing files
+\\
+MAKEINDEX & makeindex & . & command for making index
+\\
+\end{tabular}
+$$
+See \texttt{whizzytex} for other bindings. 
+
+Other shells environment values such as \texttt{TEXINPUTS} may be defined
+here as well.
+
+
 
 
 \subsection {Watching other files}
@@ -1119,17 +1158,25 @@ same page layout.
 Bash-script running altogether. Some of the parameters can be adjusted at
 installation-time by modifying the respective files \lst"whizzytex.el",
 \lst"whizzytex.sty", or \lst"whizzytex" of the distribution.  However, you
-should normally not have to do that after installation, and instead use
-system, user, or local configuration files.
+should normally not have to do that after installation (and even only
+exceptionnally during installation), and instead use system, user, or local
+configuration files.
 
 When launched, each engine looks for configuration files in appropriate
-directories with basenames \lst"whizzy.el", \lst"whizzy.sh", and
-\lst"whizzy.sty", respectively. The Emacs configuration search path is 
-defined by the emacs variable variable \lst"whizzy-configuration-path". 
-Search path for Bash and Latex settings are composed of the directories
-\lst"CONFIGDIR/", \lst"$HOME/.whizzytex/" and the
-current directory (actually \lst"$TEXINPUTS" for latex).  All configuration
-files found are loaded, in the order given above.
+directories with basenames \lst"whizzy.el", \lst"whizzy.sh", 
+\lst"whizzy.sty" and \lst"whizzy.cfg", respectively. The Emacs configuration
+search path is defined by the emacs variable variable
+\lst"whizzy-configuration-path".  Search path for Bash and Latex settings
+are composed of the directories \lst"CONFIGDIR/", \lst"$HOME/.whizzytex/"
+and the current directory (actually \lst"$TEXINPUTS" for latex).  All
+configuration files found are loaded, in the order given above.
+The difference between \lst"whizzy.sty" and \lst"whizzy.cfg" is that the
+former is loaded after all latex packages and typically use to change the
+behavior of those packages while the later is loaded first,
+before \lst"\documentclass" and is rather use used to redefined
+commands of "whizzytex" or defined extra macros before loading the
+document (e.g. as arguments that could normally be defined on the
+commandline while calling \lst"latex").
 
 Remark that a local configuration file (\emph{i.e.} one in the current
 directory) can be used to make per-document configuration by testing on 

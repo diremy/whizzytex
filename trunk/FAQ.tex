@@ -142,9 +142,11 @@ As an example, to make it work with \lst"platex" you can edit
 the script \lst"whizzytex" and change some findings as follows
 (in the experimental version): 
 \begin{verbatim}
-INITEX=iniptex
+INITEX="platex -ini"
 LATEX=platex
 FORMAT=platex
+BIBTEX=jbibtex
+FMT=fmt
 \end{verbatim}
 
 \hypertarget{cygwin}{}

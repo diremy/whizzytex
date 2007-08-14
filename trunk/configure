@@ -58,7 +58,7 @@ absolute_or_prefix () {
   case "$1" in
     "") echo;;
     /*|'$(PREFIX)'*|'$(LIBDIR)'*|'$(DATADIR)'*) echo $1;;
-    *) echo '$(PREFIX)'/$1;;
+    *) echo "$(PREFIX)/$1";;
   esac
 }
 
@@ -91,37 +91,37 @@ while : ; do
 ## 
   -prefix|--prefix) ## <absolute path>          # /usr/local
         ## set the default prefix PREFIX of all directories
-        is_absolute $2; prefix="$2"; shift;;
+        is_absolute "$2"; prefix="$2"; shift;;
 ##
   -bindir|--bindir) ## <path>                   # bin
         ## Set the directory for the excutable BINDIR
-        bindir=$(absolute_or_prefix $2); shift;;
+        bindir=$(absolute_or_prefix "$2"); shift;;
 ##
   -libdir|--libdir) ## <path>                   # lib/whizzytex
         ## set the directory for architecture dependent libraries LIBDIR
-        libdir=$(absolute_or_prefix $2); shift;;
+        libdir=$(absolute_or_prefix "$2"); shift;;
 ##
   -datadir|--datadir) ## <path>                 # share/whizzytex
         ## set the directory for architecture-independent files DATADIR
-        datadir=$(absolute_or_prefix $2); shift;;
+        datadir=$(absolute_or_prefix "$2"); shift;;
 ##
   -latexdir) ## <path>                          # $(DATADIR)/latex
         ## set the directory where to install source lisp code 
-        latexdir=$(absolute_or_prefix $2); shift;;
+        latexdir=$(absolute_or_prefix "$2"); shift;;
 ##
   -docdir|--docdir) ## <path>                   # share/doc/whizzytex
         ## set the directory where to install documentation DATADIR
-        docdir=$(absolute_or_prefix $2); shift;;
+        docdir=$(absolute_or_prefix "$2"); shift;;
 ##
   -emacsdir) ## .|?|<path>                      # $(LIBDIR)/emacs
         ## set the directory for emacs lisp code
         ## ! find for the most obvious choice in emacs system load-path
         ## ? list all choices in emacs and users load-path and ask the user
-        emacsdir=$2; shift;;
+        emacsdir="$2"; shift;;
 ##
   -xemacsdir) ## .|?|<path>                     # search for
         ## set the directory for xemacs byte-compiled lisp code
-        xemacsdir=$2; shift;;
+        xemacsdir="$2"; shift;;
 ##
   -elc) ## 
         ## also compiles lisp code
@@ -136,7 +136,7 @@ while : ; do
 ##
   -bash) ## <absolute path>                     # /bin/bash
         ## Set the bash interpreter command to BASH
-        is_absolute $2; bash=$2; shift;;
+        is_absolute "$2"; bash="$2"; shift;;
 ##
   -initex) ## <command>                         # initex
         ## Set the latex command to INITEX
@@ -177,7 +177,7 @@ while : ; do
 ##
   -dvips) ## <command>                          # dvips
         ## Set the DVI-to-Postcript-converter command name
-        dvips=$2; shift;;
+        dvips="$2"; shift;;
 ##
   -configfile|--configfile) ## <file>           # /etc/whizzytex/whizzytex.conf
         ## Set the system configuration file (full path)
@@ -343,7 +343,7 @@ case "$emacsdir" in
       emacs=''
    fi
    ;;
-  *) emacsdir=$(absolute_or_prefix $emacsdir)
+  *) emacsdir=$(absolute_or_prefix "$emacsdir")
    ;;
 esac
 
@@ -388,7 +388,7 @@ case "$xemacsdir" in
       xemacs=''
    fi
    ;;
-  *) xemacsdir=$(absolute_or_prefix $xemacsdir)
+  *) xemacsdir=$(absolute_or_prefix "$xemacsdir")
    ;;
 esac
 
@@ -408,10 +408,10 @@ else
   emacs=''
   xemacs=''
 fi
-output EMACS $emacs
-output EMACSDIR $emacsdir
-output XEMACS $xemacs
-output XEMACSDIR $xemacsdir
+output EMACS "$emacs"
+output EMACSDIR "$emacsdir"
+output XEMACS "$xemacs"
+output XEMACSDIR "$xemacsdir"
 
 
 # initex
@@ -430,12 +430,12 @@ output BIBTEX "$bibtex"
 
 cat <<EOF > dummy.tex
 \documentclass{article}
-\def \dummy {Testing you installation}
-\def \documentclass #1\dump {\relax}
-\let \dump \relax
+\def \dummy {Testing Your Installation}
+\def \dojump{\def \documentclass ##1\dump {\relax}}
+\dojump
 \dump
 \begin{document}
-\huge {\bf \dummy}\par Don't worry, feel lucky!
+\huge {\bf \dummy}\par Don't worry, feel Lucky!
 \end{document}
 EOF
 
@@ -458,24 +458,41 @@ if test -z "$fmt"
 then fmt=$(echo | $initex '&stroumf' '\batchmode' 2>&1 \
        | sed -n -e 's%^.*the format `stroumf.\([a-z][a-z]*\)'"'.*"'%\1%p')
 fi
-if test -z "$fmt"; then fmt=fmt; fi
-
-echo -n "Running LATEX=$latex... "
-if [ -n "$latex" ]; then
-  # was: $latex '&dummy' dummy.tex
-  if $latex "&$format" dummy.tex > latex.log && test -f dummy.dvi
-  then echo ok
-  else
-    error "
-    Command failed:
-
-      $latex "'"&'$format'"'" dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
-
-    $latex installation seem to have problems. 
-    See dummy.tex and latex.log
-  "
-  fi
+if test -z "$fmt"; 
+then error "Cannot determined format extension, please use option -fmt"
 fi
+
+echo -n "Running INITEX=$initex..."
+rm -f dummy.dvi
+if $initex '&'$format dummy.tex > initex.log 
+then
+  if  [ -f dummy.$fmt ]
+  then 
+    if latex '&dummy' dummy.tex > latex.log
+    then echo ok
+    else
+        error "
+        Command failed:
+
+          $latex "'"&'$format'"'" dummy.tex "'&&'" [ -f dummy.dvi ] > latex.log
+
+        $latex might be misconfigured. 
+        See dummy.tex and latex.log
+      "
+    fi
+  else
+    error "I thought format extension was $fmt, but command
+
+        initex '&"$format"' dummy.tex > latex.log
+
+    fails to produce file dummy.fmt. I am fooled and give up!
+    Please help me with option -initex, -latex -frmat and -fmt.
+    "
+  fi
+else
+  echo HERE
+fi
+
 
 output FORMAT $format
 output FMT $fmt

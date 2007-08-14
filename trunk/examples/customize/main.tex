@@ -3,12 +3,12 @@
 \begin{document}
 
 This example illustrate customization of the whizzytex shell with a
-\texttt{main.wsh} file in the current directory. This file contains
+\texttt{whizzy.sh} file in the current directory. This file contains
 \begin{verbatim}
         AUTORECOMPILE=false
 \end{verbatim}
 The effect is to switch off recompilation of the whole file when the
-the document is reformatted (for example, when the document is saved). 
+the document is reformatted or saved. 
 
 You can also control this switch interactively, by typing
 \begin{verbatim}
@@ -19,6 +19,9 @@ or
         autorecompile off
 \end{verbatim}
 in the interaction window. 
+
+Then, the whole document will only be compiled at startup, which you may
+also control by switching flag \texttt{AUTOCOMPILE}. 
 
 
 \end{document}

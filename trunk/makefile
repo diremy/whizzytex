@@ -1,9 +1,9 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 # Stable version
-RELEASE=1.2.0
+RELEASE=1.3.0
 # Current version
-VERSION=1.2.3
+VERSION=1.3.0
 # rpm release version
 Release=1
 # YAP version
@@ -164,6 +164,7 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 	xemacs -batch -q -l ../byte-compile.el 2>log && cat log && \
 	if grep -e '\*\*' log; then rm -f ../$@; false; fi 
 
+rpm: $(RPMNAME).src.rpm 
 
 Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
 	rcp $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(PAUILLAC)

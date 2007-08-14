@@ -3,32 +3,74 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
- * Added backward compatibility of linemode with older versions. 
+ * fix section counters with multiple files. 
+ * fix case-fold-search to nil in all whizzytex searches. 
+ * added a trace of the Whizzy Cursor back into the Emacs buffer. 
+ * enable redirection of navigation commands to previewer stdin.
 
 Shell-script: 
 
+ * enable redirection of navigation commands to previewer stdin.
+
 LaTeX macros:
 
- * Fix \label to work with hyperref...
- * Experimental auto-adjustment of counters (using \label).
+ * made \WhizzyAdjustCounter not fail if counter is undefined. 
+ * fix bug due to writing file names in .aux. 
 
 Installation/Documentation:
 
- * ./configure default initex to 'latex -ini' if not found.
- * Fixed quotation of command names in script during installation
- * HTML should now be generated with hevea 1.08
+ * fixed some quotes in configuration script.
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
 
+ - version 1.3.0
+ * Added backward compatibility of linemode with older versions. 
  - version 1.2.3
  * whizzy-toggle-debug not set whizzy-debug 
  * changed communication from whizzytex back to emacs.
  * added support for -pdf xpdf mode.
  * enter Emacs-debugger on fatal error when called in debug-mode.
  * change whizzy-sit-for for compatibility with Emacs on mac-os-10
+
+Shell-script: 
+
+ - version 1.2.3
+ * fix configure and checkconfig to allow -initex 'tex -ini'
+ * changed communication from whizzytex back to emacs.
+ * added support for -pdf xpdf mode.
+ * write in .waux and read in .raux to be stable in face of errors
+
+LaTeX macros:
+
+ - version 1.3.0
+ * Fix \label to work with hyperref...
+ * Experimental auto-adjustment of counters (using \label).
+ - version 1.2.3
+ * some changes to allow anchors with pdftex driver.
+ * fixed the problem with the new hypertex package (\scrollmode). 
+ * set default hyperref option to hypertex (not best, but better than nothing)
+ * write in .waux and read in .raux to be stable in face of errors
+
+Installation/Documentation:
+
+ - version 1.3.0
+ * fix in ./configure for 'latex -ini' not to block
+ * ./configure default initex to 'latex -ini' if not found.
+ * Fixed quotation of command names in script during installation
+ * HTML should now be generated with hevea 1.08
+ - version 1.2.3
+ * Export sources of the documentation
+ * Update customozation with -pdf option (and a few changes)
+ * timeout option to ./checkconfig (in case fonts need to be rebuilt).
+
+OLDER CHANGES:
+==============
+
+Emacs-mode:
+
  - version 1.2.0 
  * fixed ^ in middle of whizzy-mode-regexp-alist
  * test for the file associated to the buffer already exists.
@@ -41,60 +83,6 @@ Emacs-mode:
  * overlays are now variables and can now be customized.
  * changed whizzy-edit API.
  * added -display option.
-
-Shell-script: 
-
- - version 1.2.3
- * fix configure and checkconfig to allow -initex 'tex -ini'
- * changed communication from whizzytex back to emacs.
- * added support for -pdf xpdf mode.
- * write in .waux and read in .raux to be stable in face of errors
- - version 1.2.0 
- * diplay VERSION number with option -version and command info.
- * allow spaces in directory names (not in the filename itself).
- * changed names of configuration files whizzy.sh 
- * added a flag during initialization, so as to keep debugging information
- * added AUTOCOMPILE and AUTORECOMPILE variables.
- * removed obsolete DOMARKS.
- - version 1.1.3
- * added internal duplex mode if MULTIPLE files can be viewed altogether
- * added -display option 
-
-LaTeX macros:
-
- - version 1.2.3
- * some changes to allow anchors with pdftex driver.
- * fixed the problem with the new hypertex package (\scrollmode). 
- * set default hyperref option to hypertex (not best, but better than nothing)
- * write in .waux and read in .raux to be stable in face of errors
- - version 1.2.0 
- * fixed display of cursor in vmode.
- * small slice can be automatically enlarged to fit some number of pages.
- * changed names of configuration files whizzy.sty
- - version 1.1.3
- * changed whizzy-edit interface
- * \WhizzyInsideEnvironment to change the behavior when the cursor is inside.
-
-Installation/Documentation:
-
- - version 1.2.3
- * Export sources of the documentation
- * Update customozation with -pdf option (and a few changes)
- * timeout option to ./checkconfig (in case fonts need to be rebuilt).
- - version 1.2.0 
- * configuration, customization
- * added a redhat noarch.rpm (spec file provided by Jakuv Narebski)
- * fixed Makefile
- * whizzy-edition: documentation and examples.
- - version 1.1.3
- * MULTIPLE configuration variable and documentation
- * Few small fixes/changes.
-
-OLDER CHANGES:
-==============
-
-Emacs-mode:
-
  - Version 1.1.2
  * whizzy-master is ignored when set to the buffer itself.
  * Revert buffer keeps whizzytex alive (cleaning on failure must be FIXED.)
@@ -158,6 +146,16 @@ Emacs-mode:
 
 Shell-script: 
 
+ - version 1.2.0 
+ * diplay VERSION number with option -version and command info.
+ * allow spaces in directory names (not in the filename itself).
+ * changed names of configuration files whizzy.sh 
+ * added a flag during initialization, so as to keep debugging information
+ * added AUTOCOMPILE and AUTORECOMPILE variables.
+ * removed obsolete DOMARKS.
+ - version 1.1.3
+ * added internal duplex mode if MULTIPLE files can be viewed altogether
+ * added -display option 
  - Version 1.1.1
  * warn when fails during initialization
  * keep log files when turn off in debug mode
@@ -188,6 +186,13 @@ Shell-script:
 
 LaTeX macros:
 
+ - version 1.2.0 
+ * fixed display of cursor in vmode.
+ * small slice can be automatically enlarged to fit some number of pages.
+ * changed names of configuration files whizzy.sty
+ - version 1.1.3
+ * changed whizzy-edit interface
+ * \WhizzyInsideEnvironment to change the behavior when the cursor is inside.
  - Version 1.1.1
  * load advi.sty in advi mode
  - Version 1.1
@@ -202,6 +207,14 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ - version 1.2.0 
+ * configuration, customization
+ * added a redhat noarch.rpm (spec file provided by Jakuv Narebski)
+ * fixed Makefile
+ * whizzy-edition: documentation and examples.
+ - version 1.1.3
+ * MULTIPLE configuration variable and documentation
+ * Few small fixes/changes.
  - Version 1.1.1
  * adjusted the manual for initialization
  * add system and per-user CONFIGFILE support.
