@@ -209,6 +209,9 @@ However, this makes WhizzyTeX more fragile, because the slice must be
 instrumented with additiocal code, which at some position may unfortunaly
 make the slice erroneous.
 
+Variable `whizzy-cursor-autohide', when set, makes point invisible after 
+slicing errors until (one slice after) the error is fixed.
+
 This can be toggled from the menu bar or with `whizzy-toggle-point'.
 
 The value can also be function, which should then return  the position 
@@ -875,71 +878,75 @@ Entries are sorted per source-file and set to the whizzy variable
 
 ;; replaces whizzy-show-position
 
+;; global variable. Could in whizzy-status. 
+(defvar whizzy-cursor-autohide t
+  "*Makes cursor autohide after errors and resume (one slice) after success."
+) 
 
 (defun whizzy-show-point ()
-  (save-excursion
-    (if (looking-at "[ \t]\\|^[ \t]*$") (whizzy-backward-space))
-    (let
-        ((here (point)) (back)) 
+    (save-excursion
+      (if (looking-at "[ \t]\\|^[ \t]*$") (whizzy-backward-space))
       (let
-          ((res
-            (cond
-             ;; do not put cursor inside fragile args
-             ;; unless at the beginning of document
-             ((equal (point) whizzy-last-slice-begin))
-             ;; useless if in comment...
-             ((whizzy-in-comment-p))
-             ;; do not put cursor in arguments of \label,\cite,\begin,\end,... 
-             ((whizzy-in-fragile-arg-p))
-             ;; do not put cursor between args
-             ((whizzy-between-args-p))
-             ;; difficult case: commands..
-             (t
-              ;; move one char if cursor is on slash or letter
-              (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
-              (setq back (whizzy-backward-atom))
-              ;; (message "[%S]" back)
+          ((here (point)) (back)) 
+        (let
+            ((res
               (cond
-               ;; show cursor when entering math
-               ((equal back 'math) (point))
-               ;; show cursor at beginning of par
-               ((equal back 'par)
-                (skip-chars-forward " \t\n") (point))
-               ((equal back 'script)
+               ;; do not put cursor inside fragile args
+               ;; unless at the beginning of document
+               ((equal (point) whizzy-last-slice-begin))
+               ;; useless if in comment...
+               ((whizzy-in-comment-p))
+               ;; do not put cursor in arguments of \label,\cite,\begin,\end,... 
+               ((whizzy-in-fragile-arg-p))
+               ;; do not put cursor between args
+               ((whizzy-between-args-p))
+               ;; difficult case: commands..
+               (t
+                ;; move one char if cursor is on slash or letter
+                (if (looking-at "\\(\\\\\\|\\sw\\)") (forward-char 1))
+                (setq back (whizzy-backward-atom))
+                ;; (message "[%S]" back)
                 (cond
-                 ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
-                  ;; show protected cursor at sub/superscript
-                  (list (cons (match-beginning 1) "{")
-                        (cons (match-end 1) "}")))
-                 ((looking-at "[_^][ \t]*{")
-                  ;; show unprotected cursor at protected sub/superscript
-                  (match-end 0))
+                 ;; show cursor when entering math
+                 ((equal back 'math) (point))
+                 ;; show cursor at beginning of par
+                 ((equal back 'par)
+                  (skip-chars-forward " \t\n") (point))
+                 ((equal back 'script)
+                  (cond
+                   ((looking-at "[_^][ \t]*\\([A-Za-z0-9]\\|\\\\[A-Za-z]+\\)")
+                    ;; show protected cursor at sub/superscript
+                    (list (cons (match-beginning 1) "{")
+                          (cons (match-end 1) "}")))
+                   ((looking-at "[_^][ \t]*{")
+                    ;; show unprotected cursor at protected sub/superscript
+                    (match-end 0))
+                   ))
+                 ;; do not put cursor on  unprotected args
+                 ((equal back 'arg)
+                  ;; experimental
+                  (goto-char here)
+                  (if (looking-at "\\s.\\|\\sw\\sw") (point)))
+                 ( (or (equal back 'command) (equal back 'letter))
+                   (let ((tmp (whizzy-backward-safe)))
+                     ;; (message "CONTEXT: 'command 'arg %S @ %d" tmp (point))
+                     (cond
+                      ((and (equal tmp 'script)
+                            (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
+                       ;; show protected cursor on commands or single letter
+                       ;; in scripts
+                       (list (cons (match-beginning 0)
+                                   "{") (cons (match-end 0) "}")))
+                      ((equal tmp 'arg) (point))
+                      (tmp
+                       ;; show cursor if backward context is safe
+                       (point))
+                      )))
                  ))
-               ;; do not put cursor on  unprotected args
-               ((equal back 'arg)
-                ;; experimental
-                (goto-char here)
-                (if (looking-at "\\s.\\|\\sw\\sw") (point)))
-               ( (or (equal back 'command) (equal back 'letter))
-                 (let ((tmp (whizzy-backward-safe)))
-                   ;; (message "CONTEXT: 'command 'arg %S @ %d" tmp (point))
-                   (cond
-                    ((and (equal tmp 'script)
-                          (looking-at "\\\\[A-Za-z]+\\|[A-Za-z0-9]"))
-                     ;; show protected cursor on commands or single letter
-                     ;; in scripts
-                     (list (cons (match-beginning 0)
-                                 "{") (cons (match-end 0) "}")))
-                    ((equal tmp 'arg) (point))
-                    (tmp
-                     ;; show cursor if backward context is safe
-                     (point))
-                    )))
-               ))
-             )))
-        (setq whizzy-point res)
-        res)
-      )))
+               )))
+          (setq whizzy-point res)
+          res)
+        )))
 
 (defun whizzy-show-point-safer ()
   (save-excursion
@@ -969,13 +976,24 @@ Entries are sorted per source-file and set to the whizzy variable
        ;; Otherwise nil
        ))))
 
+(defconst whizzy-slice-error 1)
+(defconst whizzy-tex-error 2)
+(defconst whizzy-format-error 3)
+(defconst whizzy-reformat-message 4)
+(defconst whizzy-recompile-message 5)
+
 (defun whizzy-test-show ()
   "Show in Emacs buffer where marker is in saved file"
   (interactive)
   (let ((there
-         (if (functionp whizzy-point-visible)
-             (funcall whizzy-point-visible)
-           (whizzy-show-point))))
+         (if (and
+              (functionp whizzy-point-visible)
+              ;; hide cursor after erroneous slice if autohide on
+              (not
+               (and whizzy-cursor-autohide 
+                    (equal (whizzy-get whizzy-running) whizzy-slice-error)))
+              (funcall whizzy-point-visible))
+             (whizzy-show-point))))
     (if (numberp there) (whizzy-overlay-region (- there 1) there)
       (if (consp there)
           (whizzy-overlay-region (car (car there)) (car (cadr there)))
@@ -2524,7 +2542,7 @@ nil means do not guess.
 
 ;; assoc-if is not available in old vesions of emaacs
 (defun whizzy-assoc-if (pred list)
-  "Returns the longest sublist of LIST whose first element satisfied PRED."
+  "Returns the first pair of LIST whose car satisfied PRED."
   (while (and (consp list) (consp (car list))
               (not (funcall pred (caar list))))
     (setq list (cdr list)))
@@ -3350,11 +3368,6 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
             )))
         )))
 
-(defconst whizzy-slice-error 1)
-(defconst whizzy-tex-error 2)
-(defconst whizzy-format-error 3)
-(defconst whizzy-reformat-message 4)
-(defconst whizzy-recompile-message 5)
 (defvar whizzy-error-name-alist
   `((,whizzy-slice-error . "-SLICE")
     (,whizzy-tex-error . "-LATEX")
