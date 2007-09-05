@@ -1,4 +1,4 @@
-\documentclass{beamer}
+\documentclass[hyperref=hypertex]{beamer}
 \beamertemplatenavigationsymbolsempty
 
 \usepackage{pst-node}
@@ -29,11 +29,11 @@
 \usepackage[latin1]{inputenc}
 \usepackage[T1]{fontenc}
 
-\title{Overloading and Multi-methods}
+\title{Beamer Presentations with Whizzytex}
 \author{Didier Rémy\inst{1}}
 \institute{\inst{1}INRIA-Rocquencourt}
 
-\date[Nov  2006]{Gallium Seminar, 2006}
+\date{September, 2007}
 \subject{ML}
 
 %% \hoffset=1.5cm
@@ -52,29 +52,30 @@
 \frame{\titlepage}
 
 \section<presentation>*{Outline}
-\begin{frame}
-\frametitle{Outline}
+\begin{frame}{Outline}
 \tableofcontents
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section[Overloading]{Fonctions génériques}
+\section[Intro]{Introduction}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-  \frametitle{Generalités}
+\begin{frame}{Introduction it works}
 
-\begin{block}{Un exemple de PStricks à l'intérieur de beamer.}
-\newcmykcolor{orange}{0 0.5 1 0}
-\definecolor {OR}{rgb}{1,0,0}
 
- Un test \ovalnode*[fillcolor=orange]{A}{AAA} \hfil
+\begin{block}{Using PStricks withing beamer.}
+
+Un test: pas de problème avec les couleurs sur mon mac.
+ \ovalnode*[fillcolor=orange]{A}{AAAA} \hfil
           \ovalnode*[fillcolor=red]{B}{BBB}\ncarc{A}{B}
 \end{block}
 
 \begin{block}{Un arbre}
-\pstree[treesep=2em,levelsep=2.5em, nodesep=1ex]{\Tr A}{\pstree {\Tr B} {\Tr x \Tr y \Tr z}}
+\pstree[treesep=2em,levelsep=2.5em]{\Toval A}
+  {\pstree {\Toval B} {
+     \Ttri*[fillcolor=blue] x
+     \Ttri* y 
+     \Ttri*[fillcolor=red!60] z}}
 \end{block}
-
 
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,8 +86,7 @@
 
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}
-\subtitle{En bref}
+\begin{frame}[fragile=singleslide]{En bref}
 
 \begin{block}{Foo}
 
