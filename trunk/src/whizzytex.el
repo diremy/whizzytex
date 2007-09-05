@@ -876,8 +876,6 @@ Entries are sorted per source-file and set to the whizzy variable
 (make-variable-buffer-local 'whizzy-last-slice-end)
 (make-variable-buffer-local 'whizzy-last-layer)
 
-;; replaces whizzy-show-position
-
 ;; global variable. Could in whizzy-status. 
 (defvar whizzy-cursor-autohide t
   "*Makes cursor autohide after errors and resume (one slice) after success."
@@ -982,18 +980,22 @@ Entries are sorted per source-file and set to the whizzy variable
 (defconst whizzy-reformat-message 4)
 (defconst whizzy-recompile-message 5)
 
+(defun whizzy-show-cursor ()
+  (cond 
+   ;; do not show cursor if whizzy-point-visible is nil
+   ((null whizzy-point-visible))
+   ;; hide cursor after erroneous slice if autohide on
+   ((and whizzy-cursor-autohide 
+         (equal (whizzy-get whizzy-running) whizzy-slice-error)))
+   ((functionp whizzy-point-visible)
+    (funcall whizzy-point-visible))
+   (t (whizzy-show-point))))
+
+
 (defun whizzy-test-show ()
-  "Show in Emacs buffer where marker is in saved file"
+  "Show in Emacs buffer where marker is in saved file. For debugging"
   (interactive)
-  (let ((there
-         (if (and
-              (functionp whizzy-point-visible)
-              ;; hide cursor after erroneous slice if autohide on
-              (not
-               (and whizzy-cursor-autohide 
-                    (equal (whizzy-get whizzy-running) whizzy-slice-error)))
-              (funcall whizzy-point-visible))
-             (whizzy-show-point))))
+  (let ((there (whizzy-show-cursor)))
     (if (numberp there) (whizzy-overlay-region (- there 1) there)
       (if (consp there)
           (whizzy-overlay-region (car (car there)) (car (cadr there)))
@@ -1173,11 +1175,7 @@ match those of the file")
   (if whizzytex-mode
       (let ((empty-lines (count-lines (point-min) start))
             (full-lines (count-lines start (point)))
-            (word (and whizzy-point-visible
-                       (if (functionp whizzy-point-visible)
-                           (funcall whizzy-point-visible)
-                         (whizzy-show-point)))
-                  ))
+            (word (whizzy-show-cursor)))
         ;; (message "WWABD=%S word=%S"  whizzy-write-at-begin-document word)
         (let ((line
                (if whizzy-line          ; (not whizzy-point-visible)
