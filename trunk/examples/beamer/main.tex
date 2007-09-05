@@ -1,0 +1,177 @@
+\documentclass{beamer}
+\beamertemplatenavigationsymbolsempty
+
+\usepackage{pst-node}
+\usepackage{pst-tree}
+
+\mode<article> % only for the article version
+{
+  \usepackage{fullpage}
+  \usepackage{hyperref}
+}
+ 
+ 
+\mode<presentation>
+{
+  \setbeamertemplate{background canvas}[vertical shading][bottom=red!10,top=blue!10]
+ 
+  \usetheme{Warsaw}
+  \usefonttheme[onlysmall]{structurebold}
+}
+
+%% \usepackage{pgf,pgfarrows,pgfnodes,pgfautomata,pgfheaps,pgfshade
+%% }
+\usepackage{amsmath,amssymb}
+\usepackage[latin1]{inputenc}
+\usepackage{colortbl}
+
+\usepackage[USenglish,francais]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+
+\title{Overloading and Multi-methods}
+\author{Didier Rémy\inst{1}}
+\institute{\inst{1}INRIA-Rocquencourt}
+
+\date[Nov  2006]{Gallium Seminar, 2006}
+\subject{ML}
+
+%% \hoffset=1.5cm
+%% \voffset=0in
+
+\AtBeginSection[]{
+  \begin{frame}<beamer>
+    \frametitle{Outline}
+    \tableofcontents[currentsection,currentsubsection]
+  \end{frame}
+}
+
+\usepackage{boolean}
+
+\begin{document}
+\frame{\titlepage}
+
+\section<presentation>*{Outline}
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Overloading]{Fonctions génériques}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{Generalités}
+
+\begin{block}{Un exemple de PStricks à l'intérieur de beamer.}
+\newcmykcolor{orange}{0 0.5 1 0}
+\definecolor {OR}{rgb}{1,0,0}
+
+ Un test \ovalnode*[fillcolor=orange]{A}{AAA} \hfil
+          \ovalnode*[fillcolor=red]{B}{BBB}\ncarc{A}{B}
+\end{block}
+
+\begin{block}{Un arbre}
+\pstree[treesep=2em,levelsep=2.5em, nodesep=1ex]{\Tr A}{\pstree {\Tr B} {\Tr x \Tr y \Tr z}}
+\end{block}
+
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection[Déclarations]{Déclarations}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{Examples}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+\subtitle{En bref}
+
+\begin{block}{Foo}
+
+\begin{itemize}
+
+\item
+\alert<1>{Fonctions}  surchargées (génériques)
+
+\item
+\alert<2>{Système de classes}: une façon de générer des fonctions surchargées. 
+
+\item
+\alert<3>{Extensibilité}: ouverture contrôlée
+
+\item
+Kinds: contrôle transversal.
+\end{itemize}
+\end{block}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \frametitle{Déclarations génériques}
+  \begin{block}{Pre-déclarations}
+    \begin{itemize}
+    \item aaa 1
+    \item bbb 1
+    \end{itemize}
+  \end{block}
+  \begin{block}{Pre-déclarations}
+    \begin{itemize}
+    \item ccc 1
+    \item ddd 1
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Utilisation des génériques}
+  \begin{block}{Pre-déclarations}
+    \begin{itemize}
+    \item aaa 2
+    \item bbb 2
+    \end{itemize}
+  \end{block}
+  \begin{block}{Pre-déclarations}
+    \begin{itemize}
+    \item ccc 2
+    \item ddd 2
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Typage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Multi-méthodes}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{A language to generate overloaded fonctions}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+aa
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Non-overlapping}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Coverage}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Kinds}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\end{document}
