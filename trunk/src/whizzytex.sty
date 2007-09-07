@@ -432,16 +432,6 @@ to slice!\par \bigskip}}%
 %% Second 3: optional, less robust stuff, could be turned off
 %% May make a slice not compiling
 
-%% Patch for overlays, still in use? see advi trick
-
-\newcommand {\WhizzySlide}[2][]
-   {\let \overlay \whizzy@@overlay
-    \def \whizzy@line{#2}\def \whizzy@layer{#1}}
-
-\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay 1\fi}
-\g@addto@macro \whizzy@beforedumphook
-  {\@ifundefined {overlay}{}{\let \whizzy@overlay \overlay}}
-
 
 %% To show where the cursor is, we pick caracter code ^^A
 %% This will break any mode that uses ^^A
@@ -651,12 +641,6 @@ to slice!\par \bigskip}}%
 \def \WhizzyLinePoint
    {\global \let \whizzy@starthere \relax\WhizzyLine}
 
-%%% ^^A should only act when visible: this should move point to the first
-%%% page where ^^A is visible. 
-\AtBeginDocument
-  {\@ifundefined{overlay}{}
-      {\def \whizzy@AAA{\ifnum \c@overlay=0\whizzy@A\fi}}}
-
 %%% Hack because \whizzy@lineno@display generates $$\hbox{}\halign
 %%% which is not correct. The \hbox cannot be removed.
 %%% The other option is to remove lineno at beginning of display
@@ -726,57 +710,55 @@ to slice!\par \bigskip}}%
 \let \advi@edit@makelineno \whizzy@makelineno
 \def \advi@edit@line {\the\whizzy@count}
 
-%%% overlays
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patch for overlays
+
+%%% Ignore ^^A in invisible parts. 
+
+\AtBeginDocument
+  {\@ifundefined{overlay}{}
+      {\def \whizzy@AAA{\ifnum \c@overlay=0\whizzy@A\fi}}}
+
+%% Patch for overlays, still in use? see advi trick
+
+\newcommand {\WhizzySlide}[2][]
+   {\let \overlay \whizzy@@overlay
+    \def \whizzy@line{#2}\def \whizzy@layer{#1}}
+
+\def \whizzy@@overlay #1{\ifnum #1>\whizzy@layer \whizzy@overlay 1\fi}
+\g@addto@macro \whizzy@beforedumphook
+  {\@ifundefined {overlay}{}{\let \whizzy@overlay \overlay}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% PGF loads headers in before begin document
+%%% PGF 
 
-%% \let \latex@ifl@aded \@ifl@aded
-%% \def\@ifl@aded#1#2{%
-%%   \expandafter\ifx\csname ver@#2.#1\endcsname\relax
-%%   %% next two lines added
-%%     \edef \tmp@patch {\csname\@currname.\@currext-after@patch\endcsname}%
-%%     \expandafter\let\csname\@currname.\@currext-h@@k\endcsname \tmp@patch
-%%     \expandafter\@secondoftwo
-%%   \else
-%%     \expandafter\@firstoftwo
-%%   \fi}
+%%% Ignore ^^A in invisible parts. 
 
-%% \expandafter \def \csname pgf-dvips.sty-before@patch\endcsname{%
-%%   \let \default@pgfsys@defobject \pgfsys@defobject 
-%%   \let \default@pgfsys@useobject \pgfsys@useobject 
-%% }
+\AtBeginDocument
+  {\@ifundefined{ifpgfsys@visible}{}
+      {\def \whizzy@AAA{\ifpgfsys@visible \whizzy@A\fi}}}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Beamer
 
-%% \def \whizzy@dvips {dvips.def}
-%% \expandafter \def \csname pgf.sty-after@patch\endcsname{%
-%%   \ifx \Gin@driver \whizzy@dvips
-%%    \def\pgfsys@defobject##1##2##3##4{%
-%%      \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
-%%      {%
-%%        \pgfsysprotocol@setcurrentprotocol\@empty%
-%%        \pgfsysprotocol@bufferedtrue%
-%%        ##4%
-%%        \pgfsysprotocol@getcurrentprotocol\pgfsys@@temp%
-%%        \expandafter\global\expandafter\let\csname ##1\endcsname=\pgfsys@@temp%
-%%      }%
-%%      \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
-%%    }%
-%%    \def\pgfsys@useobject##1##2{%
-%%      \pgfsysprotocol@getcurrentprotocol\pgfsys@temp%
-%%      {%
-%%        \pgfsysprotocol@setcurrentprotocol\@empty%
-%%        \pgfsysprotocol@bufferedfalse%
-%%        ##2%
-%%        \expandafter\pgfsysprotocol@setcurrentprotocol\csname ##1\endcsname%
-%%        \pgfsysprotocol@invokecurrentprotocol%
-%%      }%
-%%      \pgfsysprotocol@setcurrentprotocol\pgfsys@temp%
-%%    }%
-%%    %%   \let \pgfsys@defobject \default@pgfsys@defobject 
-%%    %%   \let \pgfsys@useobject \default@pgfsys@useobject 
-%%  \fi
-%% }
+%% Ignore ^^A when copying to file. 
+%% Redefine \beamer@verbatimreadframe{%
+%% Adding ^^A as \dospecial would ignore ^^A in verbatim, which is not
+%% desired. 
+\def \whizzy@dospecials {\catcode `\^^A 12\dospecials}%
+\AtBeginDocument
+  {\@ifundefined{beamer@verbatimreadframe}{}
+    {\def\beamer@verbatimreadframe{%
+       \begingroup%
+       \let\do\beamer@makeinnocent\whizzy@dospecials
+       \count@=127%
+       \@whilenum\count@<255 \do{%
+         \advance\count@ by 1%
+         \catcode\count@=11%
+       }%
+       \beamer@makeinnocent\^^L% and whatever other special cases
+       \endlinechar`\^^M \catcode`\^^M=12 \beamer@processframefirstline}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EXPERIMENTAL FEATURES

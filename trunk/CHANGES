@@ -3,6 +3,7 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * added whizzy-autohide-cursor
  * fix section counters with multiple files. 
  * fix case-fold-search to nil in all whizzytex searches. 
  * added a trace of the Whizzy Cursor back into the Emacs buffer. 

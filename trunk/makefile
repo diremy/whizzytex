@@ -122,7 +122,7 @@ $(NAME).tgz: FILES makefile
 	mkdir $(NAME)
 	tar cf - `cat FILES`| (cd $(NAME) && tar xf -)
 	tar zcvf $@ $(NAME)
-	rm -r $(NAME)
+	rm -rf $(NAME)
 
 $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- Checking examples'
