@@ -2624,8 +2624,11 @@ a CONS means read configuration in current directory unless already read.
                (if (stringp whizzy-configuration-path)
                    (list whizzy-configuration-path)
                  whizzy-configuration-path)))
-            (list "whizzy.el"))
-           ))
+            (list "whizzy.el" 
+              (concat (file-name-sans-extension
+                       (file-name-nondirectory buffer-file-name)) ".wel"))
+           )))
+      (message "%S" files)
       (while (consp files)
         (and (file-readable-p (car files)) (load-file (car files)))
         (setq files (cdr files))))

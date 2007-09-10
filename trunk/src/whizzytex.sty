@@ -144,6 +144,8 @@
    \IfFileExists{\WHIZZYHOME/.whizzytex/#1}%
         {\@input {\WHIZZYHOME/.whizzytex/#1}}{}%
    \IfFileExists{#1}{\@input {#1}}{}%
+   \IfFileExists{\jobname.wsty}
+        {\@input {\jobname.wsty}}{}%
    \makeatother
 }
 \def \whizzy@endinput

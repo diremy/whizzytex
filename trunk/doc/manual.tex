@@ -1269,15 +1269,20 @@ signal and respond by reloading the file.
 \subsection{Viewing with \texttt{xpdf}}
 
 
-{\whizzy} now works with \lst"pdf" using the \lst"xpdf" previewer
+{\whizzy} also works with \lst"pdf" using the \lst"xpdf" previewer
 and its remote server capabilities to reload the file and jump to the
-cursor position (this does not work because they is no simple way to tell
+cursor position (this does not work with \lst"acroread" because they is no
+simple way to tell 
 \lst"acroread" to reload its file in batch). You must choose \lst"-pdf" 
 as previewer type, which will also set other variables so as to compile the
 document with pdflatex instead of latex. You must leave the default
 previewer command, i.e. enter \lst"-pdf ." and not \lst"-pdf xpdf" (or else
 understand the internals of the \lst"whizzytex" script) because
 other options need to be passed to \lst"xpdf".
+
+When compiling with \lst"pdflatex", you need to explicitly use the package
+\lst"hyperref". 
+
 
 \section{Whizzy Effects}
 

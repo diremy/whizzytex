@@ -3,6 +3,7 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * added \jobname.wel configuration file 
  * added whizzy-autohide-cursor
  * fix section counters with multiple files. 
  * fix case-fold-search to nil in all whizzytex searches. 
@@ -11,10 +12,13 @@ Emacs-mode:
 
 Shell-script: 
 
+ * added \jobname.wsh configuration file 
  * enable redirection of navigation commands to previewer stdin.
 
 LaTeX macros:
 
+ * added \jobname.wsty configuration file 
+ * added patches for pgf package and beamer class. 
  * made \WhizzyAdjustCounter not fail if counter is undefined. 
  * fix bug due to writing file names in .aux. 
 

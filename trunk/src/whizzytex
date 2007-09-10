@@ -241,7 +241,7 @@ NAME=$(basename "$BASENAME" "$FILEEXT")
 # Load configuration files, all files are loaded in order
 
 for CONFIG in \
-    {"$CONFIGDIR","$HOME"/.whizzytex}/whizzy.sh whizzy.sh 
+    {"$CONFIGDIR","$HOME"/.whizzytex}/whizzy.sh whizzy.sh "$NAME.wsh"
 do
   if [ -f "$CONFIG" ]
   then
