@@ -1,0 +1,184 @@
+%; whizzy -pdf
+
+\documentclass{beamer}
+\usepackage{hyperref}
+
+
+%% Beamer settings 
+\beamertemplatenavigationsymbolsempty
+\usetheme{Warsaw}
+
+\usepackage[USenglish,francais]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+
+%% PGF packages (for this file)
+
+\usepackage{pgf,pgfarrows,pgfnodes,pgfautomata,pgfheaps,pgfshade}
+
+%% %% PStricks packages (for this file)
+
+%% \usepackage{pstcol}
+%% \usepackage{pst-node}
+%% \usepackage{pst-tree}
+
+
+\title{Beamer Presentations with Whizzytex}
+\author{Didier R{\'{e}}my\inst{1}}
+\institute{\inst{1}INRIA-Rocquencourt}
+
+\date{September, 2007}
+\subject{ML}
+
+\def \WhizzyTeX {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\let \@\relax\TeX}}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\frame{\titlepage}
+\begin{frame}{Outline}
+\tableofcontents
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section[Intro]{Introduction}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Beamer}
+\begin{itemize}
+\item Beamer is a powerful latex class for presentations.
+\item Beamer is aimed at generating PDF output, even though it can also
+  generate Postscript output.
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Whizzytex}
+\begin{itemize}
+\item<1-> {\WhizzyTeX} is a useful tool for preparing latex documents
+\\   and especially... for preparing presentations. 
+
+\item<2->
+{\WhizzyTeX} is works with different previewers: ghostview, xpdf, xdvi, 
+and, gets even more expressive when used wiht Advi.
+
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Combining the two}
+\relax
+{\WhizzyTeX} works with the beamer class either 
+with xpdf, or  with advi. 
+
+
+However, previewing with advi requires some minor configuration. 
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Xpdf}
+\begin{frame}{Using \WhizzyTeX with Xpdf}
+This pauses no major problem.
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Advi}
+\begin{frame}{Using \WhizzyTeX with Advi}
+Previewing with advi requires some minor configuration. 
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile=singleslide]{Configuration}
+\begin{itemize}
+\item This requires a version of advi  dated from Sep 7th, 2007 or later.
+\item This requires version of whizzytex dated from Sep 7th, 2007 or later. 
+\end{itemize}
+Documentclass should be called with option hypertex:
+\begin{verbatim}
+        \documentclass[hypertex]{beamer}
+\end{verbatim}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Testing}
+\begin{frame}[fragile=singleslide]{Using PStricks with advi}
+
+You may need the following option (depending on your version of PStricks). 
+\begin{verbatim}
+        \documentclass[xcolor=pst]{beamer}
+\end{verbatim}
+
+Another tricks: by the way, we recommend calling
+\begin{verbatim}
+        \beamertemplatenavigationsymbolsempty
+\end{verbatim}
+To get read of useless anchors.
+
+See also 
+\href{http://www.giref.ulaval.ca/~ctibirna/work/readings/beamer_pstricks.pdf}
+{this document} 
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{An example with Overlays}
+\begin{itemize}
+\item<1-> This is shown on overlays 1 and greater (thus all)
+\item<2> This is shown on overlay 2 only
+\item<3-> This is shown on overlay 3 and greater
+\item<4-> This is shown on overlay 4 and greater, thus  4 only.
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile=singleslide]{Fragile frame with single slide}
+
+This works well
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile]
+\frametitle{Fragile (with no argument)}
+\begin{itemize}
+
+\item <1->
+This frame works well written as
+ \begin{verbatim}
+    \begin{frame}[fragile]
+    \frametitle{Fragile (with no argument)}
+    ...
+\end{verbatim}
+\item <2-> 
+But it would brake if written as
+ \begin{verbatim}
+    \begin{frame}[fragile]{Fragile (with no argument)}
+    ...
+\end{verbatim}
+This seems to be a problem with beamer, independant of whizzytex.
+\end{itemize}
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% \begin{frame}{An example with PStricks}
+%% \begin{block}{Using colors}
+%% Named colors should work fine.
+%%  \ovalnode*[fillcolor=orange]{A}{AAAA} \hfil
+%%   \ovalnode*[fillcolor={red}]{B}{BBB}\ncarc{A}{B}
+%% \end{block}
+
+%% \begin{block}{Un arbre}
+%% \pstree[treesep=2em,levelsep=2.5em]{\Toval A}
+%%   {\pstree {\Toval B} {
+%%      \Ttri*[fillcolor=blue] x
+%%      \Ttri* y 
+%%      \Ttri*[fillcolor=red] z}}
+%% \end{block}
+%% \end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{An frame with some PGF}
+
+\begin{pgfpicture}
+\pgfseteorule
+\pgfsetfillcolor{red}
+\pgfpathcircle{\pgfpoint{0mm}{0mm}}{1cm}
+\pgfusepath{fill}
+\pgfsetcolor{green}
+\pgfpathcircle{\pgfpoint{5mm}{0mm}}{1cm}
+\pgfusepath{fill}
+\end{pgfpicture}
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\end{document}
