@@ -7,7 +7,7 @@ all: $(FILES)
 	cd $(<D); latex $(<F)
 
 clean:
-	rm -f */*.{aux,log,dvi,ans,dview,wiz,waux,fmt}
+	rm -f */*.{aux,log,dvi,ans,dview,wiz,waux,fmt,out,nav,snm,vrb,toc}
 
 superclean: clean
 	rm -f {.,*}/{*~,.#*,#*#}

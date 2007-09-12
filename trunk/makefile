@@ -3,10 +3,10 @@ TEX=$(HOME)/lib/tex
 # Stable version
 RELEASE=1.3.0
 # Current version
-VERSION=1.3.0
+VERSION=1.3.1
 # rpm release version
 Release=1
-# YAP version
+# YAP version -- independant versionning. 
 YAPVERSION=1.1.3-1.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
@@ -32,7 +32,7 @@ TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
 
 XXXPORTS = CHANGES index.html animation.html \
-	   FAQ.html doc/whizzytex.dvi doc/whizzytex.html FAQ \
+	   FAQ.html doc/whizzytex.dvi doc/whizzytex.html FAQ  \
 	   whizzytex-yap-$(YAPVERSION).tgz
 
 EXPORTS = index.html animation.html older.html Announce \

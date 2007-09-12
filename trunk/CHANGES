@@ -3,34 +3,26 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
- * added \jobname.wel configuration file 
- * added whizzy-autohide-cursor
- * fix section counters with multiple files. 
- * fix case-fold-search to nil in all whizzytex searches. 
- * added a trace of the Whizzy Cursor back into the Emacs buffer. 
- * enable redirection of navigation commands to previewer stdin.
-
 Shell-script: 
-
- * added \jobname.wsh configuration file 
- * enable redirection of navigation commands to previewer stdin.
 
 LaTeX macros:
 
- * added \jobname.wsty configuration file 
- * added patches for pgf package and beamer class. 
- * made \WhizzyAdjustCounter not fail if counter is undefined. 
- * fix bug due to writing file names in .aux. 
-
 Installation/Documentation:
 
- * fixed some quotes in configuration script.
 
 SINCE LAST RELEASE:
 ===================
 
 Emacs-mode:
 
+ - version 1.3.1
+ * fixed some quotes in configuration script.
+ * added \jobname.wel configuration file 
+ * added whizzy-autohide-cursor
+ * fix section counters with multiple files. 
+ * fix case-fold-search to nil in all whizzytex searches. 
+ * added a trace of the Whizzy Cursor back into the Emacs buffer. 
+ * enable redirection of navigation commands to previewer stdin.
  - version 1.3.0
  * Added backward compatibility of linemode with older versions. 
  - version 1.2.3
@@ -41,6 +33,11 @@ Emacs-mode:
  * change whizzy-sit-for for compatibility with Emacs on mac-os-10
 
 Shell-script: 
+
+ - version 1.3.1
+ * fixed some quotes in configuration script.
+ * added \jobname.wsh configuration file 
+ * enable redirection of navigation commands to previewer stdin.
 
  - version 1.2.3
  * fix configure and checkconfig to allow -initex 'tex -ini'
@@ -61,6 +58,14 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ - version 1.3.1
+ * fixed some quotes in configuration script.
+ * added \jobname.wsty configuration file 
+ * added patches for pgf package and beamer class. 
+ * made \WhizzyAdjustCounter not fail if counter is undefined. 
+ * fix bug due to writing file names in .aux. 
+ - version 1.3.1
+ * fixed some quotes in configuration script.
  - version 1.3.0
  * fix in ./configure for 'latex -ini' not to block
  * ./configure default initex to 'latex -ini' if not found.

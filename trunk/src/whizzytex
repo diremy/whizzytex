@@ -1,10 +1,10 @@
 #!/bin/bash 
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
-#  Copyright (C) 2001, 2002, 20043, 2004, 2005, 2006 INRIA.
+#  Copyright (C) 2001, 2002, 20043, 2004, 2005, 2006, 2007 INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.3.0
+#  Version        : 1.3.1
 #  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 #  Web Site       : http://pauillac.inria.fr/whizzytex
 #  
@@ -26,7 +26,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.3.0"
+VERSION="1.3.1"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
