@@ -1,4 +1,4 @@
-\documentclass[xcolor=pst]{beamer}
+\documentclass[xcolor=pst,compress]{beamer}
 
 %% Beamer settings 
 \beamertemplatenavigationsymbolsempty
@@ -98,7 +98,20 @@ You may need the following option (depending on your version of PStricks).
         \documentclass[xcolor=pst]{beamer}
 \end{verbatim}
 
-Another tricks: by the way, we recommend calling
+You should also check that 
+\texttt{advi} has correctly installed the
+\texttt{pgfsys-dvips.def} in a path that has priority other the original 
+file. 
+
+(If need be, adjust your parth or rename the original file to
+\texttt{pgfsys-dvips.def.orig})
+
+
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}[fragile=singleslide]{By the way}
+We recommend calling
 \begin{verbatim}
         \beamertemplatenavigationsymbolsempty
 \end{verbatim}
@@ -107,6 +120,7 @@ To get read of useless anchors.
 See also 
 \href{http://www.giref.ulaval.ca/~ctibirna/work/readings/beamer_pstricks.pdf}
 {this document} 
+
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}{An example with Overlays}

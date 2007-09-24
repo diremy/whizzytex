@@ -454,8 +454,11 @@ to slice!\par \bigskip}}%
 %    {\def \whizzy@do{\catcode `\^^A 2\whizzy@markbegin}\ifinner
 %     \ifmmode \else \let \whizzy@empty {}\fi \fi \whizzy@do}
 \def \whizzy@A
-   {\let \whizzy@do \whizzy@markbegin
-    \ifinner \ifmmode \else \let \whizzy@do \whizzy@empty\fi \fi \whizzy@do}
+   {%\let \whizzy@do
+    \whizzy@markbegin
+    %% I do not remember why this case was off
+    %\ifinner \ifmmode \else \let \whizzydo \whizzy@empty\fi \fi \whizzy@do
+   }
 \let \whizzy@AAA \whizzy@A
 \def \whizzy@activeA {\catcode `\^^A \active}
 \begingroup
@@ -472,7 +475,7 @@ to slice!\par \bigskip}}%
 \newskip \whizzy@tmpskip
 
 \def \whizzy@markbegin
-  {\whizzy@start@here
+  {\whizzy@start@here%\whizzy@putlink{Start-Document}%
    %% Added 
    \ifmmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
    \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
@@ -540,11 +543,10 @@ to slice!\par \bigskip}}%
 
 \edef\whizzy@quote{\string"}
 \def \whizzy@putlink #1{%
-    \@ifundefined{new@pdflink}%
-      {\special {html:<A name=\whizzy@quote #1\whizzy@quote>}%
-       \special {html:</A>}}%
-      {\new@pdflink{#1}}%
-}
+      \special {html:<A name=\whizzy@quote #1\whizzy@quote>}%
+      \special {html:</A>}}%
+\AtBeginDocument
+    {\@ifundefined{new@pdflink}{}{\let \whizzy@putlink \new@pdflink}}
 
 \def \whizzy@writelineno
    {\ifhmode \unskip \fi
@@ -749,10 +751,18 @@ to slice!\par \bigskip}}%
 %% Adding ^^A as \dospecial would ignore ^^A in verbatim, which is not
 %% desired. 
 \def \whizzy@dospecials {\catcode `\^^A 12\dospecials}%
+
 \AtBeginDocument
   {\@ifundefined{beamer@verbatimreadframe}{}
-    {\def\beamer@verbatimreadframe{%
-       \begingroup%
+    {\def \setline@beamer
+       {\whizzy@makelineno 
+         \immediate \write \beamer@verbatimfileout
+          {\string \SetLineno {\the\whizzy@count}%
+           \string \SourceFile {\whizzy@curfile}%
+       }}%
+     \def \beamer@verbatimreadframe{%
+       \begingroup
+       \setline@beamer
        \let\do\beamer@makeinnocent\whizzy@dospecials
        \count@=127%
        \@whilenum\count@<255 \do{%
@@ -760,7 +770,9 @@ to slice!\par \bigskip}}%
          \catcode\count@=11%
        }%
        \beamer@makeinnocent\^^L% and whatever other special cases
-       \endlinechar`\^^M \catcode`\^^M=12 \beamer@processframefirstline}}}
+       \endlinechar`\^^M \catcode`\^^M=12 \beamer@processframefirstline
+       }%
+    }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EXPERIMENTAL FEATURES

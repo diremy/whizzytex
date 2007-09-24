@@ -149,43 +149,6 @@ is so common we provide a script to check your configuration with the command
 \end{quote}
 By default, this check is performed by automatic installation below.
 
-\subsection {Automatic installation}
-
-\label {install/automatic}
-
-By default, shell-script \lst"whizzytex" will be installed in 
-\lst"/usr/local/bin/" and, library files in
-a subdirectory of \lst"/usr/local/share/whizzytex/" and the documentation in
-\lst"/usr/local/share/doc/whizzytex/".  Moreover, Emacs-lisp code will not
-be byte-compiled.
-
-For default installation, just type: 
-\begin{quote}
-\begin{tt}
-make all
-\end{tt}
-\end{quote}
-This will create a \lst"Makefile.config" file (only if nonexistent) by
-taking a copy of the template \lst"Makefile.config.in". This will also check
-the \lst"Makefile.config" (whether it is the default or a modified version)
-against the software installed on your machine.  If you wish to change the
-default configuration, or if your configuration is rejected, see Section
-\ref {customizing}. This will also prepared configured
-versions of the files for installation.
-
-Finally, to install files, become superuser (unless you are making 
-an installation for yourself) and do:
-\begin{quote}
-\begin{tt}
-umask 022
-make install
-\end{tt}
-\end{quote}
-The first line ensures that you give read and execute permission to all.
-
-See {\bf Using {\whizzy}} (Section \ref {using}) to test your
-installation.
-
 \subsection {Customizing the installation}
 \label {customizing}
 
@@ -1038,11 +1001,14 @@ string will be passed as such to the {\whizzy} shell-script. Note that the
 name of the \lst"dvi" or postscript file will be appended to the previewer
 command.
 
-\subsection {Configuration via \texttt{whizzy.sh}}
-
-\label{configuration.sh}
+\subsection {Configuration via configuration files}
 
 This is preferable to file-based configuration.
+{\whizzy} also recognizes configuration files 
+\lst"whizzy.sh", \lst"whizzy.sty", \lst"whizzy.el" 
+in either  your home directory or the current working directory. 
+
+
 File \texttt{whizzy.sh} is read by the script \texttt{whizzytex} after some
 defaults values (usually determined by the configuration) have being
 assigned to variables. Hence, it can be used to redefined those values. 
@@ -1072,9 +1038,20 @@ MAKEINDEX & makeindex & . & command for making index
 \end{tabular}
 $$
 See \texttt{whizzytex} for other bindings. 
-
 Other shells environment values such as \texttt{TEXINPUTS} may be defined
 here as well.
+
+File "whizzy.el" is read by emacs when turning the whizzytex mode on for the
+first time.  File "whizzy.sty" is read by latex every time the document is
+reformatted.
+
+You may also use files 
+$\langle masterbasename\rangle$\lst".wsh", 
+$\langle masterbasename\rangle$\lst".wel", 
+$\langle masterbasename\rangle$\lst".wsty", 
+in the current working directory to only load the file when
+running whizzytex on the master file $\langle masterbasename\rangle$. 
+
 
 
 
@@ -1282,6 +1259,11 @@ other options need to be passed to \lst"xpdf".
 
 When compiling with \lst"pdflatex", you need to explicitly use the package
 \lst"hyperref". 
+
+Another solution is to compile via the generation of a Postscript file
+\lst"ps" and its translation to PDF using \lst"ps2pdf". 
+This allows the use of \lst"pstricks". In this case, you tune the
+configuration manually, following the example given in \lst"examples/ps2pdf/". 
 
 
 \section{Whizzy Effects}
