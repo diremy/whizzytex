@@ -898,6 +898,8 @@ Entries are sorted per source-file and set to the whizzy variable
                ((whizzy-in-fragile-arg-p))
                ;; do not put cursor between args
                ((whizzy-between-args-p))
+               ;; if mark is set at point...
+               ((= (point) (mark)) (point))
                ;; difficult case: commands..
                (t
                 ;; move one char if cursor is on slash or letter
@@ -1510,12 +1512,17 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
      ((floatp arg) (setq whizzy-load-factor arg))
      ((equal p 4)
       (setq whizzy-load-factor 0.6))
+     ((equal p 16)
+      (setq whizzy-load-factor 0.1))
      ((equal p 9)
       (setq whizzy-load-factor (max (/ whizzy-load-factor 2) 0.1)))
-     ((equal p 0)
+     ((equal p 2)
       (setq whizzy-load-factor (min (* whizzy-load-factor 2) 10.0)))
+     ((equal p 0)
+      (setq whizzy-load-factor 10.0))
      ((or (equal arg nil) (equal p 1))
-      (let ((table '(("lower" . 9) ("default" . 4) ("higher" . 0))))
+      (let ((table '(("lowest" . 16) ("lower" . 9)
+                     ("default" . 4) ("higher" . 2) ("highest" . 0))))
         (whizzy-load-factor
          (or (cdr (assoc (completing-read "load factor: "
                                           table nil t) table))

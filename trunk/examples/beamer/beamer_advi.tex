@@ -1,4 +1,12 @@
-\documentclass[xcolor=pst,compress]{beamer}
+%% Depending on versions, you may need to pass the option pst to the xcolor
+%% package. 
+
+\expandafter \ifx \csname ifdefined\endcsname \relax  % This is not elatex
+  \message {xcolor=pst}
+  \PassOptionsToPackage{pst}{xcolor}
+\fi
+
+\documentclass{beamer}
 
 %% Beamer settings 
 \beamertemplatenavigationsymbolsempty
@@ -14,7 +22,7 @@
 
 %% PStricks packages (for this file)
 
-\usepackage{pstcol}
+%% \usepackage{pstcol}
 \usepackage{pst-node}
 \usepackage{pst-tree}
 
