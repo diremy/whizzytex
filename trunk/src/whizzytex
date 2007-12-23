@@ -279,6 +279,7 @@ fatal () {
     errlog '*** Fatal error: ' "$*"
     [ -f "$ERR" ] && cat "$ERR"
     echo '<Quitting>' 
+    usleep 500000
     cleanquit "$1"
 }
 warning () {
@@ -369,8 +370,14 @@ format () {
  ( runinitex "&$FORMAT" "$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
+#############################################################################
+
 ############################################################################
 # BEGIN sections
+
+atomiccopy () {
+   $DVICOPY "$1" "$TMP/$2" && mv "$TMP/$2" "$2";
+}
 
 makebibtex () {
   if $BIBTEX $NAME 1>"$OUTPUT/bibtex"
@@ -384,7 +391,7 @@ makebibtex () {
 batchmarks () {
     if runlatex $WFORMAT '\WhizzytexInput{'$NAME'}' 1>"$OUTPUT"/latex
     then
-      $DVICOPY $NAME.$DVI $NAME.$VIEW 2>"$OUTPUT"/dvicopy
+      atomiccopy $NAME.$DVI $NAME.$VIEW 2>"$OUTPUT"/dvicopy
       [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
       if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAME.log
       then
@@ -561,12 +568,12 @@ case $VIEW in
     SIG=$SIGPS
     ;;   
   wdvi)
-    preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
+    preview () { atomiccopy $WHIZZY.$DVI $WHIZZY.$VIEW; }
     SIG=$SIGDVI
     SIGINPUT=$SIGINPUTDVI
     ;;   
   wpdf)
-    preview () { $DVICOPY $WHIZZY.$DVI $WHIZZY.$VIEW; }
+    preview () { atomiccopy $WHIZZY.$DVI $WHIZZY.$VIEW; }
     SIG=$SIGPDF
     ;;   
 esac

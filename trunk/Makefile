@@ -55,7 +55,7 @@ $(TMP)/$(EMACS): $(TMP)
 $(TMP)/$(EMACS)/whizzytex.elc: $(TMP)/$(EMACS) 
 $(TMP)/$(EMACS)/whizzytex.elc: $(TMP)/whizzytex.el byte-compile.el 
 	cd $(TMP)/$(EMACS); cp ../whizzytex.el .; \
-	$(EMACS) -batch -q -l ../../byte-compile.el
+	$(EMACS) -batch -q -no-site-file -l ../../byte-compile.el
 endif
 
 ifdef XEMACS
@@ -65,7 +65,7 @@ $(TMP)/$(XEMACS): $(TMP)
 $(TMP)/$(XEMACS)/whizzytex.elc: $(TMP)/$(XEMACS)
 $(TMP)/$(XEMACS)/whizzytex.elc: $(TMP)/whizzytex.el byte-compile.el 
 	cd $(TMP)/$(XEMACS); cp ../whizzytex.el .; \
-	$(XEMACS) -batch -q -l ../../byte-compile.el
+	$(XEMACS) -batch -q -no-site-file -l ../../byte-compile.el
 endif
 
 $(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok

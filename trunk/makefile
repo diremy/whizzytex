@@ -11,8 +11,8 @@ YAPVERSION=1.1.3-1.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
-PAUILLAC=yquem:/net/yquem/infosystems/www/cristal/cristal/whizzytex
-# BASEURL=http://pauillac.inria.fr/whizzytex/
+YQUEM=yquem:/net/yquem/infosystems/www/gallium/gallium/whizzytex
+# BASEURL=http://gallium.inria.fr/whizzytex/
 
 RPMNAME=whizzytex-$(VERSION)-$(Release)
 
@@ -62,10 +62,10 @@ doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
 	cd doc; make all 
 
 index: index.html animation.html
-	rcp $^ $(PAUILLAC)
+	rcp $^ $(YQUEM)
 
 faq: FAQ.html FAQ 
-	rcp $< $(PAUILLAC)
+	rcp $< $(YQUEM)
 
 FAQ: FAQ.html 
 	lynx -dump $< > $@
@@ -167,19 +167,19 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 rpm: $(RPMNAME).src.rpm 
 
 Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
-	rcp $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(PAUILLAC)
-	rcp VERSION $(PAUILLAC)/whizzytex.version
+	rcp $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(YQUEM)
+	rcp VERSION $(YQUEM)/whizzytex.version
 	mv $(NAME).tgz archive
 
 Release: Export 
 	cp Announce archive/Announce-$(RELEASE)
-	rcp Announce $(PAUILLAC)
+	rcp Announce $(YQUEM)
 
 xxxport: $(EXPORTS) pack 
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
 	rcp $(XXXPORTS) `cat doc/FILES` whizzytex-xxx.tgz DATE \
-	  $(PAUILLAC)
+	  $(YQUEM)
 
 smallclean:
 	cd doc; $(MAKE) clean

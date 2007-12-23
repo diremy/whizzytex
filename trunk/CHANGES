@@ -3,12 +3,18 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * Small changes in whizzy-show-point (under mark, in commands).
+
 Shell-script: 
+ 
+ * Wrapped dvicopy to make it atomic.
 
 LaTeX macros:
 
 Installation/Documentation:
 
+ * Some macros for compatibility with XEamcs and version 22.
+ * Documentation for whizzy-point-face.
 
 SINCE LAST RELEASE:
 ===================

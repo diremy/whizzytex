@@ -1,12 +1,15 @@
-%% Depending on versions, you may need to pass the option pst to the xcolor
-%% package. 
-
-\expandafter \ifx \csname ifdefined\endcsname \relax  % This is not elatex
+%% If not elatex pst option must be passed to the xcolor package
+\expandafter \ifx \csname ifdefined\endcsname \relax  
   \message {xcolor=pst}
   \PassOptionsToPackage{pst}{xcolor}
 \fi
 
-\documentclass{beamer}
+%% Pass hyperref to document class if whizzytex does not do it
+%% automatically? 
+
+\PassOptionsToPackage{hypertex}{hyperref}
+
+\documentclass[compress]{beamer}
 
 %% Beamer settings 
 \beamertemplatenavigationsymbolsempty
@@ -22,7 +25,6 @@
 
 %% PStricks packages (for this file)
 
-%% \usepackage{pstcol}
 \usepackage{pst-node}
 \usepackage{pst-tree}
 
@@ -207,7 +209,17 @@ Named colors should work fine.
 
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Testing subsection}
+\subsection{aaa}
 
+\begin{frame}{Aaa}
+aaa
+\end{frame}
 
+\subsection{bb}
+\begin{frame}{}
+aaa
+\end{frame}
+\Meaning \Parent
 
 \end{document}

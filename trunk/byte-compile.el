@@ -13,24 +13,25 @@
   ;; assumes version 21 or greater
   (defalias 'call-with-transparent-undo 'funcall)
 ) 
-(byte-compile-file "whizzytex.el")
 
 (cond
  ((equal 0 (string-match "20.*" emacs-version))
-  (defmacro whizzy-get-error-string () 'whizzy-error-string)
-  (defmacro whizzy-get-speed-string () 'whizzy-speed-string)
-  (defmacro whizzy-set-error-string (arg) 
-    (list 'setq 'whizzy-error-string arg))
-  (defmacro whizzy-set-speed-string (arg) 
-    (list 'setq 'whizzy-speed-string arg))
-  )
+  (defvar whizzy-speed-string "?")
+  (defvar whizzy-error-string nil)
+  ;; those two should rather be part of the status--- to be fixed XXX
+  (defvar whizzytex-mode-line-string
+    (list " Whizzy" 
+          'whizzy-error-string 
+          "." 
+          'whizzy-speed-string)))
  (t
-  (defmacro whizzy-get-error-string () 
-    (list 'whizzy-get 'whizzy-error-string))
-  (defmacro whizzy-get-speed-string () 
-    (list 'whizzy-get 'whizzy-speed-string))
-  (defmacro whizzy-set-error-string (arg) 
-    (list 'whizzy-set 'whizzy-error-string arg))
-  (defmacro whizzy-set-speed-string (arg) 
-    (list 'whizzy-set 'whizzy-speed-string arg))
-))
+  (defconst whizzy-error-string 27)
+  (defconst whizzy-speed-string 28)
+  (defvar whizzytex-mode-line-string
+    (list " Whizzy" 
+          '(:eval (whizzy-get whizzy-error-string)) 
+          "." 
+          '(:eval (whizzy-get whizzy-speed-string))))
+  ))
+
+(byte-compile-file "whizzytex.el")

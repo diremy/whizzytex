@@ -33,6 +33,8 @@
 %% Because hyperref does not behave well when precompiled in a format
 
 \providecommand*{\Hy@defaultdriver}{hypertex}%
+\PassOptionsToPackage{hypertex}{hyperref}%
+
 
 
 %% General purpose
@@ -375,6 +377,10 @@ to slice!\par \bigskip}}%
    \IfFileExists{#3}
       {\whizzy@setnorm{#3}%
        %% To be fix: \whizzy@curfile may be have an extension
+       %% Problem when input is called for loading stmaryrd/Ustmry.fd font
+       %% This occurs when \string \def expands to def
+       %% Current fix is to force \input{Ustmry.fd} before \beging{document}
+       %% \expandafter \ifnum \the\catcode `\\=0 
        \immediate \write \@mainaux 
            {\string \expandafter \string \gdef
              \string \csname \space whizzy@\whizzy@curfile @\string \endcsname%
@@ -383,6 +389,7 @@ to slice!\par \bigskip}}%
                     {\the\c@section.\the\c@subsection.}}}%
            % could be removed if unsafe
           \whizzy@outputline {1}{\whizzy@curfile}%
+       %% \fi
       }{}%
     #2{#3}%
     \ifwhizzy@advi \expandafter \whizzy@reposition #1\fi
