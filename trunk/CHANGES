@@ -7,6 +7,7 @@ Emacs-mode:
 
 Shell-script: 
  
+ * Added quotes in "$INPUT/view.$$"
  * Wrapped dvicopy to make it atomic.
 
 LaTeX macros:

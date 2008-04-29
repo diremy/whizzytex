@@ -329,7 +329,7 @@ clean () {
      done
    else
      rm -f $WHIZZY.* "${WHIZZY}_nil".* $NAME.{$FMT,$VIEW,$WAUX,$RAUX}
-     if $TRACE; then : ; else rm -rf $WHIZZYDIR; fi
+     if $TRACE; then : ; else rm -rf "$WHIZZYDIR"; fi
    fi
    rm -f $LOCK
 }
@@ -675,10 +675,10 @@ fi
 
 
 # Create a fifo and assign it to descriptor 3 in read-write mode.
-rm -f $INPUT/view.$$
-mkfifo $INPUT/view.$$
-exec 3<>$INPUT/view.$$
-rm $INPUT/view.$$
+rm -f "$INPUT/view.$$"
+mkfifo "$INPUT/view.$$"
+exec 3<>"$INPUT/view.$$"
+rm "$INPUT/view.$$"
 
 {
   $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &

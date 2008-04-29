@@ -80,8 +80,7 @@
 |global |long |def |whizzy@skip #1\begin{document}[|whizzy@resume]
 |endgroup
 
-%% This will only be run is the document is complete (not a slice)
-%% We put a few here
+%% This will only be run if the document is complete (not a slice)
 
 \newif \ifwhizzy@latexmode
 \whizzy@latexmodefalse
@@ -94,6 +93,7 @@
    \relax
    \let \documentclass \latex@documentclass
    \begin{document}}
+\def \WhizzyAtFullDocument {\g@addto@macro \whizzy@fulldocumenthook}
 
 %% \document is going to be redefined so that it dumps a format, 
 %% So we save the old value
@@ -502,7 +502,7 @@ to slice!\par \bigskip}}%
 
 %% whizzy aux information for whizzy extentions, should be set here
 %% so that several extension can share the same 
-%% Write auxilliary infor in .waux  but read it in .raux 
+%% Write auxilliary info in .waux  but read it in .raux 
 %% The script is supposed to move the former into the later 
 %% so as to be stable in presence of errors. 
 
