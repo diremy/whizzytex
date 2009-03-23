@@ -4,8 +4,8 @@
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
 ;; Version        : 1.3.1
-;; Bug Reports    : whizzytex-bugs@pauillac.inria.fr
-;; Web Site       : http://pauillac.inria.fr/whizzytex
+;; Bug Reports    : whizzytex-bugs@inria.fr
+;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
 ;; WhizzyTeX is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -723,11 +723,35 @@ Entries are sorted per source-file and set to the whizzy variable
     (save-excursion
       (set-buffer buf)
       (setq whizzy-status status)
+      (make-local-variable 'comint-output-filter-functions)
       (setq comint-output-filter-functions
             (list (function whizzy-filter-output)))
       )
     ))
  
+;; (defun whizzy-reinstall-process-filter ()
+;;   "reinstall WhizzyTeX process filter in WhizzyTeX process buffer
+;;    Useful when process filter has been accidentitally deinstalled by 
+;;    some other mistakened command."
+;;   (interactive)
+;;   (let ((buf (whizzy-get whizzy-process-buffer))
+;;         (status whizzy-status))
+;;     (if buf
+;;         (if (let ((p (whizzy-get whizzy-process)))
+;;               (and (processp p)
+;;                    (memq (process-status p) '(run))))
+;;             (save-excursion
+;;               (set-buffer buf)
+;;               (setq whizzy-status status)
+;;               (make-local-variable 'comint-output-filter-functions)
+;;               (setq comint-output-filter-functions
+;;                     (list (function whizzy-filter-output)))
+;;               )
+;;           (error "No whizzy process in buffer"))
+;;       (error "No whizzy process buffer")
+;;       )))
+        
+
 ; Neither works correctly, so better use the global value, 
 ; and test for local-mode. 
 (defvar whizzy-write-at-begin-document nil)
@@ -1524,21 +1548,25 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
       (setq whizzy-load-factor 0.6))
      ((equal p 16)
       (setq whizzy-load-factor 0.1))
+     ((equal p 64)
+      (setq whizzy-load-factor 0.02))
      ((equal p 9)
       (setq whizzy-load-factor (max (/ whizzy-load-factor 2) 0.1)))
      ((equal p 2)
       (setq whizzy-load-factor (min (* whizzy-load-factor 2) 10.0)))
      ((equal p 0)
-      (setq whizzy-load-factor 10.0))
+      (setq whizzy-load-factor 10.00))
      ((or (equal arg nil) (equal p 1))
-      (let ((table '(("lowest" . 16) ("lower" . 9)
+      (let ((table '(("slowest" . 64) ("lower" . 16) ("low" . 9)
                      ("default" . 4) ("higher" . 2) ("highest" . 0))))
         (whizzy-load-factor
-         (or (cdr (assoc (completing-read "load factor: "
-                                          table nil t) table))
+         (or (cdr (assoc
+                   (completing-read
+                    (format "load factor (%.2f): " whizzy-load-factor)
+                    table nil t) table))
              whizzy-load-factor))))
      ))
-  (message "%.1f" whizzy-load-factor)
+  (message "%.2f" whizzy-load-factor)
   )
 
 (defun whizzy-wait (priority)
@@ -1593,10 +1621,16 @@ during initialization."
   (interactive)
   (whizzy-call "reslice" 'filename))
 
-(defun whizzy-reformat ()
+(defun whizzy-reformat (&optional arg)
   "Reformat the document."
-  (interactive)
-  (whizzy-call "reformat" 'filename))
+  (interactive "p")
+  (or arg (setq arg 1))
+  (cond 
+   ((= arg 0) (whizzy-auto-recompile 0))
+   ((= arg 9) (whizzy-auto-recompile 1))
+   ((= arg 4) (whizzy-call "whole" 'filename))
+   (t (whizzy-call "reformat" 'filename))
+   ))
 
 (defun whizzy-send-command (command &optional arg)
   (whizzy-call
@@ -1650,8 +1684,10 @@ during initialization."
   ;; save sections header-lines
   (whizzy-save-section-lines)
   ;; call for recompilation
-  (if (stringp whizzy-slave) (whizzy-recompile)
-    (whizzy-reformat)))
+  (if (stringp whizzy-slave) 
+      (whizzy-recompile)
+    (whizzy-reformat)
+    ))
 
 ;;
 
@@ -3312,19 +3348,34 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
     dest-buffer
     )) 
 
+(defun whizzy-strip-font-names (str)
+  (if (stringp str)
+      (let ((offset 0) to)
+        (while (string-match "\\([^[]*\\)\\[[^]]*\\]" str offset)
+          (setq to (cons (match-string 1 str) to)
+                offset (match-end 0)))
+        (apply 'concat (nreverse (cons (substring str offset) to))))
+    str
+    ))
+ 
+
 (defun whizzy-goto-line (s)
   (if (string-match
 "\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)"
        s)
       (let ((line (string-to-number (match-string 1 s)))
             (last (string-to-number (match-string 2 s)))
-            (left (match-string 4 s))
+            (left  (match-string 4 s))
             (before (match-string 5 s))
             (after (match-string 6 s))
             (right (match-string 8 s))
             (file (match-string 9 s))
             (bound)
             )
+        (setq before (whizzy-strip-font-names before))
+        (setq after (whizzy-strip-font-names after))
+        (setq right (whizzy-strip-font-names right))
+        (setq bound (whizzy-strip-font-names bound))
         (cond
          ((or (not (whizzy-goto-file file))
               (and (> line last) (/= last 0)))

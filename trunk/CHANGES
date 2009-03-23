@@ -6,11 +6,17 @@ Emacs-mode:
  * Small changes in whizzy-show-point (under mark, in commands).
 
 Shell-script: 
- 
- * Added quotes in "$INPUT/view.$$"
+
+ * Added PDF* shell variables to preconfigurate whizzytex for pdflatex
+ * Postdate slice for in xpdf mode
+ * Added quotes in "$INPUT/view.$$" to allow white spaces  in DIRS
  * Wrapped dvicopy to make it atomic.
 
 LaTeX macros:
+
+ * Automatically load hyperref in pdflatex mode
+ * Pass pdftex driver to hyperref in pdflatex mode
+ * inhibited adjustment of enumi* counters
 
 Installation/Documentation:
 

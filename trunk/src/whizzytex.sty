@@ -4,8 +4,8 @@
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
 %  Version        : 1.3.1
-%  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
-%  Web Site       : http://pauillac.inria.fr/whizzytex
+%  Bug Reports    : whizzytex-bugs@inria.fr
+%  Web Site       : http://gallium.inria.fr/whizzytex
 % 
 %  WhizzyTeX is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
@@ -107,6 +107,7 @@
 %% This will fire after resume, rather use AtBeforeWhizzyDump
 \def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
 \def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
+\def \Whizzy #1{\ifwhizzy@latexmode \let \@do \relax\else \def \@do {#1}\fi \@do}
 
 %% Patch for loading aux files. 
 
@@ -165,6 +166,28 @@
    \let \documentclass \whizzy@documentclass
    \let \document \latex@document
    \dump}
+
+
+%% Problem with hyperref
+%% Default is should be hypertex, except in pdfmode.
+%% hyperref must be loaded in pdfmode to generate the write anchors.
+
+%% OLD:  hyperref does not behave well when precompiled in a format
+
+
+%% \@ifundefined{ifpdf}{%
+%% \RequirePackage{ifpdf}
+%% }{}
+\@ifundefined{pdfoutput}{
+\providecommand*{\Hy@defaultdriver}{hypertex}%
+\PassOptionsToPackage{hypertex}{hyperref}%
+}{
+\providecommand*{\Hy@defaultdriver}{hypertex}%
+\PassOptionsToPackage{pdftex}{hyperref}%
+\RequirePackage{hyperref}%
+}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 2: Robust stuff hooks on the core engine
@@ -811,7 +834,7 @@ to slice!\par \bigskip}}%
   %% Using 999 instead of 1 could overflow...
   \afterassignment \whizzy@skipto@relax \whizzy@count 1#1\relax
   \ifnum \whizzy@count=1\relax
-     %%% We encode and error: #1 is not an arrabic number
+     %%% We encode and error: #1 is not an arabic number
      \whizzy@count=999\relax
   \else
     \afterassignment \whizzy@skipto@relax \whizzy@count 0#1\relax
@@ -872,7 +895,7 @@ to slice!\par \bigskip}}%
 
 
 
-%% We desactivate adjustment of a some counters, you may deactivate more
+%% We desactivate adjustment of some counters, you may deactivate more
 
 \def \whizzy@noadjust #1{\@namedef {whizzy@c@#1}{}}
 
@@ -883,6 +906,13 @@ to slice!\par \bigskip}}%
 \whizzy@noadjust{subsection}
 \whizzy@noadjust{subsubsection}
 \whizzy@noadjust{subsection}
+%%% This has been repported to be a problem in spanish babel mode 
+%%% and with the enumitem package. 
+%%% Anyway, it does not seem useful to adjust those. 
+\whizzy@noadjust{enumi}
+\whizzy@noadjust{enumii}
+\whizzy@noadjust{enumiio}
+\whizzy@noadjust{enumiv}
 
 %% Just comment this line to deactivate this feature completely
 %\let \caption \whizzy@caption

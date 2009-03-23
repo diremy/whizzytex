@@ -1,34 +1,44 @@
 %; whizzy  -pdf xpdf
 
-%-initex pdfinitex  -latex pdflatex -format  pdflatex
-
-% Note that the above line is not active because of file .whizzy
+% Note that the above line is not active if you have a file whizzy.sh
 % Unless you set whizzy-configuration-path to nil or a string
 
 \documentclass{article}
 
-\usepackage{hyperref}
+%% \PassOptionsToPackage{pdftex}{hyperref}
+%% \RequirePackage{hyperref}
+
 
 \begin{document}
 
+\section{First section}
 
-\section {First section}
+There should be hyperlinks for pages to follow the cursor. 
+
+\tableofcontents
+
 
 Some text in the section.  
  
 \subsection {Sub}
 
 Some text in the subsection. 
-
-\subsubsection {SubSub} 
-
-Some text in the sub-subsection. 
+Another subsection on \hyperlink{next}{next page}.
 
 \newpage
 
-The cursor should follow on other pages as well. 
-\textbf{This would not work without 
-using package \texttt{hyperref}.}
+\subsubsection {SubSub} 
+
+Some text this \hypertarget{next}{next page} in the sub-subsection. 
+
+Move cursor to see if pages follow cursor.
+
+\newpage
+
+The cursor should follow on other pages as well.
+This requires loading the package hyperref, which is done
+automatically in pdf mode (if after loading the package \texttt{ifpdf}, 
+the command \verb"\ifpdf" is true). 
 
 
 
@@ -36,9 +46,13 @@ using package \texttt{hyperref}.}
 
 \subsection {Bar}
 
+
 \paragraph {Par}
 
-And a paragraph aaa a jjj aaaaa
+And a paragraph.
+
+
+
 
 \end{document}   
 

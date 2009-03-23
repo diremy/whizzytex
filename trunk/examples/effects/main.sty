@@ -1,4 +1,5 @@
 \usepackage {hyperref}
+\usepackage {exercise}
 \edef\hyper@quote{\string"}
 \edef\hyper@sharp{\string#}
 \def \softlink #1#2{\special 
@@ -9,35 +10,5 @@
   {html:</A>}}
 
 \newtheorem{theorem}{Theorem}
-\newtheorem {lemma}{Lemma}
-
-\usepackage {exercise}
-\def \pdf@hyperlink {\softlink}
-\def \pdf@hypertarget {\softtarget}
-
-\def \@thm #1#2{%
-  \refstepcounter {#1}
-  \xdef \ThmName {\@currenvir}%
-  \xdef \ThmLabel {\@currentlabel}%
-  \@ifnextchar [{\@ythm {#1}{#2}}{\@xthm{#1}{#2}}%
-}
-
-\def \capitalize #1{\uppercase {#1}}
-\newanswer {proof}
-  {\def \theExercise {\ThmName}\def \theQuestion {\ThmLabel}%
-   \if@answer@later
-       \if@answer@anchor \AnswerLink{\hbox {(See proof in the Appendix)}}\fi%
-   \else \def \AnswerName {Proof}\fi
-   \pdf@hypertarget {Thm-\ThmName.\ThmLabel}{}}
-  {}
-  {\trivlist \item [\hskip \labelsep {\underline {Proof}:}]}
-  {\penalty 100\hfill\rule{2mm}{2mm}\endtrivlist\@doendpe}
-  {{\ThmName}{\ThmLabel}}
-  [2]
-  {\subsection* 
-        {\pdf@hypertarget {Ans-#1.#2}{Proof} of 
-         \pdf@hyperlink {Thm-#1.#2}{\capitalize #1 #2}}%
-   \nobreak
-   }
-  {}
-
+\newtheorem{lemma}{Lemma}
+\newenvironment{proof}{Proof:}{}

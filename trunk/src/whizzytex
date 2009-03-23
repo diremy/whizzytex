@@ -5,8 +5,8 @@
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
 #  Version        : 1.3.1
-#  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
-#  Web Site       : http://pauillac.inria.fr/whizzytex
+#  Bug Reports    : whizzytex-bugs@inria.fr
+#  Web Site       : http://gallium.inria.fr/whizzytex
 #  
 #  WhizzyTeX is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ DVIPS=dvips
 
 # Translating DVI to DVI, may be set to dvicopy
 DVICOPY=mv
+PDFCOPY=pdfcopy
 
 # Default LaTeX implementation
 INITEX="latex -ini"
@@ -44,6 +45,11 @@ LATEXCOMMANDS=
 FORMAT=latex
 FMT=fmt
 BIBTEX=bibtex
+
+# Default for pdflatex implementation, 
+# TODO: set them during configuration. 
+PDFINITEX="pdflatex -ini"
+PDFLATEX=pdflatex
 
 # Default flags
 AUTOCOMPILE=true
@@ -166,11 +172,10 @@ do
        VIEW=wpdf
        NAVIGATION=false;
        MULTIPLE=false;
-       LATEX=pdflatex
-       INITEX=pdfinitex
-       FORMAT=pdflatex
-       FMT=fmt
+       INITEX="$PDFINITEX"
+       LATEX="$PDFLATEX"
        DUPLEX=false
+       DVICOPY=pdfcopy
        RELOAD=xpdfreload
        VIEWCOMMAND="xpdf -remote $$"
        case "$2" in
@@ -377,6 +382,12 @@ format () {
 
 atomiccopy () {
    $DVICOPY "$1" "$TMP/$2" && mv "$TMP/$2" "$2";
+}
+
+LATER=04$(date +%m%d%H%M.%S)
+pdfcopy () {
+   mv "$1" "$2"
+   touch -t "$LATER" "$2"
 }
 
 makebibtex () {
@@ -701,11 +712,17 @@ xpdfreload () {
    $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document
    $VIEWCOMMAND -reload
 }
+
+# Recompilation should run in batch, with a status
+# recompilation=ok recompilation=ko recompilation=needed recompilation=on
+# in file $(TMP)/recompilation 
 whole () {
    echo '<Recompiling whole document>'
+#    echo 'BEFORE: '$(stat -c 'inode:%i, time:%Z' $NAME.$VIEW)
    if batchmarks </dev/null >"$LOG"
    then
       echo '<Whole document updated>'
+#       echo 'AFTER: '$(stat -c 'inode:%i, time:%Z' $NAME.$VIEW)
       if $1; then echo '<Pages and sections updated>'; fi
       [ -f "$TMP"/DID ] && kill -$SIG $(cat "$TMP"/DID) || rm -f "$TMP"/DID
       true

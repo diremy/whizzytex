@@ -30,9 +30,9 @@ TARDIRS = examples
 
 TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
-
 XXXPORTS = CHANGES index.html animation.html \
-	   FAQ.html doc/whizzytex.dvi doc/whizzytex.html FAQ  \
+	   FAQ.html FAQ \
+	   doc/whizzytex.dvi  doc/whizzytex.html \
 	   whizzytex-yap-$(YAPVERSION).tgz
 
 EXPORTS = index.html animation.html older.html Announce \
@@ -47,7 +47,7 @@ whizzytex:
 	mkdir $@
 
 whatelse: 
-	@echo 'make what ? [faq pack xxxport Export ]'
+	@echo 'make what ? [Export Faq Doc pack xxxport ]'
 
 pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
@@ -61,10 +61,13 @@ doc/version.tex: RELEASE VERSION
 doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
 	cd doc; make all 
 
-index: index.html animation.html
+Index: index.html animation.html
 	rcp $^ $(YQUEM)
 
-faq: FAQ.html FAQ 
+Doc: doc/FILES
+	rcp $$(cat $^) $(YQUEM)
+
+Faq: FAQ.html FAQ 
 	rcp $< $(YQUEM)
 
 FAQ: FAQ.html 
