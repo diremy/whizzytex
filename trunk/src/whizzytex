@@ -36,9 +36,11 @@ DVIPS=dvips
 
 # Translating DVI to DVI, may be set to dvicopy
 DVICOPY=mv
-PDFCOPY=pdfcopy
+
 
 # Default LaTeX implementation
+MODE=dvi
+
 INITEX="latex -ini"
 LATEX=latex
 LATEXCOMMANDS=
@@ -50,6 +52,7 @@ BIBTEX=bibtex
 # TODO: set them during configuration. 
 PDFINITEX="pdflatex -ini"
 PDFLATEX=pdflatex
+PDFLATEXCOMMANDS='\WhizzyDriver{pdftex}'
 
 # Default flags
 AUTOCOMPILE=true
@@ -115,6 +118,7 @@ LEVEL=0
 
 # default
 RELOAD=sigreload
+RELAODARG=""
 
 while true
 do
@@ -174,12 +178,43 @@ do
        MULTIPLE=false;
        INITEX="$PDFINITEX"
        LATEX="$PDFLATEX"
+       # Perhaps the following line should be added to backup to latex.fmt
+       # in case pdflatex.fmt does not exists. 
+       # if kpsewhich -format fmt -engine / fmt pdflatex
+       # could also be fixed in a local configuration file.
+       FORMAT="pdflatex"
        DUPLEX=false
        DVICOPY=pdfcopy
        RELOAD=xpdfreload
-       VIEWCOMMAND="xpdf -remote $$"
+       WRELOAD=falsexpdfreload
+       VIEWCOMMAND=xpdfremote
        case "$2" in
        .|xpdf) ;;
+       *) warning "Use an xpdf like viewwer, or redefine RELOAD."
+          VIEWCOMMAND="$2";;
+       esac
+       shift;;
+   -kpdf)
+       LEVEL=1
+       DVI=pdf
+       VIEW=wpdf
+       NAVIGATION=false;
+       MULTIPLE=false;
+       INITEX="$PDFINITEX"
+       LATEX="$PDFLATEX -synctex=1"
+       # Perhaps the following line should be added to backup to latex.fmt
+       # in case pdflatex.fmt does not exists. 
+       # if kpsewhich -format fmt -engine / fmt pdflatex
+       # could also be fixed in a local configuration file.
+       FORMAT="pdflatex"
+       DUPLEX=false
+       DVICOPY=pdfcopy
+       RELOAD=kpdfreload
+       WRELOAD=falsexpdfreload
+       VIEWCOMMAND=kpdfremote
+       case "$2" in
+       .|xpdf) ;;
+       .|kpdf) ;;
        *) warning "Use an xpdf like viewwer, or redefine RELOAD."
           VIEWCOMMAND="$2";;
        esac
@@ -214,6 +249,7 @@ where <option> is
     -dvi <dvi-like previewer command> 
     -ps <Postscript previewer command> 
     -pdf xpdf
+    -kpdf kpdf
     -display <X display> 
     -version 
   ' 1>&2
@@ -279,12 +315,60 @@ ERR="$TMP/err"
 
 INITPHASE=true
 
+help() {
+echo "
+The main commands are:
+       duplex                   open a new duplex window
+       reformat                 reformat and recompile
+       autorecompile            recompile if necessary
+       viewer-command ARGS      send ARGS a command to the previewer
+       recompile                recompile
+       clear                    remove .aux files
+       whole                    recompile the whole documment
+       bibtex                   run bibtex 
+       help                     show this
+       info                     show variables
+       trace [ on | off ]       turn trace on or off
+       exit                     exit
+       nextslice                reload the slice and moves
+       reslice                  reload the same slice, without moving
+
+
+"
+}
+info() {
+echo "
+        COMMAND=$COMMAND
+        EXT=$EXT
+        MKSLICE=$MKSLICE
+        MKFILE=$MKFILE
+        INITEX=$INITEX
+        LATEX=$LATEX
+        FORMAT=$FORMAT
+        MULTIPLE=$MULTIPLE
+        DUPLEX=$DUPLEX
+        VIEW=$VIEW
+        VIEWCOMMAND=$VIEWCOMMAND
+        LEVEL=$LEVEL
+
+        BASENAME=$BASENAME
+        EXT=$EXT
+        NAME=$NAME
+
+        AUTOCOMPILE=$AUTOCOMPILE
+        AUTORECOMPILE=$AUTORECOMPILE
+
+        TRACE=$TRACE
+        VERSION=$VERSION
+"
+}
+
 errlog () { echo "$*" 1>&2; }
 fatal () { 
     errlog '*** Fatal error: ' "$*"
     [ -f "$ERR" ] && cat "$ERR"
     echo '<Quitting>' 
-    usleep 500000
+    if [ -x /bin/usleep ]; then /bin/usleep 500000; else /bin/sleep 1; fi;
     cleanquit "$1"
 }
 warning () {
@@ -309,7 +393,7 @@ texlog () {
     sed -n -e '/^#/p' -e '/^!/,$p' "$OUTPUT/$1" | head -$TEXERRORAROUND | \
     cat > $OUTPUT/texlog
     shift
-    echo '<Viewlog>' "$@"
+    echo '<Viewtexlog>' "$@"
   fi
   false; 
 }
@@ -372,7 +456,7 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" "$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" "$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode{'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 #############################################################################
@@ -388,6 +472,18 @@ LATER=04$(date +%m%d%H%M.%S)
 pdfcopy () {
    mv "$1" "$2"
    touch -t "$LATER" "$2"
+}
+
+xpdfremote () {
+    case $1 in 
+        $NAME.$VIEW) REMOTE=_full_$$ ;; 
+        *) REMOTE=_whizzy_$$ ;; 
+    esac
+    xpdf -remote $REMOTE "$@"
+}
+
+kpdfremote () {
+    okular --unique "$@"
 }
 
 makebibtex () {
@@ -613,6 +709,7 @@ process () {
   PROCESS=false
 #  This line was added for some reason that I forgot...
 #  Maybe for not reloading subfiles?
+#  At least it avoids errors when hyperref patches \label and \ref
   rm -f $WHIZZY.aux
   echo '<Recompiling>'
   if { runslice $WFORMAT $WHIZZY$EXT && preview; } 1>"$OUTPUT"/slice
@@ -644,7 +741,7 @@ process () {
 ############################################################################
 # Initial run
 
-# We ensure that the dvi file exists 
+# We ensure that the dvi [or pdf] file exists 
 if runslice "$WFORMAT" ${WHIZZY}_nil$EXT > "$OUTPUT"/nil
 then
   mv "${WHIZZY}_nil.$DVI" $WHIZZY.$DVI
@@ -709,9 +806,22 @@ sigreload () {
    kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
 }
 xpdfreload () {
-   $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document
+   case "$1" in cursor) 
+       $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document;;
+   esac
    $VIEWCOMMAND -reload
 }
+kpdfreload () {
+   case "$1" in cursor) 
+       $VIEWCOMMAND "$WHIZZY.$VIEW#Start-Document" ;;
+   esac
+   $VIEWCOMMAND "$WHIZZY.$VIEW" 
+}
+
+wholereload () {
+   if $MULTIPLE; then sigreload; fi
+}
+
 
 # Recompilation should run in batch, with a status
 # recompilation=ok recompilation=ko recompilation=needed recompilation=on
@@ -724,7 +834,9 @@ whole () {
       echo '<Whole document updated>'
 #       echo 'AFTER: '$(stat -c 'inode:%i, time:%Z' $NAME.$VIEW)
       if $1; then echo '<Pages and sections updated>'; fi
-      [ -f "$TMP"/DID ] && kill -$SIG $(cat "$TMP"/DID) || rm -f "$TMP"/DID
+      if [ -f "$TMP"/DID ]
+          then kill -$SIG $(cat "$TMP"/DID) || rm -f "$TMP"/DID
+      fi
       true
    else
       echo '<Whole document recompilation failed>'
@@ -743,8 +855,9 @@ reformat () {
       mv -f $NAME.$FMT $WHIZZY.$FMT
       echo '<Reformatting succeeded>'
       PROCESS=true
-      # do the slice with new format (quick)
-      # process
+      # do the slice with the new format (quick)
+      # was commented if why?
+      process && $RELOAD $1
       if $AUTORECOMPILE; then whole; fi
   else
       echo '<Reformatting failed>'
@@ -799,13 +912,13 @@ do
 #    elif [ $WHIZZY.$FMT -ot $NAME$EXT ]
 #    then reformat
   elif $NEWFILES && preprocess || $PROCESS
-  then process && $RELOAD
+  then process && $RELOAD $RELOADARG
   else
      echo '<Waiting>'
      read $READOPTION COMMAND REST
      case "$COMMAND" in
        duplex) duplex ;;
-       reformat) checkMKfile $REST; reformat ;;
+       reformat) checkMKfile $REST; reformat $RELOAD ;;
        autorecompile)
          case $REST in
            on) AUTORECOMPILE=true;;
@@ -813,38 +926,16 @@ do
          esac;;
        viewer-command) 
          if $NAVIGATION && [ -n "$REST" ]; then sendcommand $REST; fi;;
-       nextslice) process && $RELOAD ;;
-       reslice) process && $RELOAD ;;
-       whole) checkMKfile $REST; whole $DOMAKS;;
+       recompile) whole && wholereload ;;
+       # maybe more should be removed.
+       clear) rm -f $NAME.aux ;;
+       whole) checkMKfile $REST; whole $DOMAKS && wholereload;;
        bibtex) makebibtex;;
        viewps-slice) viewps true;;
        viewps-whole) viewps false;;
 #       bash) bash -c "$REST";;
-       info) 
-        echo "
-        COMMAND=$COMMAND
-        EXT=$EXT
-        MKSLICE=$MKSLICE
-        MKFILE=$MKFILE
-        INITEX=$INITEX
-        LATEX=$LATEX
-        FORMAT=$FORMAT
-        MULTIPLE=$MULTIPLE
-        DUPLEX=$DUPLEX
-        VIEW=$VIEW
-        VIEWCOMMAND=$VIEWCOMMAND
-        LEVEL=$LEVEL
-
-        BASENAME=$BASENAME
-        EXT=$EXT
-        NAME=$NAME
-
-        AUTOCOMPILE=$AUTOCOMPILE
-        AUTORECOMPILE=$AUTORECOMPILE
-
-        TRACE=$TRACE
-        VERSION=$VERSION
-";;
+       help) help;;
+       info) info;;
        trace)
           case $REST in
               on) set -o xtrace; TRACE=true;; 
@@ -853,6 +944,12 @@ do
           echo "<trace is $TRACE>"
           ;;
        exit) break ;;
+       nextslice) RELOADARG="";;
+       reslice) RELOADARG="$REST";;
+       # nextslice) preprocess && process && $RELOAD ;;
+       # reslice) preprocess && process && $RELOAD $REST;;
+       "") ;;
+       *) echo 'Command not understood' ;;
      esac
   fi
 done

@@ -30,8 +30,11 @@
 \def \whizzy@version {1.3.1}
 
 %% The best to remove problem with hyperref.
-%% Because hyperref does not behave well when precompiled in a format
+%% Because hyperref does not behave well when precompiled in a format, it
+%% should be loaded later.
 
+%% Perhaps, setting the default driver to hypertex should not be done when 
+%% running pdflatex 
 \providecommand*{\Hy@defaultdriver}{hypertex}%
 \PassOptionsToPackage{hypertex}{hyperref}%
 
@@ -85,6 +88,7 @@
 \newif \ifwhizzy@latexmode
 \whizzy@latexmodefalse
 \def \whizzy@fulldocumenthook {}
+\def \whizzy@beginslicehook {}
 \def \whizzy@resume
   {\endgroup 
    \message {[WhizzyTeX is resuming in LaTeX mode]}%
@@ -94,6 +98,7 @@
    \let \documentclass \latex@documentclass
    \begin{document}}
 \def \WhizzyAtFullDocument {\g@addto@macro \whizzy@fulldocumenthook}
+\def \WhizzyAtBeginSlice {\g@addto@macro \whizzy@beginslicehook}
 
 %% \document is going to be redefined so that it dumps a format, 
 %% So we save the old value
@@ -107,18 +112,25 @@
 %% This will fire after resume, rather use AtBeforeWhizzyDump
 \def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
 \def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
-\def \Whizzy #1{\ifwhizzy@latexmode \let \@do \relax\else \def \@do {#1}\fi \@do}
+\def \Whizzy #1{\ifwhizzy@latexmode \let \@do \relax\else \def \@do {#1}\fi
+\@do}
+%% \AtBeginDocument{\Whizzy {\whizzy@beginslicehook}}
+
 
 %% Patch for loading aux files. 
 
 \def \whizzy@newl@bel #1#2#3{\global \@namedef {#1@#2}{#3}}
 \def \whizzy@loadauxhook {}
+\def \AtBeginPreloadaux {\g@addto@macro \whizzy@loadauxhook}
+\def \whizzy@endloadauxhook {}
+\def \AtEndPreloadaux {\g@addto@macro \whizzy@endloadauxhook}
 \def \whizzy@loadaux 
  {\begingroup
     \@floatplacement \@dblfloatplacement \makeatletter \let \@writefile
      \@gobbletwo \global \let \@multiplelabels \relax 
      \whizzy@loadauxhook
      \@input {\jobname .aux}%
+     \whizzy@endloadauxhook
      \global \let \whizzy@multiplelabels \@multiplelabels
      \global \let \@newl@bel \whizzy@newl@bel
      \AtBeginDocument {\global \let  \@multiplelabels
@@ -140,24 +152,26 @@
 %% We can now redefine \document to add a few work and hooks and dump the
 %% format. 
 
-\def \whizzy@loadconfig #1{%
+\def \WHIZZYCONFIGNAME {whizzy.sty}
+\def \whizzy@loadconfig {%
    \makeatletter
-   \IfFileExists{\WHIZZYCONFIGDIR/#1}%
-        {\@input {\WHIZZYCONFIGDIR/#1}}{}%
-   \IfFileExists{\WHIZZYHOME/.whizzytex/#1}%
-        {\@input {\WHIZZYHOME/.whizzytex/#1}}{}%
-   \IfFileExists{#1}{\@input {#1}}{}%
+   \IfFileExists{\WHIZZYCONFIGDIR/\WHIZZYCONFIGNAME}%
+        {\@input {\WHIZZYCONFIGDIR/\WHIZZYCONFIGNAME}}{}%
+   \IfFileExists{\WHIZZYHOME/.whizzytex/\WHIZZYCONFIGNAME}%
+        {\@input {\WHIZZYHOME/.whizzytex/\WHIZZYCONFIGNAME}}{}%
+   \IfFileExists{\WHIZZYCONFIGNAME}{\@input {\WHIZZYCONFIGNAME}}{}%
    \IfFileExists{\jobname.wsty}
         {\@input {\jobname.wsty}}{}%
    \makeatother
 }
 \def \whizzy@endinput
-   {\whizzy@loadconfig{whizzy.cfg}\makeatother \endinput}%
+   {\whizzy@loadconfig %{whizzy.cfg}
+    \makeatother \endinput}%
 
 \def \document 
   {\endgroup
    \whizzy@beforeauxhook
-   \whizzy@loadconfig {whizzy.sty}%
+   %% \whizzy@loadconfig %{whizzy.sty}%
    \begingroup \def \@currenvir {document}%
    \whizzy@loadaux
    \endgroup
@@ -174,18 +188,23 @@
 
 %% OLD:  hyperref does not behave well when precompiled in a format
 
+\def \WhizzyDVI{dvi}
+\def \WhizzyPDF{pdf}
+\@ifundefined{WhizzyMode}{\let \WhizzyMode \WhizzyDVI}{}
 
-%% \@ifundefined{ifpdf}{%
-%% \RequirePackage{ifpdf}
-%% }{}
-\@ifundefined{pdfoutput}{
-\providecommand*{\Hy@defaultdriver}{hypertex}%
-\PassOptionsToPackage{hypertex}{hyperref}%
-}{
-\providecommand*{\Hy@defaultdriver}{hypertex}%
-\PassOptionsToPackage{pdftex}{hyperref}%
-\RequirePackage{hyperref}%
-}
+\ifx \WhizzyMode \WhizzyPDF
+  \providecommand*{\Hy@defaultdriver}{hypertex}%
+  \PassOptionsToPackage{pdftex}{hyperref}%
+  \RequirePackage{hyperref}%
+\else
+  \providecommand*{\Hy@defaultdriver}{hypertex}%
+  \PassOptionsToPackage{hypertex}{hyperref}%
+\fi
+
+%% To be investigated
+%% Too late + does not work even if passed before \documentclass. 
+%%   \message{**PassOptionsToClass{beamer}{hypertex}}%
+%%   \PassOptionsToClass{beamer}{hypertex}%
 
 
 
@@ -440,11 +459,14 @@ to slice!\par \bigskip}}%
      \whizzy@setfile {\whizzy@local}\par
      \whizzy@outputline {0}{\whizzy@local}%
    }
-\def \whizzy@master@banner {\whizzy@banner {\noindent
+\newif \ifWhizzyShowMaster \WhizzyShowMastertrue
+\def \whizzy@master@banner {\ifWhizzyShowMaster
+  \whizzy@banner {\noindent
      {\LARGE\bf \whizzy@fill\space
-       Mastered by \whizzy@master\space \whizzy@fill}}}
+       Mastered by \whizzy@master\space \whizzy@fill}}\fi}
 \def \whizzy@outputmaster {\whizzy@master@banner}
-\def \whizzy@master@end{\par \bigskip \whizzy@master@banner \par}
+\def \whizzy@master@end{\ifWhizzyShowMaster 
+        \par \bigskip \whizzy@master@banner \par\fi}
 
 
 \def \WhizzyMaster #1{%
@@ -692,7 +714,8 @@ to slice!\par \bigskip}}%
 
 \def \WhizzyEnvlimit #1#2{\expandafter \def \csname wiz@#1@#2\endcsname}
 \newcount \whizzy@envno
-\def \whizzy@envlimit@waux {\whizzy@makelineno \whizzy@aux {\string 
+\def \whizzy@envlimit@waux 
+     {\whizzy@makelineno \whizzy@aux {\string 
       \WhizzyEnvlimit {\@currenvir}{\thewhizzy@envno}{\the \whizzy@count}}}
 \def \whizzy@relet #1#2{\expandafter 
     \let \csname #1\expandafter \endcsname \csname #2\endcsname}
@@ -716,7 +739,14 @@ to slice!\par \bigskip}}%
       \ifnum \whizzy@line<\the\whizzy@count \else
         \ifnum \whizzy@line<\@aux \let \whizzy@envinout \@firstoftwo
     \fi \fi \fi}{in@#1}{out@#1}%
+%% Was: 
   \whizzy@envselect{end#1}{\whizzy@envlimit@waux}{endin@#1}{endout@#1}%
+%% Changed so as to allow closing whizzy env that as not been open as whizzy
+%% env and then default to non whizzy env.
+%%   \whizzy@envselect{end#1}{%
+%%       %% The two next lines were Was  }
+%%       \@ifundefined{thewhizzy@envno}{}{\whizzy@envlimit@waux}%
+%%       }{endin@#1}{endout@#1}%
   \newenvironment{in@#1}}
 
 %% We stop here if no support for Active-DVI
@@ -814,6 +844,8 @@ to slice!\par \bigskip}}%
 
 \let \whizzy@latex@label \label
 \let \whizzy@latex@refstepcounter \refstepcounter
+%% Some packages make redefine 
+\AtBeginDocument {}
 
 \def \whizzy@refstepcounter #1{%
   \whizzy@latex@refstepcounter {#1}%
@@ -868,7 +900,8 @@ to slice!\par \bigskip}}%
           \expandafter \whizzy@setref \csname r@#1\endcsname%
           %% We skip the error case (the label is not an arabic number)
           \ifnum \whizzy@count=999\else
-            \advance \whizzy@count -\value{\whizzy@currentcounter}\relax
+            \advance \whizzy@count -\csname
+            whizzy@c@\whizzy@currentcounter\endcsname\relax
             %% Next line could be removed -- it adjusts the counter
             %% for the rest of first run of the slice
             %% should be inneffective in most future runs.
@@ -917,7 +950,14 @@ to slice!\par \bigskip}}%
 %% Just comment this line to deactivate this feature completely
 %\let \caption \whizzy@caption
 \AtBeginDocument
-  {\ifwhizzy@latexmode \else \let \refstepcounter \whizzy@refstepcounter\fi}
+  {\ifwhizzy@latexmode \else 
+   %% Check whether it is still the default binding
+   %% The cleverref package redefines it with an optional argument!
+   \ifx \refstepcounter \whizzy@latex@refstepcounter
+      \let \refstepcounter \whizzy@refstepcounter
+   \fi
+   %% Else do not patch
+   \fi}
 
 %%%% To deactivate, just comment the previous line
 %%%% END Experimental feature: adjustement of labels.

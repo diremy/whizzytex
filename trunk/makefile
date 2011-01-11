@@ -13,6 +13,7 @@ TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
 YQUEM=yquem:/net/yquem/infosystems/www/gallium/gallium/whizzytex
 # BASEURL=http://gallium.inria.fr/whizzytex/
+SCP=scp
 
 RPMNAME=whizzytex-$(VERSION)-$(Release)
 
@@ -62,13 +63,10 @@ doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
 	cd doc; make all 
 
 Index: index.html animation.html
-	rcp $^ $(YQUEM)
-
-Doc: doc/FILES
-	rcp $$(cat $^) $(YQUEM)
+	$(SCP) $^ $(YQUEM)
 
 Faq: FAQ.html FAQ 
-	rcp $< $(YQUEM)
+	$(SCP) $< $(YQUEM)
 
 FAQ: FAQ.html 
 	lynx -dump $< > $@
@@ -170,18 +168,18 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 rpm: $(RPMNAME).src.rpm 
 
 Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
-	rcp $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(YQUEM)
-	rcp VERSION $(YQUEM)/whizzytex.version
+	$(SCP) $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(YQUEM)
+	$(SCP) VERSION $(YQUEM)/whizzytex.version
 	mv $(NAME).tgz archive
 
 Release: Export 
 	cp Announce archive/Announce-$(RELEASE)
-	rcp Announce $(YQUEM)
+	$(SCP) Announce $(YQUEM)
 
 xxxport: $(EXPORTS) pack 
 	make NAME=whizzytex-xxx whizzytex-xxx.tgz
 	date > DATE
-	rcp $(XXXPORTS) `cat doc/FILES` whizzytex-xxx.tgz DATE \
+	$(SCP) $(XXXPORTS) `cat doc/FILES` whizzytex-xxx.tgz DATE \
 	  $(YQUEM)
 
 smallclean:

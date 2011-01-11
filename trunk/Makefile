@@ -11,6 +11,8 @@ TMP=tmp
 INSTALLX=install
 INSTALLR=install -m 0644
 
+INSTALLED = whizzytex.installed
+
 what:
 	@echo 'make what? [ config all install clean distclean uninstall ]'
 
@@ -19,20 +21,22 @@ Makefile.config:
 	@echo '--- You may edit it or run "make config" for customization'
 	cp $@.in $@
 
-.PHONY: all
-all: $(TMP)/whizzytex $(TMP)/whizzytex.el \
+ALL = $(TMP)/whizzytex $(TMP)/whizzytex.el \
 	$(patsubst %,$(TMP)/%/whizzytex.elc, $(EMACS) $(XEMACS))
+
+.PHONY: all
+all: config.checked $(ALL)
 
 .PHONY: config config.force
 
 config: 
 	bash ./configure
 
-config.ok: Makefile.config 
-	bash ./checkconfig config.ok
+config.checked: Makefile.config 
+	bash ./checkconfig config.checked
 
 config.force: 
-	touch config.ok
+	touch config.checked
 
 $(TMP): 
 	rm -f $(TMP)
@@ -68,7 +72,7 @@ $(TMP)/$(XEMACS)/whizzytex.elc: $(TMP)/whizzytex.el byte-compile.el
 	$(XEMACS) -batch -q -no-site-file -l ../../byte-compile.el
 endif
 
-$(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) config.ok
+$(TMP)/whizzytex: $(SRC)/whizzytex $(TMP) Makefile.config
 	sed -e '1s|^#!/bin/bash *$$|#!$(BASH)|' \
 	    -e 's|^PACKAGE=.*|PACKAGE=$(LATEXDIR)/whizzytex.sty|' \
 	    -e 's|^MULTIPLE=.*|MULTIPLE=$(MULTIPLE)|' \
@@ -94,37 +98,43 @@ endif
 
 .PHONY: install
 install: all
+	@[ -f config.checked ] || ( \
+	echo 'Warning!' && \
+	echo '  Your Makefile.config has not been checked.' && \
+	echo '  Run "make config.checked" (or "make all") to check it,' && \
+	echo '  or  "make config.force"  to accept it as is.' && \
+	false)
 ifdef EMACSDIR
-	rm -f Manager.installed
+	rm -f $(INSTALLED)
 	mkdir -p $(DESTDIR)$(EMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(EMACSDIR)
-	echo $(DESTDIR)$(EMACSDIR)/whizzytex.el >> Manager.installed
+	echo $(DESTDIR)$(EMACSDIR)/whizzytex.el >> $(INSTALLED)
 	rm -f $(DESTDIR)$(EMACSDIR)/whizzytex.elc
 ifdef EMACS
 	$(INSTALLR) $(TMP)/$(EMACS)/whizzytex.elc $(DESTDIR)$(EMACSDIR)
-	echo $(DESTDIR)$(EMACSDIR)/whizzytex.elc >> Manager.installed
+	echo $(DESTDIR)$(EMACSDIR)/whizzytex.elc >> $(INSTALLED)
 endif
 endif
 ifdef XEMACSDIR
 	mkdir -p $(DESTDIR)$(XEMACSDIR)
 	$(INSTALLR) $(TMP)/whizzytex.el $(DESTDIR)$(XEMACSDIR)
-	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.el >> Manager.installed
+	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.el >> $(INSTALLED)
 	rm -f $(DESTDIR)$(XEMACSDIR)/whizzytex.elc
 ifdef XEMACS
 	cp $(TMP)/$(XEMACS)/whizzytex.elc $(DESTDIR)$(XEMACSDIR)
-	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.elc >> Manager.installed
+	echo $(DESTDIR)$(XEMACSDIR)/whizzytex.elc >> $(INSTALLED)
 endif
 endif
 	mkdir -p $(DESTDIR)$(BINDIR)
 	$(INSTALLX) $(TMP)/whizzytex $(DESTDIR)$(BINDIR)
-	echo $(DESTDIR)$(BINDIR)/whizzytex >> Manager.installed
+	echo $(DESTDIR)$(BINDIR)/whizzytex >> $(INSTALLED)
 	mkdir -p $(DESTDIR)$(LATEXDIR) 
 	$(INSTALLR) $(SRC)/whizzytex.sty $(DESTDIR)$(LATEXDIR)
-	echo $(DESTDIR)$(LATEXDIR)/whizzytex.sty >> Manager.installed
+	echo $(DESTDIR)$(LATEXDIR)/whizzytex.sty >> $(INSTALLED)
 	mkdir -p $(DESTDIR)$(DOCDIR) 
 	$(INSTALLR) doc/whizzytex.html COPYING GPL INSTALL $(DESTDIR)$(DOCDIR)
 	for i in doc/whizzytex.html COPYING GPL INSTALL; \
-	 do echo $(DOCDIR)/$$i; done >> Manager.installed
+	 do echo $(DOCDIR)/$$i; done >> $(INSTALLED)
 
 where:
 ifdef EMACSDIR
@@ -144,9 +154,9 @@ endif
 	@echo 'Documentation  in DOCDIR=$(DESTDIR)$(DOCDIR)'
 
 .PHONY: uninstall
-uninstall: Manager.installed
-	rm -f `cat Manager.installed`
-	rm -f Manager.installed
+uninstall: $(INSTALLED)
+	rm -f `cat $(INSTALLED)`
+	rm -f $(INSTALLED)
 
 
 clean::
@@ -157,4 +167,4 @@ clean::
 	cd examples; make clean
 
 distclean:: clean
-	rm -f Makefile.config config.ok 
+	rm -f Makefile.config config.checked

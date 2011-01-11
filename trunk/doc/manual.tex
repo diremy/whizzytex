@@ -796,12 +796,13 @@ is optional and is the command used to call the viewer
 
 \item[\texttt{-mkslice} \arg{command}]\indent\\
 tells {\whizzy} to use  \arg{command} to preprocess the slice. 
-The command \arg{make} will receive one argument
-\texttt{\_whizzy\_basename.new} and should produce 
-\texttt{\_whizzy\_basename.tex}
+The command \arg{command} will receive only one argument
+which is the slice to be produced \texttt{\_whizzy\_basename.tex} 
 (or \texttt{\_whizzy\_basename.ltx} if the extension of the master file is 
-\texttt{.ltx}).
-By default, \lst"mv" is simply used.
+\texttt{.ltx}) from the original \texttt{\_whizzy\_basename.new} 
+(whose name is obtained by replacing the suffix ".tex" or ".ltx" by ".new")
+By default, the command \lst"mv" is  used to move the original to the
+destination. (See the example in \lst"./examples/gpic/")
 
 {\em The Unix \lst"make"  can itself be used as a preprocessor (with an
 appropriate \lst"Makefile").  However, one may have to work around

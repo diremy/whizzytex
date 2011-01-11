@@ -51,7 +51,6 @@ Then, to benefit from {\WhizzyEdit}, one must write style files that
 instrument some of the latex commands. 
 
 
-
 \section {Tests}
 
 \vspace {8em}
@@ -62,7 +61,7 @@ instrument some of the latex commands.
 
 \noindent
 \psset{boxsep=0pt,framesep=0pt}
-\weditcirclenode{x=6.0946,y=4.7659,w=6.5153}
+\weditcirclenode{x=6.0946,y=4.7659,w=7.7798}
   [boxsep=0pt,framesep=0pt,fillstyle=solid,fillcolor=cyan]{A}%
   {Left \\adjusted\\ circle}%
 \weditcirclenode*{x=24.4620,y=7.7952,w=2.4906}
@@ -87,7 +86,7 @@ aa a aj lkljk lj l lk }}%
   {\hsize \adviw\vtop{aa kj lkj lkjkl ljk jjklj klj  aa a aj lkljk lj l lk
   }}%
 %
-\adviedit{x=24.8987,Y=-5.8014,w=9.3456,h=2.9880,d=7.1008}
+\adviedit{x=22.7743,Y=-5.8014,w=10.6101,h=2.2799,d=7.1008}
   {\hsize \adviw\vtop{\vskip -\advih\noindent 
   aa ljl j kjlkj ljl jk j kj  hkj lhj ha hjg hjgkgh jk
 su yy iaysuy lkj ljl jk jlk jkl jj}}%
@@ -98,11 +97,11 @@ su yy iaysuy lkj ljl jk jlk jkl jj}}%
 %% hspace
 \adviedit{w=21.3128}{\hspace \adviw}AAA
 
-\adviedit{x=22.2576,y=-4.2045,w=10.7179}
+\adviedit{x=22.2576,y=-4.2045,w=9.6051}
  {\ovalnode{A}
    {\parbox{0.69\adviw}{aa aa  a a aaa hkj npkj a aaa hkj kj kj hkj k j}}}
 
-This is some \adviedit{h=-3.1266,w=5.7692,unit=2em}
+This is some \adviedit{h=-3.7588,w=4.8840,unit=2em}
  {\bubble{anchor}(\advicw,\advich){buble \\bla bla}}
 with a bubble
 
@@ -120,7 +119,7 @@ $$
 \adviedit{x=14.5131,y=0.8895}{\ovalnode{A}{A}}%
 \adviedit{x=6.1570,y=-8.1928}{\ovalnode{B}{B}}%
 \adviedit{x=-5.6150,y=0.1397}{\ovalnode{C}{C}}%
-\adviedit{x=-9.4247,y=-7.4891}{\ovalnode{D}{D}}%
+\adviedit{x=-8.8177,y=-5.8200}{\ovalnode{D}{D}}%
 \ncarc{A}{B}\Bput{\ovalnode{ab}{ab}}
 \ncarc{B}{C}\Bput{b\adviedit{w=1.9034}{\ovalnode{E}{\hspace{\adviw}E}}c}
 \ncarc{B}{D}
@@ -154,7 +153,7 @@ $$
 \adviedit{x=-1.9414,y=-0.1603,h=0.6052,W=1}{\ov[0.2]}%
 \adviedit{x=-5.9878,y=0.3253,h=0.6052,W=1}{\ov[0.2]}%
 }%
-\adviedit{x=-11.8928,y=8.1872,h=1.2194,w=7.4739}{\ov}%
+\adviedit{x=-10.9318,y=7.4285,h=2.7874,w=6.1588}{\ov}%
 \adviedit{x=-2.6759,y=0.0673,h=8.6809,w=4.6210}{\ov}%
 $$
 \section{Pictures}
@@ -186,6 +185,8 @@ Be careful, A Camel may hide another one\ldots.
 
 Chossing a color:
 
+\bgroup
+
 \medskip
 {\setedit{unit=\hsize}%
  \vbox{%
@@ -196,7 +197,6 @@ Chossing a color:
 }
 
 \vspace{8em}
-\Meaning \whizzy@thelineno
 
 \qquad 
 \weditbubble{w=10.5823,h=1.7234}
@@ -207,16 +207,18 @@ Chossing a color:
 
 \vspace{5em}
 
+\egroup
+
 \section{Tabulars, minipages, etc.}
 
-\adviedit{w=7.4988}{%
+\adviedit{w=1.9409}{%
 \begin{minipage}{\adviw}
 aaa ahjhk hjk
 \end{minipage}}
 
 AAA
 $$
-\adviedit{w=9.6446}{%
+\adviedit{w=10.9597}{%
 \begin{tabular*}{\adviw}{l@{\extracolsep{\fill}}cr}
 aaa &  bbb & ccc\\
 \end{tabular*}}

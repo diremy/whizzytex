@@ -1,12 +1,13 @@
 #!/bin/bash
 
 CONFIGOK=false
+OKFILE=config.checked
 usage () {
    (echo 'Usage:
-        checkconfig [ -timeout N ] [ config.ok ] 
+        checkconfig [ -timeout N ] [ $OKFILE ] 
 
     N > 0 in seconds (default is 3).
-    config.ok, if mentioned and existing is be used as default configuration.
+    config.checked, if mentioned and existing is be used as default configuration.
 ') >&2
    exit 1
 }
@@ -23,7 +24,7 @@ do
        else usage
        fi
        shift;;
-   config.ok) CONFIGOK=true;;
+   config.checked) CONFIGOK=true;;
    *) ;;
   esac
   shift
@@ -67,9 +68,9 @@ sed -e 's/ *= */=/' -e 's/(\([A-Z][A-Z]*\))/{\1}/' \
    > config.bash
 source config.bash
 rm config.bash
-if $CONFIGOK && [ -f config.ok ]; then 
-  echo 'Using existing configuration config.ok'
-  source config.ok; 
+if $CONFIGOK && [ -f OKFILE ]; then 
+  echo 'Using existing configuration OKFILE'
+  source OKFILE; 
 fi
 
 # Emacs 
@@ -269,10 +270,10 @@ then
 else
   echo 'No anomaly detected in Makefile.config.'
   rm -f dummy.{fmt,efmt,tex,aux,log,dvi,ps}
-  # config.ok
+  # $OKFILE
   (if test -n "$ADVI"; then echo ADVIOK=$ADVI; fi
    if test -n "$XDVI"; then echo XDVIOK=$XDVI; fi
-   if test -n "$GV"; then echo GVOK=$GV; fi) > config.ok
+   if test -n "$GV"; then echo GVOK=$GV; fi) > $OKFILE
 fi
 
 

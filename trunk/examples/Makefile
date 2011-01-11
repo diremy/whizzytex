@@ -10,6 +10,7 @@ clean:
 	rm -f */*.{aux,log,dvi,ans,dview,wiz,waux,fmt,out,nav,snm,vrb,toc}
 
 superclean: clean
+	rm -f $(FILES)
 	rm -f {.,*}/{*~,.#*,#*#}
 	rm -rf */_whizzy_*
 

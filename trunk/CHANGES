@@ -3,17 +3,29 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+ * Added an argument to "reslice" to tell if the cursor is present (for xpdf)
+ * Changed <viewlog> to <viewtexlog> fixes strange interactions with emacs
+ * Added cursor argument to reslice when the cursor is displayed
  * Small changes in whizzy-show-point (under mark, in commands).
+ * comint-output-filter-functions made buffer-local in the process windows
 
 Shell-script: 
 
+ * Do not change page in xpdf reloading when the cursor is not available
+ * Changed <viewlog> to <viewtexlog> because fo strange interaction with emacs
+ * pdf mode now calls -reload only when the cursor is not displayed. 
+ * pdf mode changes latex to pdflatex format
  * Added PDF* shell variables to preconfigurate whizzytex for pdflatex
- * Postdate slice for in xpdf mode
+ * Postdate slice for use in xpdf mode
+ * Pass output mode (dvi or pdf) to latex
  * Added quotes in "$INPUT/view.$$" to allow white spaces  in DIRS
  * Wrapped dvicopy to make it atomic.
 
 LaTeX macros:
 
+ * Desactivated \refstepcounter when chaned (cleveref package). Temporary fix.
+ * Added \AtEndPreloadaux hook run after preloading of aux files
+ * Takes output mode (dvi or pdf) from shell-script
  * Automatically load hyperref in pdflatex mode
  * Pass pdftex driver to hyperref in pdflatex mode
  * inhibited adjustment of enumi* counters
