@@ -571,6 +571,9 @@ to slice!\par \bigskip}}%
 \newcommand{\xMeaning}[1]
   {\expandafter \Meaning \csname \string#1\endcsname}
 
+\newcommand{\csMeaning}[1]
+  {\expandafter \Meaning \csname #1\endcsname}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 5: advi stuff
 
@@ -949,15 +952,21 @@ to slice!\par \bigskip}}%
 
 %% Just comment this line to deactivate this feature completely
 %\let \caption \whizzy@caption
+
+%% CUT OF for course
 \AtBeginDocument
   {\ifwhizzy@latexmode \else 
    %% Check whether it is still the default binding
    %% The cleverref package redefines it with an optional argument!
+        %% \let \whizzy@latex@label \label
+        %% \let \whizzy@latex@refstepcounter \refstepcounter
+        %% \let \refstepcounter \whizzy@refstepcounter
    \ifx \refstepcounter \whizzy@latex@refstepcounter
       \let \refstepcounter \whizzy@refstepcounter
    \fi
    %% Else do not patch
    \fi}
+>>>>>>> 1.25
 
 %%%% To deactivate, just comment the previous line
 %%%% END Experimental feature: adjustement of labels.

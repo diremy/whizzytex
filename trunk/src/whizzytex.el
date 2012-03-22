@@ -302,6 +302,7 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
     (cons "letter"  'letter)
     (cons "article" 'section)
     (cons "book" 'chapter)
+    (cons "memoir" 'chapter)
     )
   "*Alist mapping latex document class to slicing modes.
 \(See also `whizzy-mode-regexp-alist')"
@@ -3383,6 +3384,15 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
     ))
  
 
+(defun whizzy-default-goto-line-hook ()
+  (raise-frame)
+  (x-focus-frame nil)
+)  
+
+(defvar whizzy-goto-line-hook 'whizzy-default-goto-line-hook
+  "*Hook run after `goto-line' is executed (except if for moving pages)."
+)
+
 (defun whizzy-goto-line (s)
   (if (string-match
 "\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)"
@@ -3419,7 +3429,7 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
           (if left (setq left (whizzy-detex left)))
           (if right (setq right (whizzy-detex right)))
           (let*
-              ((here (point))
+              ((here (point)) (moved t)
                ;; (space "[\t ]*\n?[\t ]*")
                (blank "\\([\t ]\\|[^\\]%[^\n]*\n\\)*")
                (sp (concat blank "\n?" blank))
@@ -3461,8 +3471,10 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
                   (goto-char here)
                 (goto-char (match-end 1)))
               )
-             (t))
+             (t (setq moved nil)))
             (whizzy-observe-changes)
+            ;; suggested changes by Par  Kurlberg
+            ;; (if moved (run-hooks whizzy-goto-line-hook))
             )))
         )))
 

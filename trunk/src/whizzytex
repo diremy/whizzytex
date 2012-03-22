@@ -321,27 +321,6 @@ ERR="$TMP/err"
 
 INITPHASE=true
 
-help() {
-echo "
-The main commands are:
-       duplex                   open a new duplex window
-       reformat                 reformat and recompile
-       autorecompile            recompile if necessary
-       viewer-command ARGS      send ARGS a command to the previewer
-       recompile                recompile
-       clear                    remove .aux files
-       whole                    recompile the whole documment
-       bibtex                   run bibtex 
-       help                     show this
-       info                     show variables
-       trace [ on | off ]       turn trace on or off
-       exit                     exit
-       nextslice                reload the slice and moves
-       reslice                  reload the same slice, without moving
-
-
-"
-}
 info() {
 echo "
         COMMAND=$COMMAND
@@ -367,6 +346,28 @@ echo "
 
         TRACE=$TRACE
         VERSION=$VERSION
+"
+}
+
+help() {
+echo "
+The main commands are:
+       duplex                   open a new duplex window
+       reformat                 reformat and recompile
+       autorecompile            recompile if necessary
+       viewer-command ARGS      send ARGS a command to the previewer
+       recompile                recompile
+       clear                    remove .aux files
+       whole                    recompile the whole documment
+       bibtex                   run bibtex 
+       help                     show this
+       info                     show variables
+       trace [ on | off ]       turn trace on or off
+       exit                     exit
+       nextslice                reload the slice and moves
+       reslice                  reload the same slice, without moving
+
+
 "
 }
 
@@ -908,6 +909,7 @@ viewps () {
 }
 
 INITPHASE=false
+RELOADARG=""
 
 SWITCHED=false
 kpdfswitch () {
@@ -951,6 +953,7 @@ do
        bibtex) makebibtex;;
        viewps-slice) viewps true;;
        viewps-whole) viewps false;;
+       printenv) printenv;;
 #       bash) bash -c "$REST";;
        help) help;;
        info) info;;
