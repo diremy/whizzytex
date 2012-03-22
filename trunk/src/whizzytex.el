@@ -105,9 +105,9 @@ default options.")
 
 (defvar whizzy-viewers
   '(
-    ("-advi" "advi -html Start-Document") ("-dvi" "xdvi")
+    ("-advi" "advi -html Start-Document") ("-dvi" "xdvi") ("-nodvi" "noviewer") 
     ("-ps" "gv")
-    ("-pdf" "xpdf") ("-kpdf" "kpdf")
+    ("-pdf" "xpdf") ("-kpdf" "kpdf") ("-nopdf" "noviewer")
    )
   "*Alist defining accepted previewers and their default configuration.
 
@@ -124,7 +124,7 @@ Each element of the alist is of the form
 
 where
 
-  <type> can only be \"-advi\", \"-dvi\", \"-ps\", \"-pdf\", or \"-kpdf\"
+  <type> can only be \"-advi\", \"-dvi\", \"-nodvi\", \"-ps\", \"-pdf\", \"-kpdf\" or \"-nopdf\".
 
   <command>
 
@@ -148,6 +148,10 @@ Moreover, <type> and <default-command> should agree in the following way:
     With -advi, the command need to be an ActiveDVI previewer.  See also
     `whizzy-line', and `whizzy-point-visible'.
 
+  -dvi
+
+    behaves as -dvi but does not launch the previewer (checking only mode).
+
   -ps
 
     tells whizzytex to produce Postscript files (using dvips) and to use
@@ -158,6 +162,10 @@ Moreover, <type> and <default-command> should agree in the following way:
     tells whizzytex to produce PDF files (using pdflatex) and to use
     xpdf to preview them and xpdf -reload to reload the file. 
     Currently, no other option if left for the previewer.
+
+  -nopdf
+ 
+    behaves as -pdf but does not launch the previewer (checking only mode).
 
 
 In addition -advi tell whizzytex to tell latex to dump source line number
@@ -2288,7 +2296,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
      (string-match "\\([a-z]+ +\\)?-" string)
      (progn
        (setq start (- (match-end 0) 1))
-       (if (string-match "\\(-a?dvi\\|-ps\\|-pdf\\|-kpdf\\)\\b *" string start)
+       (if (string-match "\\(-a?dvi\\|-nodvi\\|-ps\\|-pdf\\|-kpdf\\|-nopdf\\)\\b *" string start)
            (progn
              (setq tmp-view (cons (match-string 1 string) tmp-view))
              (setq start (match-end 0)))

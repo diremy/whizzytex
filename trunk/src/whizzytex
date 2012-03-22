@@ -51,9 +51,9 @@ BIBTEX=bibtex
 
 # Default for pdflatex implementation, 
 # TODO: set them during configuration. 
-PDFINITEX="pdflatex -ini"
 PDFLATEX=pdflatex
-PDFLATEXCOMMANDS='\WhizzyDriver{pdftex}'
+PDFINITEX="$PDFLATEX -ini"
+# PDFLATEXCOMMANDS='\WhizzyDriver{pdftex}'
 
 # Default flags
 AUTOCOMPILE=true
@@ -123,7 +123,7 @@ RELAODARG=""
 
 while true
 do
-  case $1 in
+  case "$1" in
    -kill) DO=kill;;
    -wakeup) DO=wakeup;;
    -formatonly) DO=format;;
@@ -145,7 +145,7 @@ do
    -fmt) FMT="$2"; shift;;
    -dvicopy) DVICOPY="$2"; shift;;
    -watch) NEWFILES=newfiles;;
-   -dvi)
+   -dvi|-nodvi)
        MODE=dvi
        VIEW=wdvi;
        NAVIGATION=false;
@@ -154,6 +154,7 @@ do
        .) VIEWCOMMAND=xdvi;;
        *) VIEWCOMMAND="$2";;
        esac
+       case "$1" in -nodvi) VIEWCOMMAND=noviewer;; esac
        shift;;
    -advi)
        MODE=advi
@@ -174,15 +175,13 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
-   -pdf)
-       MODE=pdf
+   -pdf|-kpdf|-nopdf)
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
        NAVIGATION=false;
        MULTIPLE=false;
        INITEX="$PDFINITEX"
-       LATEX="$PDFLATEX"
        # Perhaps the following line should be added to backup to latex.fmt
        # in case pdflatex.fmt does not exists. 
        # if kpsewhich -format fmt -engine / fmt pdflatex
@@ -190,41 +189,34 @@ do
        FORMAT="pdflatex"
        DUPLEX=false
        DVICOPY=pdfcopy
-       RELOAD=xpdfreload
        WRELOAD=falsexpdfreload
-       VIEWCOMMAND=xpdfremote
+       case "$1" in
+           -pdf)
+               MODE=pdf
+               LATEX="$PDFLATEX"
+               RELOAD=xpdfreload
+               VIEWCOMMAND=xpdfremote
+             ;;
+           -kpdf) 
+               MODE=kpdf
+               LATEX="$PDFLATEX -synctex=1"
+               RELOAD=kpdfreload
+               VIEWCOMMAND=kpdfremote
+             ;;
+           -nopdf)
+               MODE=pdf
+               LATEX="$PDFLATEX"
+               RELOAD=true
+               VIEWCOMMAND=noviewer
+             ;;
+       esac
        case "$2" in
-       .|xpdf) ;;
+       .|xpdf|kpdf|noviewer) ;;
        *) warning "Use an xpdf like viewwer, or redefine RELOAD."
           VIEWCOMMAND="$2";;
        esac
-       shift;;
-   -kpdf)
-       MODE=kpdf
-       LEVEL=1
-       DVI=pdf
-       VIEW=wpdf
-       NAVIGATION=false;
-       MULTIPLE=false;
-       INITEX="$PDFINITEX"
-       LATEX="$PDFLATEX -synctex=1"
-       # Perhaps the following line should be added to backup to latex.fmt
-       # in case pdflatex.fmt does not exists. 
-       # if kpsewhich -format fmt -engine / fmt pdflatex
-       # could also be fixed in a local configuration file.
-       FORMAT="pdflatex"
-       DUPLEX=false
-       DVICOPY=pdfcopy
-       RELOAD=kpdfreload
-       WRELOAD=falsexpdfreload
-       VIEWCOMMAND=kpdfremote
-       case "$2" in
-       .|xpdf) ;;
-       .|kpdf) ;;
-       *) warning "Use an xpdf like viewwer, or redefine RELOAD."
-          VIEWCOMMAND="$2";;
-       esac
-       shift;;
+       shift
+       ;;
    -display)
        export DISPLAY="$2"
        shift;;
@@ -464,7 +456,9 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode{'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode
+ 
+ {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 #############################################################################
@@ -796,6 +790,13 @@ mkfifo "$INPUT/view.$$"
 exec 3<>"$INPUT/view.$$"
 rm "$INPUT/view.$$"
 
+noviewer () {
+  trap "" SIGUSR1 SIGUSR2 SIGCONT
+  echo Starting...
+  while true; do echo $$; sleep 10; done
+  echo Done...
+}
+
 {
   $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &
   echo $! >> "$TMP"/pids
@@ -828,6 +829,7 @@ kpdfreload () {
 wholereload () {
    if $MULTIPLE; then sigreload; fi
 }
+
 
 
 # Recompilation should run in batch, with a status

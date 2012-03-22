@@ -194,7 +194,7 @@
 \@ifundefined{WhizzyMode}{\let \WhizzyMode \WhizzyDVI}{}
 
 \ifx \WhizzyMode \WhizzyPDF
-  \providecommand*{\Hy@defaultdriver}{hypertex}%
+  \providecommand*{\Hy@defaultdriver}{hpdftex}%
   \PassOptionsToPackage{pdftex}{hyperref}%
   \RequirePackage{hyperref}%
 \else
