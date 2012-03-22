@@ -3,6 +3,7 @@ HVAOPT = -fix
 
 DOCSOURCES=manual.tex manual.sty caml.eps version.tex Makefile
 DOCFORMATS=dvi ps pdf html info
+SHELL = bash
 all: FILES
 
 FILES: $(addprefix whizzytex., dvi ps pdf html info) Makefile

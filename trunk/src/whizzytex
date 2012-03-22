@@ -1,10 +1,10 @@
 #!/bin/bash 
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
-#  Copyright (C) 2001, 2002, 20043, 2004, 2005, 2006, 2007 INRIA.
+#  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011  INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.3.1
+#  Version        : 1.3.2
 #  Bug Reports    : whizzytex-bugs@inria.fr
 #  Web Site       : http://gallium.inria.fr/whizzytex
 #  
@@ -26,7 +26,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.3.1"
+VERSION="1.3.2"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -43,6 +43,7 @@ MODE=dvi
 
 INITEX="latex -ini"
 LATEX=latex
+LATEXCOMMANDLINE=
 LATEXCOMMANDS=
 FORMAT=latex
 FMT=fmt
@@ -145,6 +146,7 @@ do
    -dvicopy) DVICOPY="$2"; shift;;
    -watch) NEWFILES=newfiles;;
    -dvi)
+       MODE=dvi
        VIEW=wdvi;
        NAVIGATION=false;
        MULTIPLE=false;
@@ -154,6 +156,7 @@ do
        esac
        shift;;
    -advi)
+       MODE=advi
        LEVEL=2
        VIEW=wdvi;
        case "$2" in
@@ -162,6 +165,7 @@ do
        esac
        shift;;
    -ps)
+       MODE=ps
        VIEW=ps
        NAVIGATION=false;
        MULTIPLE=false;
@@ -171,6 +175,7 @@ do
        esac
        shift;;
    -pdf)
+       MODE=pdf
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
@@ -195,6 +200,7 @@ do
        esac
        shift;;
    -kpdf)
+       MODE=kpdf
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
@@ -348,6 +354,7 @@ echo "
         MULTIPLE=$MULTIPLE
         DUPLEX=$DUPLEX
         VIEW=$VIEW
+        MODE=$MODE
         VIEWCOMMAND=$VIEWCOMMAND
         LEVEL=$LEVEL
 
@@ -456,7 +463,7 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 # Making format
 
 format () {
- ( runinitex "&$FORMAT" "$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode{'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode{'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 #############################################################################
@@ -797,7 +804,6 @@ rm "$INPUT/view.$$"
   } &
 
 sendcommand () {
-#    echo "$1" $SIGINPUT $ID
     echo -n "$1" >&3 && kill -$SIGINPUT $ID \
         || fatal 'Previewer cannot receive commands' $SIG
 }
@@ -903,6 +909,18 @@ viewps () {
 
 INITPHASE=false
 
+SWITCHED=false
+kpdfswitch () {
+  if $SWITCHED
+  then
+      SWITCHED=false
+      $VIEWCOMMAND "$WHIZZY.$VIEW" 
+  else
+      SWITCHED=true
+      $VIEWCOMMAND "$NAME.$VIEW" 
+  fi
+}
+
 echo '<Initialization succeeded, entering loop>'
 while true
 do
@@ -946,10 +964,15 @@ do
        exit) break ;;
        nextslice) RELOADARG="";;
        reslice) RELOADARG="$REST";;
+       switch)
+             case $MODE in
+                 advi) sendcommand w ;;
+                 kpdf) kpdfswitch ;;
+             esac;;
        # nextslice) preprocess && process && $RELOAD ;;
        # reslice) preprocess && process && $RELOAD $REST;;
        "") ;;
-       *) echo 'Command not understood' ;;
+       *) echo 'Command not understood' : "$COMMAND" ;;
      esac
   fi
 done

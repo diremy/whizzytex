@@ -1,35 +1,24 @@
 Dear WhizzyTeX users and maintainers,
 
-It is my pleasure to announce a new release of WhizzyTeX. 
+It is my pleasure to announce the new release 1.3.2 of WhizzyTeX. 
 
 WhizzyTeX is an Emacs minor mode for incrementally viewing LaTeX documents
-that you are editing. It works under Unix with gv and xdvi viewers, but the
-Active-DVI viewer (see http://pauillac.inria.fr/activedvi/) will provide
-much better visual effects and will offer more functionalities.
-
-Version 1.3.0 is now available. 
+that you are editing. It works under Unix with gv, xpdf, and xdvi viewers,
+but the Active-DVI viewer (see http://advi.inria.fr/) will provide
+better visual effects and will offer more functionalities.
 
 The source code, documentation, and information are available at
 
-        http://cristal.inria.fr/whizzytex/
+        http://gallium.inria.fr/whizzytex/
 
-Bug reports to whizzytex-bugs@pauillac.inria.fr
+Bug reports to whizzytex-bugs@inria.fr
 
-This release is mostly a maintanance release.  It contains several bug fixes
-and a only few visible improvements since version 1.2, which are: 
-
- - Easier configuration for recent tetex distributions without "initex"
- - Some support for use with PDF viewers 
-
-See the web site for more details. 
+This release is a maintanance release.  It contains several bug fixes and a
+only few visible improvements since version 1.3.0.  See CHANGES on the
+whizzytex website for more details.
 
 Enjoy, 
 
         Didier Rémy 
 
-
-PS:
-
-To keep informed of upgrades, check the WhizzyTeX WEB page occasionally, or
-just watch the content of the file http://cristal.inria.fr/whizzytex/VERSION.
 

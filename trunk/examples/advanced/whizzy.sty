@@ -1,5 +1,5 @@
 \usepackage{comment}
-\@ifundefined {WhizzyTeX}{}{%
+\@ifundefined {WhizzyTeX}{}{\AtBeginDocument{%
   \WhizzyInsideEnvironment {itemize}
      {\em \out@itemize}
      {\endout@itemize}
@@ -23,4 +23,4 @@
     {\whizzy@envlimit@waux}
   \let \latex@mpr@and \mpr@and
   \def \mpr@and {\latex@mpr@and \whizzy@writelineno}
-}
+}}

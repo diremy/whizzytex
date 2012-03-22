@@ -1,9 +1,9 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
-;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007 INRIA.
+;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011 INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.1
+;; Version        : 1.3.2
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -60,7 +60,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.1"
+(defconst whizzytex-version "1.3.2"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -1683,10 +1683,8 @@ during initialization."
 (defun whizzy-send-switch-duplex (arg)
   (interactive "P")
   (if whizzytex-mode
-      (whizzy-send-command "w")
-    (whizzytex-mode arg)
-    ))
-
+      (whizzy-call "switch")
+    (whizzytex-mode arg)))
 (defun whizzy-send-goto-end (arg)
   (interactive "p")
   (whizzy-send-command "."))
@@ -3468,6 +3466,25 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
             )))
         )))
 
+(defun whizzy-goto-position (s)
+  (if (string-match
+       "\#position \\([0-9]*\\), \\([0-9]+\\) \\([^ \t\n]*\\)"
+       s)
+      (let ((line (string-to-number (match-string 1 s)))
+            (col (string-to-number (match-string 2 s)))
+            (file (match-string 3 s))
+            )
+        (if (file-name-absolute-p file)
+            (setq file (file-name-nondirectory file)))
+        (if (string-match "_whizzy_\\(.*\\)" file)
+            (setq file (match-string 1 file)))
+        (and (whizzy-goto-file file)
+             (goto-line line)
+             (forward-char col))
+        (whizzy-observe-changes)
+        )))
+
+
 (defvar whizzy-error-name-alist
   `((,whizzy-mlpost-error . "-MLPOST")
     (,whizzy-slice-error . "-SLICE")
@@ -3637,6 +3654,10 @@ Log file name is obtain from suffix by removing leading character."
 
          ((string-match "^\#line \\([0-9][0-9]*\\)" command)
           (whizzy-goto-line s)
+          )
+
+         ((string-match "^\#position \\([0-9][0-9]*\\)" command)
+          (whizzy-goto-position s)
           )
 
          ((string-match 
@@ -4192,7 +4213,6 @@ It should accept the following arguments
     ( [?\C-c ?\C-j] . whizzy-jump-to-error)
     ( [?\C-c ?\C-p] . whizzy-send-previous-page)
     ( [?\C-c ?\C-n] . whizzy-send-next-page)
-    ( [?\C-c ?\C-w] . whizzy-send-switch-duplex)
     ( [?\C-c ?\C-w] . whizzy-send-switch-duplex)
     ( [C-mouse-4] . whizzy-mouse-previous-slice )
     ( [C-mouse-5] . whizzy-mouse-next-slice )

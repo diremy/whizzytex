@@ -1,9 +1,9 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
-%  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007 INRIA.
+%  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011 INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.3.1
+%  Version        : 1.3.2
 %  Bug Reports    : whizzytex-bugs@inria.fr
 %  Web Site       : http://gallium.inria.fr/whizzytex
 % 
@@ -27,7 +27,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.3.1}
+\def \whizzy@version {1.3.2}
 
 %% The best to remove problem with hyperref.
 %% Because hyperref does not behave well when precompiled in a format, it
@@ -179,6 +179,7 @@
    \let \latex@documentclass \documentclass
    \let \documentclass \whizzy@documentclass
    \let \document \latex@document
+   \let \do \relax
    \dump}
 
 
@@ -579,7 +580,6 @@ to slice!\par \bigskip}}%
 \let \WhizzyStart \relax
 \let \WhizzyLine \whizzy@ignore
 \let \WhizzyLinePoint \whizzy@ignore
-\let \WhizzyEnvlimit \whizzy@outputline
 \let \WhizzyEnvlimit \whizzy@outputline
 \newcommand \whizzy@ignore@oii[3][]{}
 \def \WhizzyInsideEnvironment{\whizzy@ignore@oii}

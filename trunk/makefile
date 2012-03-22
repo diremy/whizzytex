@@ -1,13 +1,13 @@
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 # Stable version
-RELEASE=1.3.0
+RELEASE=1.3.1
 # Current version
-VERSION=1.3.1
+VERSION=1.3.2
 # rpm release version
 Release=1
 # YAP version -- independant versionning. 
-YAPVERSION=1.1.3-1.0
+# YAPVERSION=1.3.2.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -33,8 +33,9 @@ TARFILES = $(TARSOURCES) $(TARPRODUCED) $(TARDIRS)
 
 XXXPORTS = CHANGES index.html animation.html \
 	   FAQ.html FAQ \
-	   doc/whizzytex.dvi  doc/whizzytex.html \
-	   whizzytex-yap-$(YAPVERSION).tgz
+	   doc/whizzytex.dvi  doc/whizzytex.html
+
+# 	   whizzytex-yap-$(YAPVERSION).tgz
 
 EXPORTS = index.html animation.html older.html Announce \
 	   emacs.gif activedvi.gif emacs009.gif activedvi009.gif \
@@ -53,10 +54,10 @@ whatelse:
 pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
 doc/version.tex: RELEASE VERSION
-	(echo '\def\release{'`cat RELEASE`'}' ; \
-	 echo '\def\Release{'$(Release)'}' ; \
-	 echo '\def\version{'`cat VERSION`'}' ; \
-	 echo '\def\YAPVERSION{'$(YAPVERSION)'}' ) > $@
+	(echo '\\def\\release{'`cat RELEASE`'}' ; \
+	 echo '\\def\\Release{'$(Release)'}' ; \
+	 echo '\\def\\version{'`cat VERSION`'}' ; \
+	 echo '\\def\\YAPVERSION{'$(YAPVERSION)'}' ) > $@
 
 
 doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
@@ -167,8 +168,13 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 
 rpm: $(RPMNAME).src.rpm 
 
-Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
-	$(SCP) $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(YQUEM)
+# Export: $(EXPORTS) xxxport $(RPMNAME).src.rpm DATE 
+# 	$(SCP) $(EXPORTS) $(RPMNAME).src.rpm $(cat doc/FILES) $(YQUEM)
+# 	$(SCP) VERSION $(YQUEM)/whizzytex.version
+# 	mv $(NAME).tgz archive
+
+Export: $(EXPORTS) xxxport DATE 
+	$(SCP) $(EXPORTS) $(cat doc/FILES) $(YQUEM)
 	$(SCP) VERSION $(YQUEM)/whizzytex.version
 	mv $(NAME).tgz archive
 
@@ -196,20 +202,20 @@ superclean:: clean
 	rm FAQ.html FAQ
 	rm -f *~ .#* #*# FILES 
 
-REDHAT=/usr/src/redhat
-RPMINPUTFILES= $(NAME).tgz whizzytex-makefile.patch
+# REDHAT=/usr/src/redhat
+# RPMINPUTFILES= $(NAME).tgz whizzytex-makefile.patch
 
-$(RPMNAME).src.rpm: $(RPMNAME).noarch.rpm
+# $(RPMNAME).src.rpm: $(RPMNAME).noarch.rpm
 
-$(RPMNAME).noarch.rpm: $(RPMINPUTFILES)
-	cp $(RPMINPUTFILES) /usr/src/redhat/SOURCES/
-	rpmbuild -ba whizzytex.spec
-	cp \
-	 $(REDHAT)/SRPMS/$(RPMNAME).src.rpm \
-	 $(REDHAT)/RPMS/noarch/$(RPMNAME).noarch.rpm \
-	 .
-	chown remy $(RPMNAME).*rpm
-	chgrp formel $(RPMNAME).*rpm
+# $(RPMNAME).noarch.rpm: $(RPMINPUTFILES)
+# 	cp $(RPMINPUTFILES) /usr/src/redhat/SOURCES/
+# 	rpmbuild -ba whizzytex.spec
+# 	cp \
+# 	 $(REDHAT)/SRPMS/$(RPMNAME).src.rpm \
+# 	 $(REDHAT)/RPMS/noarch/$(RPMNAME).noarch.rpm \
+# 	 .
+# 	chown remy $(RPMNAME).*rpm
+# 	chgrp formel $(RPMNAME).*rpm
 
 
 .in.out:
