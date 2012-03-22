@@ -1,0 +1,6 @@
+#!/bin/bash
+
+trap "" SIGUSR1 SIGUSR2 SIGCONT
+echo starting...
+while true; do echo .; sleep 1; done
+echo done...
