@@ -1,7 +1,0 @@
-noviewer () {
-  trap "" SIGUSR1 SIGUSR2 SIGCONT
-  echo starting...
-  while true; do sleep 1000; done
-  echo done...
-}
-VIEWCOMMAND=noviewer
