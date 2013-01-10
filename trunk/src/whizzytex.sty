@@ -28,6 +28,8 @@
 %%%% Section 1: The core engine
 
 \def \whizzy@version {1.3.2}
+%% The Church Boolean
+\newcommand{\Whizzytex}[2]{#1}
 
 %% The best to remove problem with hyperref.
 %% Because hyperref does not behave well when precompiled in a format, it
@@ -189,9 +191,10 @@
 
 %% OLD:  hyperref does not behave well when precompiled in a format
 
-\def \WhizzyDVI{dvi}
-\def \WhizzyPDF{pdf}
-\@ifundefined{WhizzyMode}{\let \WhizzyMode \WhizzyDVI}{}
+\let \WhizzyNIL 0
+\let \WhizzyPDF 1
+\let \WhizzyDVI 2
+\providecommand{\WhizzyMode}{2}
 
 \ifx \WhizzyMode \WhizzyPDF
   \providecommand*{\Hy@defaultdriver}{hpdftex}%
@@ -873,7 +876,7 @@ to slice!\par \bigskip}}%
      \whizzy@count=999\relax
   \else
     \afterassignment \whizzy@skipto@relax \whizzy@count 0#1\relax
-    \message {COUNT #1 => \the\whizzy@count}
+    \message {COUNT #1 => \the\whizzy@count}%
   \fi
 }
 
@@ -966,7 +969,6 @@ to slice!\par \bigskip}}%
    \fi
    %% Else do not patch
    \fi}
->>>>>>> 1.25
 
 %%%% To deactivate, just comment the previous line
 %%%% END Experimental feature: adjustement of labels.
