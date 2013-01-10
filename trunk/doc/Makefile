@@ -40,6 +40,6 @@ clean:
 	rm -f manual.{aux,log,dvi,toc,dview,wiz,fmt}
 
 distclean: clean
-	rm -f whizzytex.{dvi,ps,pdf,html,info} manual.hva
+	rm -f whizzytex.{dvi,ps,pdf,html,gif,info} manual.html
 
 
