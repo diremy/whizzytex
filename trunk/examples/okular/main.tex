@@ -11,37 +11,100 @@
 
 \begin{document}
 
-\section{First section}
-
-There should be hyperlinks for pages to follow the cursor. 
+\begin{abstract}
+This example is used to illustrate, test and expalin how to run {\WhizzyTeX}
+with the Okular pdf previewer. 
+\end{abstract}
 
 \tableofcontents
 
+\section{Quick tips}
+
+This has been tested under linux with Ubuntu \verb"12.04"
+and \verb"textlive 2009".
+
+\subsection{Okular Configuration}
 
 
-Some text in the section.  
+In \verb"Settings", choose \verb"Configure Okular..."  and \verb"Editor".
+Then select \verb"Custom Text Editor" and fill in the following line:
+\begin{verbatim}
+        echo '#position %l, %c %f'
+\end{verbatim}
+Use \texttt{shift left click} to move to the source file.
+\begin{quote}\small
+This will echo a command in the \verb"*whizzytex*" emacs buffer of the form
+\begin{verbatim}
+        #position 26, 0 main.tex
+\end{verbatim}
+that is interpreted by emacs to move the edited file to the right position.
+(Here 26 and 0 are the line and character offset positions in the source
+file, while \verb"main.tex" is the name of the source file.
+\end{quote}
+You can click on the source file anywhere, which should move to the 
+correct line in the source file.
+
+You should also choose the "Fit Page" option and turn off "Continuous" 
+option to avoid \texttt{Okular} blinking at each reaload.
+
+\subsection{Whizzytex configuration}
+
+To activate this mode, you must tell whizzytex to run in \texttt{kpdf} mode,
+for instance by inserting the following line among the first lines of your
+buffer 
+\begin{verbatim}
+        %; whizzy  -kpdf kpdf
+\end{verbatim}
+{\WhizzyTeX} will then call Okular as a previewer and the appropriate 
+commands to reload the slice.
+
+\subsection{Editing in emacs}
+
+Okular does not allow
+You can switch bewteen slice and master in emacs with the 
+\verb"\C-c \C-w" keystrokes. 
+
+
+\section {Sandbox}
+
+This sections is a sandbox for you to try editing and nivigatiing in the
+document. 
  
 \subsection {Sub}
 
-Some text in the subsection. 
-Another subsection on \hyperlink{next}{next page}.
+Some text in a subsection.
+You may jump in another subsection on another page by selecting this
+\hyperlink{next}{link}.
 
 \newpage
 
 \subsubsection {SubSub} 
 
-Some text this \hypertarget{next}{next page} in the sub-subsection. 
+This subsection appearson another page \hypertarget{next}{link} 
+Move cursor to check that \emph{pages follow the cursor}.
 
-Move cursor to see if pages follow cursor.
+\subsection {Your sandbox}
+
+\setbox0 \hbox \bgroup
+
+\begin{minipage}{0.8\linewidth}
+This is you sandbox: it is a text arear to try typing in. It easily previews
+when the mode is "Fit Page".. However, for some reason, okular sometime
+jumps back to "Fit Width"....
+
+\medskip
+
+You may freely override this text and see if the cursor follows your
+edition. 
+\end{minipage}
+
+\egroup
+\centerline{\fbox{\box0}}
 
 \newpage
+This section expand on several pages, you can move betwen pages in the
+source, click, etc.
 
-aaa hjkhjk h
-\newpage
-khjkhkjk
-
-hjkh kjh jk  hjh kj hjkh k uu iuio uoi foo
-hjkhjkhk  dfsf dddd hjh jkhjkhk hkjhj khkj  hjkhkj
 
 
 The cursor should follow own other pages as well.
@@ -59,8 +122,6 @@ the command \verb"\ifpdf" is true).
 \paragraph {Par}
 
 And a paragraph.
-
-
 
 
 \end{document}   

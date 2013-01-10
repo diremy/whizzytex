@@ -129,7 +129,7 @@ $(NAME).tgz: FILES makefile
 $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- Checking examples'
 	cd examples; make >/dev/null
-	@echo ' --- src/whizzytex.el'
+	@echo ' --- Checking src/whizzytex.el'
 	grep -e '^\((defvar whizzy-command-name "\)[^"]*\(".*\)$$' \
 	   src/whizzytex.el
 	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' \
@@ -137,7 +137,7 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	test X`sed -n -e \
 	        's/^(defconst whizzytex-version "\([^"]*\)" *$$/\1/p' \
 	  src/whizzytex.el` = X'$(VERSION)'	   
-	@echo ' --- src/whizzytex'
+	@echo ' --- Checking src/whizzytex'
 	test X`sed -n -e 's/^VERSION="\([^"]*\)" *$$/\1/p' \
 	  src/whizzytex` = X'$(VERSION)'	   
 	grep -e '^PACKAGE=[/a-z.][/a-z.]*$$' src/whizzytex

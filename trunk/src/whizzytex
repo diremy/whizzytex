@@ -189,7 +189,7 @@ do
        FORMAT="pdflatex"
        DUPLEX=false
        DVICOPY=pdfcopy
-       WRELOAD=falsexpdfreload
+       WRELOAD=false
        case "$1" in
            -pdf)
                MODE=pdf
@@ -814,16 +814,16 @@ sigreload () {
    kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
 }
 xpdfreload () {
-   case "$1" in cursor) 
+   case "$1" in curso) 
        $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document;;
    esac
    $VIEWCOMMAND -reload
 }
 kpdfreload () {
    case "$1" in cursor) 
-       $VIEWCOMMAND "$WHIZZY.$VIEW#Start-Document" ;;
+       $VIEWCOMMAND "$WHIZZY.$VIEW#Start-Document" 2>/dev/null ;;
    esac
-   $VIEWCOMMAND "$WHIZZY.$VIEW" 
+   $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
 }
 
 wholereload () {

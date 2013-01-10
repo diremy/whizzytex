@@ -5,6 +5,8 @@ Emacs-mode:
 
 Shell-script: 
 
+* Added a "noviewer" predefined viewer for either dvi or pdf modes. 
+
 LaTeX macros:
 
 Installation/Documentation:
