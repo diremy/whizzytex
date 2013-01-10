@@ -154,6 +154,7 @@ do
        .) VIEWCOMMAND=xdvi;;
        *) VIEWCOMMAND="$2";;
        esac
+       case "$1" in -nodvi) VIEWCOMMAND=noviewer;; esac
        shift;;
    -advi)
        MODE=advi
@@ -174,7 +175,7 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
-   -pdf|-kpdf)
+   -pdf|-kpdf|-nopdf)
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
@@ -205,18 +206,14 @@ do
            -nopdf)
                MODE=pdf
                LATEX="$PDFLATEX"
-               ;;
-       esac
-       case "$2" in
-           .|xpdf|kpdf) 
-               ;;
-           noviewer) 
                RELOAD=true
                VIEWCOMMAND=noviewer
-               ;;
-           *) warning "Use an xpdf like viewwer, or redefine RELOAD."
-               VIEWCOMMAND="$2"
-               ;;
+             ;;
+       esac
+       case "$2" in
+       .|xpdf|kpdf|noviewer) ;;
+       *) warning "Use an xpdf like viewwer, or redefine RELOAD."
+          VIEWCOMMAND="$2";;
        esac
        shift
        ;;
