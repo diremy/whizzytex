@@ -5,11 +5,14 @@ Emacs-mode:
 
 Shell-script: 
 
+* Fix the "okular" previewer mode.
 * Added a "noviewer" predefined viewer for either dvi or pdf modes. 
 
 LaTeX macros:
 
 Installation/Documentation:
+
+* Fix the example and documentation for use with Okular PDF previewer. 
 
 SINCE LAST RELEASE:
 ===================
