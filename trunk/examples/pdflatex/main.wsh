@@ -1,0 +1,2 @@
+LATEX=pdflatex
+INITEX="pdflatex -ini"

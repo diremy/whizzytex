@@ -1,0 +1,20 @@
+# Implements -ps2pdf
+# We asume that it was lauched with -advi 
+
+mycopy () {
+    FROM="$1"
+    $DVIPS -o "$TMP/$FROM.ps" "$FROM" 2>/dev/null && \
+    rm $FROM && \
+    ps2pdf "$TMP/$FROM.ps" "$FROM.pdf" && \
+    # Change of target should be atomic. 
+    mv "$FROM.pdf" "$2"
+}
+
+WHIZZYTMPFILES="{$NAME.dvi.ps,$WHIZZY.dvi.ps}"
+
+SIGDVI=$SIGPDF
+DVICOPY=mycopy
+LEVEL=1
+RELOAD=xpdfreload
+VIEWCOMMAND="xpdf -remote $$"
+

@@ -1,0 +1,11 @@
+INITEX="xelatex -ini"
+LATEX=xelatex
+FORMAT=xelatex
+BIBTEX=bibtex
+FMT=fmt
+LEVEL=1
+VIEW=nopdf
+RELOAD=xpdfreload
+VIEWCOMMAND="xpdf -remote $$"
+DVI=pdf
+SIGDVI=SIGHUP

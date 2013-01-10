@@ -1,0 +1,44 @@
+\documentclass{article}
+
+\usepackage{hyperref}
+
+\usepackage{pst-node}
+
+\begin{document}
+
+
+\section {What is the advantage of
+\protect \psset{fillcolor=yellow,fillstyle=solid}
+\protect\ovalnode{ps2pdf}{\texttt{ps2pdf}} 
+over \protect\ovalnode{pdflatex}{\texttt{pdflatex}}}
+
+The compilation cycle is slower. However, this allows using pstricks
+with PDF output as illustrated above 
+\ncarc[arcangle=50,arrowsize=2ex]{->}{ps2pdf}{pdflatex}
+ 
+\subsection {Sub}
+
+Some text in the subsection. 
+
+\subsubsection {SubSub} 
+
+Some text in the sub-subsection. 
+
+\newpage
+
+The cursor should follow on other pages as well. 
+\textbf{This would not work without 
+using package \texttt{hyperref}.}
+
+
+
+\section{Foo}
+
+\subsection {Bar}
+
+\paragraph {Par}
+
+And a paragraph aaa a jjj aaaaa
+
+\end{document}   
+
