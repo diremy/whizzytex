@@ -1,0 +1,12 @@
+--- whizzytex-1.3.3/Makefile.orig	Thu Nov 27 18:49:06 CET 2003	
++++ whizzytex-1.3.3/Makefile		Mon Mar 22 19:04:35 CET 2004
+@@ -123,9 +123,6 @@
+ 	$(INSTALLR) $(SRC)/whizzytex.sty $(DESTDIR)$(LATEXDIR)
+ 	echo $(DESTDIR)$(LATEXDIR)/whizzytex.sty >> Manager.installed
+ 	mkdir -p $(DESTDIR)$(DOCDIR) 
+-	$(INSTALLR) doc/whizzytex.html COPYING GPL INSTALL $(DESTDIR)$(DOCDIR)
+-	for i in doc/whizzytex.html COPYING GPL INSTALL; \
+-	 do echo $(DOCDIR)/$$i; done >> Manager.installed
+ 
+ where:
+ ifdef EMACSDIR

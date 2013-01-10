@@ -105,9 +105,14 @@ default options.")
 
 (defvar whizzy-viewers
   '(
-    ("-advi" "advi -html Start-Document") ("-dvi" "xdvi") ("-nodvi" "noviewer") 
+    ("-advi" "advi -html Start-Document")
+    ("-dvi" "xdvi")
+    ("-nodvi" "noviewer") 
     ("-ps" "gv")
-    ("-pdf" "xpdf") ("-kpdf" "kpdf") ("-nopdf" "noviewer")
+    ("-pdf" "xpdf")
+    ("-kpdf" "kpdf")
+    ("-gpdf" "gpdf")
+    ("-nopdf" "noviewer")
    )
   "*Alist defining accepted previewers and their default configuration.
 
@@ -124,7 +129,7 @@ Each element of the alist is of the form
 
 where
 
-  <type> can only be \"-advi\", \"-dvi\", \"-nodvi\", \"-ps\", \"-pdf\", \"-kpdf\" or \"-nopdf\".
+  <type> can only be \"-advi\", \"-dvi\", \"-nodvi\", \"-ps\", \"-pdf\", \"-kpdf\",  \"-gpdf\" or \"-nopdf\".
 
   <command>
 
@@ -160,8 +165,16 @@ Moreover, <type> and <default-command> should agree in the following way:
   -pdf
 
     tells whizzytex to produce PDF files (using pdflatex) and to use
-    xpdf to preview them and xpdf -reload to reload the file. 
-    Currently, no other option if left for the previewer.
+    xpdf to preview them and xpdf -reload to reload the file.
+
+  -kpdf
+
+    tells whizzytex to produce PDF files (using pdflatex with --synctex=1)
+    okular --unique to preview them and reload the file. 
+
+  -gpdf
+
+    similar to -kpdf, but uses evince as a previewer instead. 
 
   -nopdf
  
@@ -2296,7 +2309,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
      (string-match "\\([a-z]+ +\\)?-" string)
      (progn
        (setq start (- (match-end 0) 1))
-       (if (string-match "\\(-a?dvi\\|-nodvi\\|-ps\\|-pdf\\|-kpdf\\|-nopdf\\)\\b *" string start)
+       (if (string-match "\\(-a?dvi\\|-nodvi\\|-ps\\|-pdf\\|-kpdf\\|-gpdf\\|-nopdf\\)\\b *" string start)
            (progn
              (setq tmp-view (cons (match-string 1 string) tmp-view))
              (setq start (match-end 0)))

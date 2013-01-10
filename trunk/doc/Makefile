@@ -40,6 +40,8 @@ clean:
 	rm -f manual.{aux,log,dvi,toc,dview,wiz,fmt}
 
 distclean: clean
-	rm -f whizzytex.{dvi,ps,pdf,html,gif,info} manual.html
+	rm -f whizzytex.{dvi,ps,pdf,html,info} manual.html
+
+# Keep caml.eps and gif files: hard to remake
 
 

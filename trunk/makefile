@@ -1,3 +1,4 @@
+SHELL=bash
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 # Stable version
@@ -132,8 +133,7 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- Checking src/whizzytex.el'
 	grep -e '^\((defvar whizzy-command-name "\)[^"]*\(".*\)$$' \
 	   src/whizzytex.el
-	grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' \
-	   src/whizzytex.el
+	# grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' src/whizzytex.el
 	test X`sed -n -e \
 	        's/^(defconst whizzytex-version "\([^"]*\)" *$$/\1/p' \
 	  src/whizzytex.el` = X'$(VERSION)'	   

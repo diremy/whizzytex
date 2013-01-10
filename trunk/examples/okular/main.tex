@@ -7,6 +7,7 @@
 
 %% \PassOptionsToPackage{pdftex}{hyperref}
 \RequirePackage{hyperref}
+\providecommand {\WhizzyTeX}{\textsc{WhizzyTeX}}
 
 
 \begin{document}
@@ -56,7 +57,8 @@ buffer
         %; whizzy  -kpdf kpdf
 \end{verbatim}
 {\WhizzyTeX} will then call Okular as a previewer and the appropriate 
-commands to reload the slice.
+commands to run \verb"pdflatex" with \verb"synctex=1"
+and to reload slices.
 
 \subsection{Editing in emacs}
 

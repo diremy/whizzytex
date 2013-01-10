@@ -175,7 +175,7 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
-   -pdf|-kpdf|-nopdf)
+   -pdf|-kpdf|-gpdf|-nopdf)
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
@@ -203,6 +203,12 @@ do
                RELOAD=kpdfreload
                VIEWCOMMAND=kpdfremote
                ;;
+           -gpdf) 
+               MODE=opdf
+               LATEX="$PDFLATEX -synctex=1"
+               RELOAD=gpdfreload
+               VIEWCOMMAND=gpdfremote
+               ;;
            -nopdf)
                MODE=pdf
                LATEX="$PDFLATEX"
@@ -211,7 +217,7 @@ do
              ;;
        esac
        case "$2" in
-       .|xpdf|kpdf|noviewer) ;;
+       .|xpdf|kpdf|gpdf|noviewer|"") ;;
        *) warning "Use an xpdf like viewwer, or redefine RELOAD."
           VIEWCOMMAND="$2";;
        esac
@@ -487,6 +493,12 @@ xpdfremote () {
 kpdfremote () {
     okular --unique "$@"
 }
+
+gpdfremote () {
+    evince --page-label=Start-Document "$@"
+    wmctrl -R emacs@arbois
+}
+
 
 makebibtex () {
   if $BIBTEX $NAME 1>"$OUTPUT/bibtex"
@@ -819,11 +831,21 @@ xpdfreload () {
    esac
    $VIEWCOMMAND -reload
 }
+
 kpdfreload () {
    case "$1" in cursor) 
        $VIEWCOMMAND "$WHIZZY.$VIEW#Start-Document" 2>/dev/null ;;
    esac
    $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
+}
+
+gpdfreload () {
+   case "$1" in 
+     cursor) 
+       $VIEWCOMMAND --page-label=Start-Document "$WHIZZY.$VIEW" 2>/dev/null ;;
+     *) $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
+   esac
+   wmctrl -R emacs@arbois
 }
 
 wholereload () {
