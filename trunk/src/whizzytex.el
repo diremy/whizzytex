@@ -3125,7 +3125,7 @@ face \(type \\[list-faces-display] for a list of existing faces).")
 
 (unless (facep whizzy-error-face)
   (defface whizzy-error-face
-    '((((class color)) (:background "orange")))
+    '((((class color)) (:background "green")))
     "Face used for marking erros in in WhizzyTeX."
     :group 'whizzytex))
 

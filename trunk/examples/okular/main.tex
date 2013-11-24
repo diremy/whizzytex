@@ -115,15 +115,32 @@ automatically in pdf mode (if after loading the package \texttt{ifpdf},
 the command \verb"\ifpdf" is true). 
 
 
+\newcommand{\PAGE}[1][this text]{
+\newpage 
+ \section*{Foo}
 
-\section{Foo}
+This page will be display twice in exacly the same way---except the
+page and section numbers and  \textbf{#1}. 
 
-\subsection {Bar}
+\subsection* {Bar}
 
+This is filling the page with some text.
 
-\paragraph {Par}
+\subsection*{Gnus}
 
-And a paragraph.
+This is to see whether the effect of displaying similar pages, 
+which gives an idea of the best possible effect when reloading the document
+}
+
+\PAGE
+\PAGE[that text]
+\PAGE[that tex]
+\PAGE[that t]
+\PAGE[that]
+\PAGE[that's]
+\PAGE[that's a]
+\PAGE[that's al]
+\PAGE[that's all]
 
 
 \end{document}   

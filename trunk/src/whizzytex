@@ -238,6 +238,12 @@ do
        esac
        case "$2" in
        .|xpdf|kpdf|gpdf|noviewer|"") ;;
+       llpp)
+         SIGPDF=SIGHUP
+         LATEX="$PDFLATEX -synctex=1"
+         VIEWCOMMAND="llpp -wtmode -dest Start-Document"
+         RELOAD=sigreload
+         ;;
        *) warning "Use an xpdf like viewwer, or redefine RELOAD."
           VIEWCOMMAND="$2";;
        esac
