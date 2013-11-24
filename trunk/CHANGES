@@ -3,6 +3,9 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+* replaced goto-line by whizzy-goto-line to avoid setting the mark.
+  [recommanded by Kevin Ryde]
+
 Shell-script: 
 
 * Fix the "okular" previewer mode.

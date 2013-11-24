@@ -175,6 +175,26 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
+   -skim)
+       LEVEL=1
+       DVI=pdf
+       VIEW=wpdf
+       NAVIGATION=false;
+       MULTIPLE=false;
+       INITEX="$PDFINITEX"
+       # Perhaps the following line should be added to backup to latex.fmt
+       # in case pdflatex.fmt does not exists. 
+       # if kpsewhich -format fmt -engine / fmt pdflatex
+       # could also be fixed in a local configuration file.
+       FORMAT="pdflatex"
+       DUPLEX=false
+       DVICOPY=pdfcopy
+       WRELOAD=falsexpdfreload
+       MODE=kpdf
+       LATEX="$PDFLATEX -synctex=1"
+       RELOAD=kpdfreload
+       VIEWCOMMAND=kpdfremote
+       ;;
    -pdf|-kpdf|-gpdf|-nopdf)
        LEVEL=1
        DVI=pdf
@@ -364,6 +384,7 @@ The main commands are:
        exit                     exit
        nextslice                reload the slice and moves
        reslice                  reload the same slice, without moving
+       rmaux                    rm .aux files
 
 
 "
@@ -981,6 +1002,8 @@ do
 #       bash) bash -c "$REST";;
        help) help;;
        info) info;;
+       rmaux) 
+             rm $(WHIZZY).aux $(NAME).aux ;;
        trace)
           case $REST in
               on) set -o xtrace; TRACE=true;; 

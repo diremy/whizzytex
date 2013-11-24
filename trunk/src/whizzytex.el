@@ -1528,15 +1528,14 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
       )))
 
 (defun whizzy-suspend (&optional arg)
-  "Suspend or resume slicing in the current buffer.
+  "Suspend, slice once, or resume slicing in the current buffer.
 
-Suspend WhizzyTeX if `whizzytex-mode' is t and set it to 'suspended.
-Resume WhizzyTeX if `whizzytex-mode' is 'suspended and set it to t.
-Otherwise, it raises an error.
+If `whizzytex-mode' is t, then set it to 'suspended and suspend WhizzyTeX. 
 
-If ARG is 0 and mode is suspended, just slice once and leave mode suspended.
+If `whizzytex-mode' is 'suspended, just slice once if ARG is 1; 
+otherwise, resume WhizzyTeX and set mode to t. 
 
-This only stop slicing and does not kill WhizzyTeX.  It can be useful to do
+This only stops slicing and does not kill WhizzyTeX.  It can be useful to do
 a sequence of editing while slicing could be distracting or annoying."
   (interactive "p")
   (cond
@@ -1548,11 +1547,16 @@ a sequence of editing while slicing could be distracting or annoying."
     (force-mode-line-update)
     (setq whizzytex-mode 'suspended))
    ((equal whizzytex-mode 'suspended)
-    (if (= arg 0) (whizzy-observe-changes t t)
+    (cond
+     ((= arg 1)
+          (whizzy-observe-changes t t)
+          (whizzy-set-speed-string "Z")
+          (force-mode-line-update))
+     (t
       (add-hook 'post-command-hook 'whizzy-observe-changes t t)
       (whizzy-set-speed-string "?")
       (force-mode-line-update)
-      (setq whizzytex-mode t)))
+      (setq whizzytex-mode t))))
    (t
     (error "Unknown whizzytex-mode %S" whizzytex-mode)))
   )
@@ -1575,8 +1579,10 @@ interactively):
 
  1 (nil) ask the user
  4 (default) set load factor to default value 0.6
+ 9 (lowest) divide load factor by 2
  9 (lower) divide load factor by 2
  0 (higher) multiply load factor by 2
+ 0 (highest) multiply load factor by 2
 
 The function maintain values in the range of 0.1 - 10.
 Other can only be set assigned to `whizzy-load-factor' by hand."
@@ -1589,7 +1595,7 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
      ((equal p 16)
       (setq whizzy-load-factor 0.1))
      ((equal p 64)
-      (setq whizzy-load-factor 0.02))
+      (setq whizzy-load-factor 0.01))
      ((equal p 9)
       (setq whizzy-load-factor (max (/ whizzy-load-factor 2) 0.1)))
      ((equal p 2)
@@ -1597,7 +1603,7 @@ Other can only be set assigned to `whizzy-load-factor' by hand."
      ((equal p 0)
       (setq whizzy-load-factor 10.00))
      ((or (equal arg nil) (equal p 1))
-      (let ((table '(("slowest" . 64) ("lower" . 16) ("low" . 9)
+      (let ((table '(("lowest" . 64) ("lower" . 16) ("low" . 9)
                      ("default" . 4) ("higher" . 2) ("highest" . 0))))
         (whizzy-load-factor
          (or (cdr (assoc
@@ -3050,7 +3056,7 @@ Otherwise, output is kept as long as the window is visible
       (let ((here (point)))
         (unwind-protect
             (progn
-              (goto-line error-begin)
+              (whizzy-goto-line error-begin)
               (beginning-of-line)
               (setq error-begin (point))
               (end-of-line)
@@ -3175,7 +3181,7 @@ face \(type \\[list-faces-display] for a list of existing faces).")
             (words (match-string 5 arg)))
 
         (save-excursion
-          (goto-line line)
+          (whizzy-goto-line line)
           (if (or (<= (point) whizzy-last-slice-begin)
                   (>= (point) whizzy-last-slice-end))
               nil
@@ -3405,16 +3411,22 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
     ))
  
 
-(defun whizzy-default-goto-line-hook ()
+(defun whizzy-goto-line (line)
+  (goto-char (point-min))
+  (forward-line (1- line)))
+
+
+(defun whizzy-default-goto-line-string-hook ()
   (raise-frame)
   (x-focus-frame nil)
 )  
 
-(defvar whizzy-goto-line-hook 'whizzy-default-goto-line-hook
+
+(defvar whizzy-goto-line-string-hook 'whizzy-default-goto-line-hook
   "*Hook run after `goto-line' is executed (except if for moving pages)."
 )
 
-(defun whizzy-goto-line (s)
+(defun whizzy-goto-line-string (s)
   (if (string-match
 "\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)"
        s)
@@ -3462,8 +3474,8 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
                )
             (cond
              ((> last 0)
-              (goto-line line) (beginning-of-line) (setq bound (point))
-              (goto-line last) (end-of-line)
+              (whizzy-goto-line line) (beginning-of-line) (setq bound (point))
+              (whizzy-goto-line last) (end-of-line)
               (cond
                ((or (re-search-backward context bound t)
                     (re-search-backward left-context bound t)
@@ -3486,8 +3498,8 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
                ))
              ((> line 0)
               (if (= last 0) (setq bound (point-max))
-                (goto-line last) (end-of-line) (setq bound (point)))
-              (goto-line line) (beginning-of-line)
+                (whizzy-goto-line last) (end-of-line) (setq bound (point)))
+              (whizzy-goto-line line) (beginning-of-line)
               (if (not (re-search-forward word bound t))
                   (goto-char here)
                 (goto-char (match-end 1)))
@@ -3495,7 +3507,7 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
              (t (setq moved nil)))
             (whizzy-observe-changes)
             ;; suggested changes by Par  Kurlberg
-            ;; (if moved (run-hooks whizzy-goto-line-hook))
+            ;; (if moved (run-hooks whizzy-goto-line-string-hook))
             )))
         )))
 
@@ -3512,7 +3524,7 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
         (if (string-match "_whizzy_\\(.*\\)" file)
             (setq file (match-string 1 file)))
         (and (whizzy-goto-file file)
-             (goto-line line)
+             (whizzy-goto-line line)
              (forward-char col))
         (whizzy-observe-changes)
         )))
@@ -3595,7 +3607,7 @@ Log file name is obtain from suffix by removing leading character."
     (save-window-excursion
       (save-excursion
         (and (whizzy-goto-file file)
-             (prog1 (goto-line (string-to-number line))
+             (prog1 (whizzy-goto-line (string-to-number line))
                (end-of-line))
              (or (re-search-backward regexp (point-min) t)
                  (re-search-forward regexp (point-max) t))
@@ -3686,7 +3698,7 @@ Log file name is obtain from suffix by removing leading character."
           )
 
          ((string-match "^\#line \\([0-9][0-9]*\\)" command)
-          (whizzy-goto-line s)
+          (whizzy-goto-line-string s)
           )
 
          ((string-match "^\#position \\([0-9][0-9]*\\)" command)
