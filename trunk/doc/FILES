@@ -1,11 +1,8 @@
-doc/caml.eps
 doc/Makefile
+doc/caml.eps
 doc/manual.sty
 doc/manual.tex
 doc/version.tex
-doc/whizzytex001.gif
-doc/whizzytex002.gif
-doc/whizzytex003.gif
 doc/whizzytex.dvi
 doc/whizzytex.html
 doc/whizzytex.info
@@ -13,3 +10,6 @@ doc/whizzytex.info-1
 doc/whizzytex.info-2
 doc/whizzytex.pdf
 doc/whizzytex.ps
+doc/whizzytex001.gif
+doc/whizzytex002.gif
+doc/whizzytex003.gif

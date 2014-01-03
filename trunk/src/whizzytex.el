@@ -1,9 +1,10 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
-;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011 INRIA.
+;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.2
+;; Version        : 1.3.3
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -60,7 +61,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.2"
+(defconst whizzytex-version "1.3.3"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -290,7 +291,7 @@ not according to the value of this variable."
     (cons 'ocaml "^([*]")
     )
    (mapcar
-    '(lambda (a) (cons (car a) (concat whizzy-mode-regexp-prefix (cdr a))))
+    #'(lambda (a) (cons (car a) (concat whizzy-mode-regexp-prefix (cdr a))))
    '(
      (letter .  "\\\\begin{letter}")
      (slide . "\\\\\\(overlays *{?[0-9*]+}? *{[% \t\n]*\\\\\\)?\\(begin *{slide.*}\\|newslide\\|Slide\\b\\)[^\n]*")
@@ -357,7 +358,7 @@ persistent, and hidden when the error disapears.")
   (if milliseconds
       (setq seconds (+ seconds (/ milliseconds 1000))
             milliseconds (mod milliseconds 1000)))
-  (sit-for seconds milliseconds display))
+  (sit-for seconds display))
 ;; this form is obsolete, but still supported
 
 
@@ -671,14 +672,14 @@ where S0 is chapter, S1 is section, etc.
 Entries are sorted per source-file and set to the whizzy variable
 `whizzy-counters'."
   (if (or (whizzy-get whizzy-counters) arg)
-      (save-excursion
-        (set-buffer (whizzy-get whizzy-master-buffer))
+      ;; (save-excursion (set-buffer (whizzy-get whizzy-master-buffer))
+      (with-current-buffer (whizzy-get whizzy-master-buffer)
         (let* ((filename (concat (whizzy-get whizzy-dir)
                                  (whizzy-get whizzy-basename) ".pag"))
                (tmp) (list) (all) (elem) (last))
           (if (file-exists-p filename)
-              (save-excursion
-                (set-buffer (get-buffer-create "*load*"))
+              ;; (save-excursion (set-buffer (get-buffer-create "*load*"))
+              (with-current-buffer (get-buffer-create "*load*")
                 (insert-file-contents filename)
                 (while
                     (re-search-forward
@@ -711,7 +712,7 @@ Entries are sorted per source-file and set to the whizzy variable
                 (erase-buffer))
             (message "File %s not found" filename))
           ;; (setq all (nreverse all))
-          (setq all (sort all '(lambda (a b) (string< (car a) (car b)))))
+          (setq all (sort all #'(lambda (a b) (string< (car a) (car b)))))
           ;; building two-level association list. 
           (while all
             (setq elem (caar all))
@@ -732,8 +733,8 @@ Entries are sorted per source-file and set to the whizzy variable
   (let ((buf (concat "*" (buffer-name) "*"))
         (status whizzy-status))
     (if (get-buffer buf)
-        (save-excursion
-          (set-buffer buf)
+        ;; (save-excursion (set-buffer buf)
+        (with-current-buffer buf
           (erase-buffer)
           (setq whizzy-status status)
           (whizzy-set whizzy-initialized nil)
@@ -751,8 +752,8 @@ Entries are sorted per source-file and set to the whizzy variable
                      whizzy-command-name nil args))
     (whizzy-set whizzy-process-buffer buf)
     (whizzy-set whizzy-process (get-buffer-process buf))
-    (save-excursion
-      (set-buffer buf)
+    ;; (save-excursion (set-buffer buf)
+    (with-current-buffer buf
       (setq whizzy-status status)
       (make-local-variable 'comint-output-filter-functions)
       (setq comint-output-filter-functions
@@ -1171,7 +1172,7 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
 (defvar whizzy-temp-for-revert-buffer nil)
 (defun whizzy-before-revert ()
   (setq whizzy-temp-for-revert-buffer
-        (mapcar '(lambda (atom) (cons atom (symbol-value atom)))
+        (mapcar #'(lambda (atom) (cons atom (symbol-value atom)))
                 whizzy-local-variables))
   (setq whizzytex-mode nil)
   (setq whizzy-status nil)
@@ -1185,7 +1186,7 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
 (defun whizzy-after-revert ()
   (unless (null whizzy-temp-for-revert-buffer)
     (remove-hook 'after-revert-hook 'whizzy-after-revert t) 
-    (mapc '(lambda (elem) (set (car elem) (cdr elem)))
+    (mapc #'(lambda (elem) (set (car elem) (cdr elem)))
             whizzy-temp-for-revert-buffer)
     (setq whizzy-temp-for-revert-buffer nil)
     (add-hook 'before-revert-hook 'whizzy-before-revert t t)
@@ -1964,7 +1965,7 @@ These can be defined with `whizzy-add-configuration'.
 
 (defun whizzy-run-file-hooks ()
   (let ((f (cdr (whizzy-assoc-if
-                 '(lambda (r) (string-match r (buffer-file-name)))
+                 #'(lambda (r) (string-match r (buffer-file-name)))
                  whizzy-hook-alist))))
     (if f (apply f nil))))
 
@@ -2106,7 +2107,9 @@ If ARG turn mode off even if apparently allready off.
       (if (and (equal arg 'master) (whizzy-get whizzy-running))
           (let ((master (whizzy-get whizzy-master-buffer)))
             (if (buffer-live-p master)
-                (save-excursion (set-buffer master) (whizzy-mode-off))))
+                ;; (save-excursion (set-buffer master)
+                (with-current-buffer master 
+                  (whizzy-mode-off))))
         (if (not (or whizzytex-mode arg)) nil
           (remove-hook  'post-command-hook 'whizzy-observe-changes t)
           (remove-hook  'after-save-hook 'whizzy-after-save t)
@@ -2122,8 +2125,9 @@ If ARG turn mode off even if apparently allready off.
             (let ((buffers (whizzy-get whizzy-slaves)))
               (while buffers
                 (if (buffer-live-p (car buffers))
-                    (save-excursion
-                      (set-buffer (car buffers)) (whizzy-mode-off)))
+                    ;; (save-excursion (set-buffer (car buffers))
+                    (with-current-buffer (car buffers)
+                      (whizzy-mode-off)))
                 (setq buffers (cdr buffers)))
               (whizzy-set whizzy-slaves nil)))
           (setq whizzytex-mode nil)
@@ -2271,7 +2275,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
            (concat
             "Slicing mode ``" mode-string
             "'' is not valid. Use: "
-            (mapconcat '(lambda (e) (symbol-name (car e)))
+            (mapconcat #'(lambda (e) (symbol-name (car e)))
                        whizzy-mode-regexp-alist ", ")))
           )
       (setq mode (whizzy-auto-mode)))
@@ -2722,7 +2726,7 @@ a CONS means read configuration in current directory unless already read.
            (append
             (if whizzy-configuration-alist nil
               (mapcar
-               '(lambda (f) (concat f "/whizzy.el"))
+               #'(lambda (f) (concat f "/whizzy.el"))
                (if (stringp whizzy-configuration-path)
                    (list whizzy-configuration-path)
                  whizzy-configuration-path)))
@@ -2744,15 +2748,14 @@ a CONS means read configuration in current directory unless already read.
           (looking-at "\\([^\n]+[^ \n]\\) *\n")
           (match-string 1)))
    (cdr (whizzy-assoc-if
-         '(lambda (a) (string-match regexp (symbol-name a)))
+         #'(lambda (a) (string-match regexp (symbol-name a)))
          ;; local-variable-p takes two arguments in xemacs
          (if (local-variable-p 'whizzy-configuration (current-buffer))
              (cdr whizzy-configuration)
            ;; (whizzy-load-configuration)
            (cdr (setq whizzy-configuration
                       (whizzy-assoc-if
-                       '(lambda (a)
-                          (string-match a buffer-file-name))
+                       #'(lambda (a) (string-match a buffer-file-name))
                        whizzy-configuration-alist)))
            )))
    ))
@@ -2772,7 +2775,7 @@ a CONS means read configuration in current directory unless already read.
   (while (and from to (equal (car from) (car to)))
     (setq from (cdr from))
     (setq to (cdr to)))
-  (concat (mapconcat '(lambda (x) "../") (cdr from) nil)
+  (concat (mapconcat #'(lambda (x) "../") (cdr from) nil)
           (mapconcat 'identity to "/")))
 
 
@@ -3371,8 +3374,8 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
                          (y-or-n-p (format "Visit file %s? " fullname)))
                     whizzy-auto-visit)
                 (if (setq dest-buffer (find-file-noselect fullname))
-                    (save-excursion
-                      (set-buffer dest-buffer)
+                    ;; (save-excursion (set-buffer dest-buffer)
+                    (with-current-buffer dest-buffer
                       (setq whizzy-status status)
                       (setq whizzy-slave t)
                       t)
@@ -4315,7 +4318,7 @@ Does nothing if there is no current local map."
     (unless
         ;; do nothing if there is no local map
         (not (keymapp map)) 
-      (mapc '(lambda (b) (if b (define-key map (car b) (cdr b))))
+      (mapc #'(lambda (b) (if b (define-key map (car b) (cdr b))))
               (eval whizzy-key-bindings))
       (if whizzy-xemacsp
           (progn

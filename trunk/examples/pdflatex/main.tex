@@ -1,4 +1,4 @@
-%; whizzy  -pdf llpp
+%; whizzy -pdf xpdf
 
 % Note that the above line is not active if you have a file whizzy.sh
 % Unless you set whizzy-configuration-path to nil or a string
@@ -6,14 +6,15 @@
 \documentclass{article}
 
 %% \PassOptionsToPackage{pdftex}{hyperref}
-\RequirePackage{hyperref}
 
+\usepackage[ignore]{advi}
+\usepackage{hyperref}
 
 \begin{document}
 
 \section{First section}
 
-There should be hyperlirnks for pages to follow the cursor. 
+There should be hyperlinks for pages to follow the cursor. 
 
 \tableofcontents
 

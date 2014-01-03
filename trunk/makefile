@@ -4,11 +4,10 @@ TEX=$(HOME)/lib/tex
 # Stable version
 RELEASE=1.3.1
 # Current version
-VERSION=1.3.2
+VERSION=1.3.3
 # rpm release version
 Release=1
 # YAP version -- independant versionning. 
-# YAPVERSION=1.3.2.0
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
@@ -55,10 +54,10 @@ whatelse:
 pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
 doc/version.tex: RELEASE VERSION
-	(echo '\\def\\release{'`cat RELEASE`'}' ; \
-	 echo '\\def\\Release{'$(Release)'}' ; \
-	 echo '\\def\\version{'`cat VERSION`'}' ; \
-	 echo '\\def\\YAPVERSION{'$(YAPVERSION)'}' ) > $@
+	(echo '\def\release{'`cat RELEASE`'}' ; \
+	 echo '\def\Release{'$(Release)'}' ; \
+	 echo '\def\version{'`cat VERSION`'}' ; \
+	 echo '\def\YAPVERSION{'$(YAPVERSION)'}' ) > $@
 
 
 doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile
@@ -127,13 +126,14 @@ $(NAME).tgz: FILES makefile
 	tar zcvf $@ $(NAME)
 	rm -rf $(NAME)
 
+# grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' src/whizzytex.el
+
 $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	@echo ' --- Checking examples'
 	cd examples; make >/dev/null
 	@echo ' --- Checking src/whizzytex.el'
 	grep -e '^\((defvar whizzy-command-name "\)[^"]*\(".*\)$$' \
 	   src/whizzytex.el
-	# grep -e '^\( *\)\(("-advi[^)]*")\) *\(("-dvi[^)]*"\)) *$$' src/whizzytex.el
 	test X`sed -n -e \
 	        's/^(defconst whizzytex-version "\([^"]*\)" *$$/\1/p' \
 	  src/whizzytex.el` = X'$(VERSION)'	   
@@ -147,7 +147,7 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	    's/^\\\\def *\\\\whizzy@version *{\([^}]*\)} *$$/\1/p' \
 	  src/whizzytex.sty` = X'$(VERSION)'	   
 	@echo ' --- whizzytex.spec'
-	test X`sed -n -e 's/^Release:[ 	]*\([0-9]*\) *$$/\1/p' \
+	test X`sed -n -e 's/^Release:[ \t]*\([0-9]*\) *$$/\1/p' \
 	  whizzytex.spec` = X'$(Release)'	   
 	touch $@
 

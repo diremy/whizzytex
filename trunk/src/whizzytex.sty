@@ -1,9 +1,10 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
-%  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011 INRIA.
+%  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+%                INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.3.2
+%  Version        : 1.3.3
 %  Bug Reports    : whizzytex-bugs@inria.fr
 %  Web Site       : http://gallium.inria.fr/whizzytex
 % 
@@ -27,7 +28,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.3.2}
+\def \whizzy@version {1.3.3}
 %% The Church Boolean
 \newcommand{\Whizzytex}[2]{#1}
 
@@ -37,8 +38,8 @@
 
 %% Perhaps, setting the default driver to hypertex should not be done when 
 %% running pdflatex 
-\providecommand*{\Hy@defaultdriver}{hypertex}%
-\PassOptionsToPackage{hypertex}{hyperref}%
+%% \providecommand*{\Hy@defaultdriver}{hypertex}%
+%% \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
 
 
 
@@ -191,19 +192,35 @@
 
 %% OLD:  hyperref does not behave well when precompiled in a format
 
-\let \WhizzyNIL 0
-\let \WhizzyPDF 1
-\let \WhizzyDVI 2
-\providecommand{\WhizzyMode}{2}
+\def \WhizzyNIL {nil}
+\def \WhizzyPDF {pdf}
+\def \WhizzyDVI {dvi}
+
+\@ifundefined {WhizzyMode}
+  {}
+  {\message {[\string\WhizzyMode is preset to \WhizzyMode]}}
+  
+\def \WhizzyProvideMode #1%
+  {\@ifundefined {WhizzyMode}
+    {\let \WhizzyMode=#1\message {\string\WhizzyMode set to \WhizzyMode}}
+    {}}
+
+\@ifundefined {pdfoutput}
+   {\WhizzyProvideMode \WhizzyDVI}
+   {\ifnum \pdfoutput=0 
+        \WhizzyProvideMode \WhizzyDVI\else
+     \WhizzyProvideMode \WhizzyPDF\fi}
 
 \ifx \WhizzyMode \WhizzyPDF
-  \providecommand*{\Hy@defaultdriver}{hpdftex}%
-  \PassOptionsToPackage{pdftex}{hyperref}%
+  \providecommand* {\Hy@defaultdriver}{pdftex}%
+  \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
   \RequirePackage{hyperref}%
 \else
-  \providecommand*{\Hy@defaultdriver}{hypertex}%
-  \PassOptionsToPackage{hypertex}{hyperref}%
+  \providecommand* {\Hy@defaultdriver}{hypertex}%
+  \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
 \fi
+
+\message {[Default hyperref driver is set to \Hy@defaultdriver]}
 
 %% To be investigated
 %% Too late + does not work even if passed before \documentclass. 

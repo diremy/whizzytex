@@ -1,2 +1,5 @@
+%% \providecommand*{\Hy@defaultdriver}{pdftex}%
 % \PassOptionsToPackage{pdftex}{hyperref}
 % \RequirePackage{hyperref}
+
+\message {\meaning \Hy@defaultdriver}

@@ -1,6 +1,6 @@
 Summary: 	Emacs minor mode for incremental viewing of LaTeX documents.
 Name: 		whizzytex
-Version: 	1.3.2
+Version: 	1.3.3
 Release: 	1
 License: 	GPL
 Group: 		Applications/Editors
