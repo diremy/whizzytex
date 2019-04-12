@@ -144,7 +144,7 @@ $$
 \adviedit{x=-4.6935,y=1.8635,h=0.6052,w=1.0700}{\ov[0.2]}%
 \adviedit{x=-1.3243,y=1.8767,h=0.5062,w=0.8299}{\ov[0.2]}%
 }%
-\adviedit{x=3.9626,y=7.5836,h=1.2277,w=6.5467}{\ov}%
+\adviedit{x=3.9626,y=7.5836,h=1.1661,w=6.1767}{\ov}%
 \adviedit{x=1.4389,y=-4.3766,h=3.1945,w=4.0175}{\ov}%
 \adviedit{x=-6.1000,y=-4.5374,h=2.7535,w=4.0984}{\ov
 \adviedit{x=-2.5889,y=-0.5650,h=0.6052,W=1}{\ov[0.2]}%
@@ -172,7 +172,7 @@ Be careful, A Camel may hide another one\ldots.
 \setedit{unit=0.2\adviw}%
 %%To place and resize each Caml independently, using the same unit.
 \adviedit{x=3.8210,y=-1.0322,w=-0.5217,h=0.8348}{\caml}%
-\adviedit{x=7.1190,y=-1.3109,w=-1.1080,h=1.0374}{\caml}%
+\adviedit{x=7.5576,y=-1.1530,w=-1.0729,h=1.1427}{\caml}%
 \adviedit{x=1.1410,y=-0.9226,w=1.1661,h}{\caml}%e
 \adviedit{x=0.1042,y=-1.4842,w=1.4992,h=1.3165}{\caml}%
 \adviedit{x=1.4824,y=-1.4802,w=1.5068,h=1.3165}{\caml}%
@@ -190,16 +190,16 @@ Chossing a color:
 \medskip
 {\setedit{unit=\hsize}%
  \vbox{%
- \hbox{R: \adviedit[R]{w=0.4678}{\xdef\R{\advicw}\hfil}}%
- \hbox{G: \adviedit[G]{w=0.2576}{\xdef\G{\advicw}}}%
- \hbox{B: \adviedit[B]{w=0.5671}{\xdef\B{\advicw}}}%
+ \hbox{R: \adviedit[R]{w=0.0493}{\xdef\R{\advicw}\hfil}}%
+ \hbox{G: \adviedit[G]{w=0.5557}{\xdef\G{\advicw}}}%
+ \hbox{B: \adviedit[B]{w=0.3170}{\xdef\B{\advicw}}}%
  \colorbox[rgb]{\R,\G,\B}{\strut \qquad\qquad}
 }
 
 \vspace{8em}
 
 \qquad 
-\weditbubble{w=10.5823,h=1.7234}
+\weditbubble{w=11.9079,h=1.5692}
 {\weditbubble{w=3.4823,h=2.3381}
             {\weditbubble{w=-0.4397,h=1.5079}{anchor}{first}}
             {second}}
@@ -211,7 +211,7 @@ Chossing a color:
 
 \section{Tabulars, minipages, etc.}
 
-\adviedit{w=1.9409}{%
+\adviedit{w=4.0988}{%
 \begin{minipage}{\adviw}
 aaa ahjhk hjk
 \end{minipage}}
@@ -228,7 +228,7 @@ Bellow, the draw dimension is the external width of the tabular
 and not the column width...
 que l'on re`gle
 $$
-\adviedit{w=14.6107}{%
+\adviedit{w=11.8363}{%
 \begin{tabular}{lp{\adviw}r}
 aaa &  bbb & ccc\\
 \end{tabular}}
@@ -238,7 +238,7 @@ Unfortunately, the only kown nice fix is to use a command inside...
 $$
 %Define first line
 \newbox \bar 
-\setbox\bar =\hbox{\adviedit{w=7.0083}{%
+\setbox\bar =\hbox{\adviedit{w=8.9812}{%
 \begin{minipage}[t]{\adviw}
 aaa ahjhk hjk
 \end{minipage}}}

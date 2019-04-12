@@ -3,18 +3,44 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
+- mupdf: added entry
+
 
 Shell-script: 
 
+- mupdf: new entry, with specific reloading command, rquires xdotool
 
 LaTeX macros:
+
+- mupdf: dump page info in _whizzy_NAME.mark when cursor mark is inserted
+- Fixed preloading of fonts by deactivating line info on *.fd files.
 
 
 Installation/Documentation:
 
 
-SINCE LAST RELEASE:
-===================
+SINCE LAST MAJOR RELEASE:
+=========================
+
+Emacs-mode:
+
+ - version 1.3.4
+ * fix enumiio <- enumiii
+ * changed \rm and \bf for \rmfamily and \bfseries
+
+Shell-script: 
+
+ - version 1.3.4
+
+LaTeX macros:
+
+ - version 1.3.4
+
+Installation/Documentation:
+
+
+OLDER CHANGES:
+==============
 
 Emacs-mode:
 
@@ -27,49 +53,6 @@ Emacs-mode:
  * Added cursor argument to reslice when the cursor is displayed
  * Small changes in whizzy-show-point (under mark, in commands).
  * comint-output-filter-functions made buffer-local in the process windows
-
-Shell-script: 
-
- - version 1.3.2
- * Fixed driver setting
- * Fixed the "okular" previewer mode.
- * Added a "noviewer" predefined viewer for either dvi or pdf modes. 
- - version 1.3.2
- * Do not change page in xpdf reloading when cursor position is not available
- * Changed <viewlog> to <viewtexlog> because fo strange interaction with emacs
- * pdf mode now calls -reload only when the cursor is not displayed. 
- * pdf mode changes latex to pdflatex format
- * Added PDF* shell variables to preconfigurate whizzytex for pdflatex
- * Postdate slice for use in xpdf mode
- * Pass output mode (dvi or pdf) to latex
- * Added quotes in "$INPUT/view.$$" to allow white spaces  in DIRS
- * Wrapped dvicopy to make it atomic.
-
-LaTeX macros:
-
- - version 1.3.2
- * Fixed driver setting
- - version 1.3.2
- * Desactivated \refstepcounter when changed (cleveref package). Temporary fix.
- * Added \AtEndPreloadaux hook run after preloading of aux files
- * Takes output mode (dvi or pdf) from shell-script
- * Automatically load hyperref in pdflatex mode
- * Pass pdftex driver to hyperref in pdflatex mode
- * inhibited adjustment of enumi* counters
-
-Installation/Documentation:
-
- - version 1.3.2
- * Fix the example and documentation for use with Okular PDF previewer. 
- - version 1.3.2
- * Some macros for compatibility with XEamcs and version 22.
- * Documentation for whizzy-point-face.
-
-OLDER CHANGES:
-==============
-
-Emacs-mode:
-
  - version 1.3.1
  * fixed some quotes in configuration script.
  * added \jobname.wel configuration file 
@@ -161,6 +144,20 @@ Emacs-mode:
 
 Shell-script: 
 
+ - version 1.3.3
+ * Fixed driver setting
+ * Fixed the "okular" previewer mode.
+ * Added a "noviewer" predefined viewer for either dvi or pdf modes. 
+ - version 1.3.2
+ * Do not change page in xpdf reloading when cursor position is not available
+ * Changed <viewlog> to <viewtexlog> because fo strange interaction with emacs
+ * pdf mode now calls -reload only when the cursor is not displayed. 
+ * pdf mode changes latex to pdflatex format
+ * Added PDF* shell variables to preconfigurate whizzytex for pdflatex
+ * Postdate slice for use in xpdf mode
+ * Pass output mode (dvi or pdf) to latex
+ * Added quotes in "$INPUT/view.$$" to allow white spaces  in DIRS
+ * Wrapped dvicopy to make it atomic.
  - version 1.3.1
  * fixed some quotes in configuration script.
  * added \jobname.wsh configuration file 
@@ -210,6 +207,14 @@ Shell-script:
 
 LaTeX macros:
 
+ * Fixed driver setting
+ - version 1.3.2
+ * Desactivated \refstepcounter when changed (cleveref package). Temporary fix.
+ * Added \AtEndPreloadaux hook run after preloading of aux files
+ * Takes output mode (dvi or pdf) from shell-script
+ * Automatically load hyperref in pdflatex mode
+ * Pass pdftex driver to hyperref in pdflatex mode
+ * inhibited adjustment of enumi* counters
  - version 1.3.0
  * Fix \label to work with hyperref...
  * Experimental auto-adjustment of counters (using \label).
@@ -239,6 +244,11 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ - version 1.3.3
+ * Fix the example and documentation for use with Okular PDF previewer. 
+ - version 1.3.2
+ * Some macros for compatibility with XEamcs and version 22.
+ * Documentation for whizzy-point-face.
  - version 1.3.1
  * fixed some quotes in configuration script.
  * added \jobname.wsty configuration file 

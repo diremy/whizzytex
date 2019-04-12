@@ -2,10 +2,11 @@
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+#                2015, 2016.
 #                INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.3.3
+#  Version        : 1.3.4
 #  Bug Reports    : whizzytex-bugs@inria.fr
 #  Web Site       : http://gallium.inria.fr/whizzytex
 #  
@@ -79,6 +80,7 @@ SIGINPUTDVI=SIGUSR2
 SIGINPUT=SIGCONT
 SIGPS=SIGHUP
 SIGPDF=SIGCONT
+SIGMUPDF=SIGHUP
 
 # Option to read command, could be use to send timeout, in case, whizzytex 
 # should watch other files that those controlled by emacs
@@ -86,6 +88,10 @@ SIGPDF=SIGCONT
 READOPTION=
 
 ### End of configuration variables
+
+### Environnment for sed to work properly
+export LC_TYPE=C
+export LANG=C
 
 TRACE=false
 
@@ -176,7 +182,7 @@ do
        *) VIEWCOMMAND="$2";;
        esac
        shift;;
-   -pdf|-kpdf|-gpdf|-nopdf)
+   -pdf|-kpdf|-gpdf|-nopdf|-skim|-mupdf)
        LEVEL=1
        DVI=pdf
        VIEW=wpdf
@@ -216,6 +222,13 @@ do
                RELOAD=true
                VIEWCOMMAND=noviewer
                ;;
+           -mupdf)
+               MODE=pdf
+               LATEX="$PDFLATEX"
+               SIGPDF=SIGHUP
+               RELOAD=mupdfreload
+               VIEWCOMMAND=mupdf
+               ;;
        esac
        case "$2" in
        .|xpdf|kpdf|gpdf|noviewer|"") ;;
@@ -228,10 +241,10 @@ do
         skim)
           MODE=skim
           LATEX="$PDFLATEX -synctex=1"
-          RELOAD=true
-          VIEWCOMMAND=skim
+          RELOAD=skimreload
+          VIEWCOMMAND=Skim
           ;;
-       *) warning "Use an xpdf like viewwer, or redefine RELOAD."
+       *) warning "Use an xpdf like viewer, or redefine RELOAD."
           VIEWCOMMAND="$2";;
        esac
        shift
@@ -319,6 +332,7 @@ WHIZZYDIR=${WHIZZY}_d
 WFORMAT="&$WHIZZY"
 LOCK=.$WHIZZY$EXT
 SLICE=$WHIZZY.new
+WSYNCTEX=${WHIZZY}.synctex.gz
 
 # Be careful fullnames may contain a space.
 
@@ -346,6 +360,7 @@ echo "
         VIEW=$VIEW
         MODE=$MODE
         VIEWCOMMAND=$VIEWCOMMAND
+        RELOAD=$RELOAD
         LEVEL=$LEVEL
 
         BASENAME=$BASENAME
@@ -478,7 +493,7 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
 echo DVI=$DVI
 
 format () {
- ( runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+ ( echo runinitex \'"&$FORMAT"\' \'"$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}'\'; runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
 }
 
 #############################################################################
@@ -839,6 +854,16 @@ sendcommand () {
 sigreload () {
    kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
 }
+
+skimreload () {
+    if [ $WSYNCTEX -a ! $WSYNCTEX -ot $WHIZZY$EXT ]
+    then
+        gunzip -c $WSYNCTEX | sed -e '2,2 s/_whizzy_//' | \
+            gzip -c > $OUTPUT/$WSYNCTEX &&
+            mv $OUTPUT/$WSYNCTEX $WSYNCTEX
+    fi
+}
+
 xpdfreload () {
    case "$1" in curso) 
        $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document;;
@@ -860,6 +885,32 @@ gpdfreload () {
      *) $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
    esac
    wmctrl -R emacs@arbois
+}
+
+WINDOWID="unset"
+# Require xwinfo and xdotool
+mupdfreload () {
+    kill -$SIG $ID || fatal 'Previewer is not responding to signal' $SIG
+    case "$WINDOWID" in
+        unset)
+            WINDOWID=$(xwininfo -root -tree | grep "$NAME".wpdf)
+            case /$WINDOWID/ in
+                //) WINDOWID=none;;
+                *) WINDOWID=$(expr "$WINDOWID" : " *\([^ ]*\) *");;
+            esac
+            ;;
+    esac
+    case "$WINDOWID" in
+        unset|none) ;;
+        *)
+            if [ -f ${WHIZZY}.mark ]
+            then
+                PAGE=$(cat ${WHIZZY}.mark)
+                PAGE=$(expr "$PAGE" : ".*page=\([0-9]*\);")
+                xdotool type --window "$WINDOWID" "${PAGE}g" 2>/dev/null 
+            fi
+            ;;
+    esac
 }
 
 wholereload () {
@@ -996,7 +1047,7 @@ do
        help) help;;
        info) info;;
        rmaux) 
-             rm $(WHIZZY).aux $(NAME).aux ;;
+             rm ${WHIZZY}.aux ${NAME}.aux ;;
        trace)
           case $REST in
               on) set -o xtrace; TRACE=true;; 

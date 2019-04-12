@@ -1,10 +1,11 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
 %  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+%                2015, 2016.
 %                INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.3.3
+%  Version        : 1.3.4
 %  Bug Reports    : whizzytex-bugs@inria.fr
 %  Web Site       : http://gallium.inria.fr/whizzytex
 % 
@@ -28,7 +29,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.3.3}
+\def \whizzy@version {1.3.4}
 %% The Church Boolean
 \newcommand{\Whizzytex}[2]{#1}
 
@@ -198,7 +199,7 @@
 
 \@ifundefined {WhizzyMode}
   {}
-  {\message {[\string\WhizzyMode is preset to \WhizzyMode]}}
+  {\message {[\string\WhizzyMode\space is preset to \WhizzyMode]}}
   
 \def \WhizzyProvideMode #1%
   {\@ifundefined {WhizzyMode}
@@ -264,8 +265,8 @@
 {%\@ifundefined{slide}{}{\slide}%
 \par\noindent \ifwhizzy@advi \else \let \whizzy@fbox \fbox\fi
 \whizzy@fbox {\hsize=0.9\hsize\relax
-\vbox {\huge \bigskip \centering \bf Welcome to \WhizzyTeX!\\[0.5em]
-\large {\rm (version \whizzy@version)} \\[1em] 
+\vbox {\huge \bigskip \centering \bfseries Welcome to \WhizzyTeX!\\[0.5em]
+\large {\rmfamily (version \whizzy@version)} \\[1em] 
 \Large This is an empty slice \\[1em] 
 \LARGE Move forward or backward \\
 in the source document \\
@@ -317,6 +318,13 @@ to slice!\par \bigskip}}%
   {\@ifundefined {appendix}{}
      {\g@addto@macro \appendix {\whizzy@appendixtrue}}}
 
+\def \g@addbefore@macro #1#2{\begingroup
+        \edef \@hook {#2}\toks@ \expandafter {\@hook#1}\xdef
+        #1{\the \toks@}\endgroup}
+%% \def \whizzy@markon #1#2{%
+%%    \expandafter \g@addbefore@macro \csname section\endcsname
+%%         {\whizzy@mark {#2}}}
+%% \def \whizzy@markon #1#2{}
 \def \whizzy@markon #1#2{%
   \expandafter \let \expandafter \@do \csname #1\endcsname
   \expandafter \let \csname whizzy@#1\endcsname \@do
@@ -355,7 +363,7 @@ to slice!\par \bigskip}}%
 
 \def \whizzy@navigate@banner #1{%
    \par
-    \vbox {\Large \bf \par
+    \vbox {\Large \bfseries \par
     \whizzy@outputline {0}{\whizzy@local}%
     \ifx #1A\setbox 0\centerline {\lower 1em\hbox {\small Move-to}}%
     \ht0 0em \dp0 0em \box0\par
@@ -436,23 +444,34 @@ to slice!\par \bigskip}}%
 %% open groups around the \input to save the name of current file to reset
 %% it at the end. The function call just save the name over \input{...}
 
+\def \whizzy@pfd {.fd}
+\def \whizzy@undo@fd #1.fd#2\relax
+  {\def \@test{#2}\ifx \@test \whizzy@pfd \let \@do \relax\fi}
+
 \def \whizzy@input #1#2#3{%
    \IfFileExists{#3}
       {\whizzy@setnorm{#3}%
        %% To be fix: \whizzy@curfile may be have an extension
        %% Problem when input is called for loading stmaryrd/Ustmry.fd font
        %% This occurs when \string \def expands to def
-       %% Current fix is to force \input{Ustmry.fd} before \beging{document}
-       %% \expandafter \ifnum \the\catcode `\\=0 
-       \immediate \write \@mainaux 
+       %% Previous fix was to force \input{Ustmry.fd} before \beging{document}
+       %% New fix is don't do it when \the\catcode `\\ is non 0
+       %% The following need to be in a group so that \immediate is not
+       %% evaluated  \ifnum \immediate \write... \fi does not seem to work
+       %% \expandafter \ifnum \the\catcode `\\=0 \@do \fi neither
+       %% Instead, we check whether the \whizzy@curfile ends with .fd
+       \def \@do
+         {\immediate \write \@mainaux 
            {\string \expandafter \string \gdef
              \string \csname \space whizzy@\whizzy@curfile @\string \endcsname%
                {\the\c@page.\@ifundefined{c@chapter}{}{\the\c@chapter.}%
                 \@ifundefined{c@section}{}%
                     {\the\c@section.\the\c@subsection.}}}%
            % could be removed if unsafe
-          \whizzy@outputline {1}{\whizzy@curfile}%
-       %% \fi
+          \whizzy@outputline {1}{\whizzy@curfile}}%
+       \expandafter \whizzy@undo@fd \whizzy@curfile.fd\relax \@do
+       %% does not work:
+       %% \
       }{}%
     #2{#3}%
     \ifwhizzy@advi \expandafter \whizzy@reposition #1\fi
@@ -483,7 +502,7 @@ to slice!\par \bigskip}}%
 \newif \ifWhizzyShowMaster \WhizzyShowMastertrue
 \def \whizzy@master@banner {\ifWhizzyShowMaster
   \whizzy@banner {\noindent
-     {\LARGE\bf \whizzy@fill\space
+     {\LARGE\bfseries \whizzy@fill\space
        Mastered by \whizzy@master\space \whizzy@fill}}\fi}
 \def \whizzy@outputmaster {\whizzy@master@banner}
 \def \whizzy@master@end{\ifWhizzyShowMaster 
@@ -647,6 +666,14 @@ to slice!\par \bigskip}}%
 
 \def \whizzy@start@here
    {\whizzy@putlink{Start-Document}%
+    %% To produce info for starting at the right page
+    \newwrite \whizzy@outmark
+    \immediate \openout \whizzy@outmark \jobname.mark\relax
+    \immediate \write \whizzy@outmark 
+        {Start-Document: file=\whizzy@curfile;\space
+                         line=\whizzy@line->\the\whizzy@count;\space
+                         page=\the\c@page;\space End}%
+    \immediate \closeout \whizzy@outmark
     \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
                \whizzy@curfile]}%
     \whizzy@makelineno
@@ -970,7 +997,7 @@ to slice!\par \bigskip}}%
 %%% Anyway, it does not seem useful to adjust those. 
 \whizzy@noadjust{enumi}
 \whizzy@noadjust{enumii}
-\whizzy@noadjust{enumiio}
+\whizzy@noadjust{enumiii}
 \whizzy@noadjust{enumiv}
 
 %% Just comment this line to deactivate this feature completely

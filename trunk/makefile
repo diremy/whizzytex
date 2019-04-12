@@ -1,4 +1,5 @@
 SHELL=bash
+LANG=C
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 # Stable version
@@ -117,7 +118,7 @@ FILES: $(TARFILES) doc/FILES makefile
 	touch VERSION $(TAG)
 	make smallclean
 	(echo FILES; echo $(TAG); \
-	 tar zcvf /dev/null $(TARFILES) $(shell cat doc/FILES)) \
+	 tar zcvf - $(TARFILES) $(shell cat doc/FILES) | tar -tf -) \
 	  | grep -v CVS | grep -v '/$$' > $@
 
 $(NAME).tgz: FILES makefile
@@ -147,7 +148,7 @@ $(PACKDIR)/checked: $(PACKDIR)/.exists $(SOURCES) $(NAME).tgz
 	    's/^\\\\def *\\\\whizzy@version *{\([^}]*\)} *$$/\1/p' \
 	  src/whizzytex.sty` = X'$(VERSION)'	   
 	@echo ' --- whizzytex.spec'
-	test X`sed -n -e 's/^Release:[ \t]*\([0-9]*\) *$$/\1/p' \
+	test X`sed -n -e 's/^Release:[[:space:]]*\([0-9]*\) *$$/\1/p' \
 	  whizzytex.spec` = X'$(Release)'	   
 	touch $@
 

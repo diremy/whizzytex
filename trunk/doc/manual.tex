@@ -899,16 +899,22 @@ This sets the Emacs variable \lst"whizzy-paragraph" to \texttt{regexp}.
 \subsection {Modes} 
 \label {modes}
 
-{\whizzy} recognizes three modes \lst"slide", \lst"section", and
-\lst"document".  
+{\whizzy} recognizes several modes,
+\lst"slide",
+\lst"section",
+\lst"subsection",
+\lst"paragraph",
+\lst"document", and
+\lst"node", described below.
+
 The mode determines the slice of the document being displayed and indirectly
-the frequently of slicing. 
+the frequency of slicing.
 
 Note that in any mode but \lst"none" slices are always included in the file
-beeing editing and files that it may include. Thus, when slice delimitors
-are not found, the slice default to the whole file. The slice may also be
-empty if the cursor is located before \lst"\begin{document}" or 
-after \lst"\end"\lst"{document}". 
+beeing editing or other files included.  When slice delimitors are not
+found, the slice default to the whole file. The slice may also be empty if
+the cursor is located before \lst"\begin{document}" or after
+\lst"\end"\lst"{document}".
 
 \begin{description}
 
@@ -946,7 +952,7 @@ when the file is a slave, which does not contain \lst"\begin{document}".
 In \lst"none" slicing mode, there is no sectioning unit at all and
 the whole document is recompiled altogether. 
 Currently, pages are not turned to point and the 
-cursor is not shown in \lst"document" mode, because full documents are not
+cursor is not shown as in \lst"document" mode, because full documents are not
 sliced. (A slicing document mode could be obtained by working in paragraph
 mode, with an appropriate regexp.)
 

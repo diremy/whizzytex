@@ -1,10 +1,11 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+;;               2015, 2016.
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.3
+;; Version        : 1.3.4
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -61,7 +62,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.3"
+(defconst whizzytex-version "1.3.4"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -111,8 +112,10 @@ default options.")
     ("-nodvi" "noviewer") 
     ("-ps" "gv")
     ("-pdf" "xpdf")
+    ("-skim" "Skim")
     ("-kpdf" "kpdf")
     ("-gpdf" "gpdf")
+    ("-mupdf" "mupdf")
     ("-nopdf" "noviewer")
    )
   "*Alist defining accepted previewers and their default configuration.
@@ -466,7 +469,7 @@ Each buffer where whizzytex is active contains a non nil value.
 Values of the vector are shared between all buffers contributing to the same 
 document.  
 
-These fiels are internal and should never be set the user, nor read, 
+These fiels are internal and should never be set by the user, nor read, 
 unless for debugging purposes. Fields are: 
 
  `whizzy-running' `whizzy-process' `whizzy-process-window'
@@ -479,6 +482,10 @@ unless for debugging purposes. Fields are:
 
 Fields can be read with `whizzy-get' (and set with `whizzy-set'). 
 ")
+
+(defvar whizzy-master-buffers nil
+   "*List of possibly running whizzytex master buffers")
+  
 (make-variable-buffer-local 'whizzy-status)
 (put 'whizzy-status 'permanent-local t)
 
@@ -728,6 +735,18 @@ Entries are sorted per source-file and set to the whizzy variable
           ))))
 
 ;; END of functions for maping source section headers to LaTeX counters.
+
+;; (defvar whizzy-slice-master nil)
+;; (make-variable-buffer-local 'whizzy-slice-master)
+
+;; (defun whizzy-master-slice ()
+;;   (let ((master (whizzy-get whizzy-master-buffer))
+;;         (slice (get-buffer )))
+;;     (message "%S-%S" master slice)
+;;     (if (and master slice)
+;;          (with-current-buffer slice
+;;            (setq whizzy-slice-master master))
+;;       )))
 
 (defun whizzy-start-process (args)
   (let ((buf (concat "*" (buffer-name) "*"))
@@ -1116,7 +1135,7 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
   (unless (or (< (point) from) (>= from to) (> (point) to))
     (if local
         (if (or whizzy-use-write-annotate
-                (not (functionp 'call-with-transparent-undo)))
+                (not (functionp 'atomic-change-group)))
             ;; we insert annotations on the fly
             (let ((write-region-annotate-functions
                    (cons 'whizzy-write-region-annotate
@@ -1134,16 +1153,15 @@ Calls `call-with-transparent-undo' which assumes version 21 or above.")
           (let ((insertions (whizzy-write-region-annotate from to))
                 (shift 0))
             (save-excursion 
-              (call-with-transparent-undo
-               (lambda ()
-                 (while (consp insertions)
-                   (goto-char (+ (caar insertions) shift))
-                   (insert (cdar insertions))
-                   (setq shift (- (point) (caar insertions)))
-                   (setq insertions (cdr insertions)))
-                 (write-region from (+ to shift) (whizzy-get whizzy-slicename)
-                               nil 'ignore)
-                 ))
+              (atomic-change-group
+                (while (consp insertions)
+                  (goto-char (+ (caar insertions) shift))
+                  (insert (cdar insertions))
+                  (setq shift (- (point) (caar insertions)))
+                  (setq insertions (cdr insertions)))
+                (write-region from (+ to shift) (whizzy-get whizzy-slicename)
+                              nil 'ignore)
+                )
               )))
       ;; there are no annotatinos
       (write-region from to (whizzy-get whizzy-slicename) nil 'ignore))
@@ -1310,7 +1328,7 @@ match those of the file")
 (defvar whizzy-slice-pages 0
   "*Recommended number of pages per slice.
 WhizzyTeX will try to extend the slice before and after the default slice
-to get that number of pages without exeeding it. It never reduces the default
+to get that number of pages without exceeding it. It never reduces the default
 slice, which can be changed by `whizzy-change-mode'.  
 In particular, a value of zero cancel this facility.
 
@@ -1913,7 +1931,9 @@ The following variables can be customized:
 
   (interactive "P")
   (and buffer-read-only
-       (not (y-or-n-p "Are you sure you wish to WhizzyTeX read only buffer? "))
+       (not (y-or-n-p
+             (format "Are you sure you wish to WhizzyTeX read only buffer %S? "
+                     (current-buffer))))
        (error "Aborted"))
   (let* ((prefix-arg (prefix-numeric-value arg))
          (new-mode (if (null arg) (not whizzytex-mode) (>  prefix-arg 0))))
@@ -1971,10 +1991,10 @@ These can be defined with `whizzy-add-configuration'.
 
 (defun whizzy-mode-on (&optional query)
   "See `whizzytex-mode' for meaning of QUERY"
-  (let ((case-fold-search) (mode-set))
+  (let ((case-fold-search) (mode-set) (new-status))
     (if whizzytex-mode nil
       (or whizzy-status
-          (setq whizzy-status (make-vector whizzy-length nil)))
+          (setq new-status (setq whizzy-status (make-vector whizzy-length nil))))
       (unwind-protect
           (if (not (whizzy-setup  (>= query 4)))
               (progn
@@ -2060,8 +2080,8 @@ These can be defined with `whizzy-add-configuration'.
                                     (list filename)
                                     )))
                   (whizzy-start-process args))
-                  (whizzy-set whizzy-running 0)
-                  )))
+                (whizzy-set whizzy-running 0)
+                )))
             (add-hook 'after-save-hook 'whizzy-after-save t t)
             (add-hook 'kill-buffer-hook 'whizzy-mode-off t t)
             (add-hook 'before-revert-hook 'whizzy-before-revert t t)
@@ -2091,7 +2111,9 @@ These can be defined with `whizzy-add-configuration'.
         (unless whizzytex-mode
           (whizzy-mode-off t))
         ;; did not even turn mode on. whizzy-status could be inconsistent.
-        (unless mode-set
+        (if mode-set
+            (let ((buf (whizzy-get whizzy-master-buffer)))
+              (if buf (add-to-list 'whizzy-master-buffers buf)))
           (setq whizzy-status nil))
         (force-mode-line-update)
         ))))
@@ -2319,11 +2341,12 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
      (string-match "\\([a-z]+ +\\)?-" string)
      (progn
        (setq start (- (match-end 0) 1))
-       (if (string-match "\\(-a?dvi\\|-nodvi\\|-ps\\|-pdf\\|-kpdf\\|-gpdf\\|-nopdf\\)\\b *" string start)
+       (if (string-match "\\(-a?dvi\\|-nodvi\\|-ps\\|-pdf\\|-kpdf\\|-gpdf\\|-nopdf\\|-skim\\|-mupdf\\)\\b *" string start)
            (progn
              (setq tmp-view (cons (match-string 1 string) tmp-view))
              (setq start (match-end 0)))
          (setq tmp-view (cons nil tmp-view)))
+       ;; (message "tmp-view: %S" tmp-view)
        (let ((options whizzy-command-options)
              (option) (argp) (tmp))
          (if (equal (string-match "[^-]" string start) start)
@@ -2482,11 +2505,18 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
 
 (defun whizzy-find-running-master ()
   "Find a master-buffer running whizzytex having the current-buffer for slave."
-  (let* ((all (buffer-list)) (filename buffer-file-name)
-         (sections) (dir) (found))
+  (let* ((all (buffer-list))
+         (filename buffer-file-name)
+         (directory (and filename (file-name-directory filename)))
+         sections running same-dir dir found buf)
     (save-excursion
       (while (and all (not found))
-        (set-buffer (car all))
+        (set-buffer (setq buf (car all)))
+        (if (and (whizzy-get whizzy-master-buffer) (member buf whizzy-master-buffers))
+            (progn
+              (setq running (cons buf running))
+              (if (and buffer-file-name (equal directory (file-name-directory buffer-file-name)))
+                  (setq same-dir (cons buf same-dir)))))
         (unless (or whizzy-slave (not (whizzy-get whizzy-running)))
           (setq dir (whizzy-get whizzy-dir))
           (setq sections (whizzy-get whizzy-counters))
@@ -2495,9 +2525,14 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
                  (expand-file-name (concat dir (caar sections)))
                  filename)
                 (setq found buffer-file-name))
-            (setq sections (cdr sections))))
+            (setq sections (cdr sections)))
+          )
         (setq all (cdr all)))
-      found)))
+      ;; (message "%S\n%S\n%S\n" found running same-dir)
+      (or found
+          (and (= (length same-dir) 1) (car same-dir))
+          (and (= (length running) 1) (car running)))
+      )))
           
 (defun whizzy-default-guess-master ()
   "Default function for variable `whizzy-guess-master'."
@@ -2528,10 +2563,19 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
              (string-match "\\./\\([^/]*\\)\\.log" filename))
          (match-string 1 filename)))
        )
-    (and
-     (or (file-exists-p (setq filename (concat basename ".tex")))
-         (file-exists-p (setq filename (concat basename ".ltx"))))
-     filename)))
+    (or
+     (and
+      (or (file-exists-p (setq filename (concat basename ".tex")))
+          (file-exists-p (setq filename (concat basename ".ltx"))))
+      filename)
+     (let ((files
+            (split-string 
+             (shell-command-to-string
+              "find . -depth 1 -name '[a-z]*.tex' \
+                -exec grep -l -E '^\\\\begin{document}' '{}' ';'")
+             "\n" t)))
+       (and files (null (cdr files)) (file-name-nondirectory (car files))))
+     )))
 
 (defvar whizzy-guess-master 'whizzy-default-guess-master
   "*Function to guess the master file name.
@@ -2566,8 +2610,9 @@ nil means do not guess.
                     (and (boundp 'TeX-master)
                          (stringp TeX-master)
                          (file-readable-p TeX-master)
+                         (not (file-directory-p TeX-master))
                          TeX-master)
-                    (whizzy-find-running-master)
+                    (with-temp-buffer (whizzy-find-running-master) buffer-file-name)
                     (let ((default
                             (and whizzy-guess-master
                                  (funcall whizzy-guess-master))))
@@ -3427,12 +3472,18 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
 
 (defvar whizzy-goto-line-string-hook 'whizzy-default-goto-line-hook
   "*Hook run after `goto-line' is executed (except if for moving pages)."
-)
+  )
+
+(defun whizzy-skip-font-info (str)
+  (let ((start 0))
+    (while (setq start (string-match "\\[[^]]*\\]" str start))
+      (setq str (replace-match "" nil nil str)))
+    str))
 
 (defun whizzy-goto-line-string (s)
-  (if (string-match
-"\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)"
-       s)
+  (if (string-match "\#line .*\\[[^]]*\\]" s)
+      (setq s (whizzy-skip-font-info s)))
+  (if (string-match "\#line \\([0-9]*\\), \\([0-9]+\\) \\(<<\\(.*\\)\\)?<<\\(.*\\)>><<\\([^>]*\\)>>\\(\\(.*\\)>>\\)? \\([^ \t\n]*\\)" s)
       (let ((line (string-to-number (match-string 1 s)))
             (last (string-to-number (match-string 2 s)))
             (left  (match-string 4 s))
