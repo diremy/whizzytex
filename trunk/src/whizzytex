@@ -43,8 +43,12 @@ DVICOPY=mv
 # Default LaTeX implementation
 MODE=dvi
 
+# Default LateX output dir
+WOUT=.
+
 INITEX="latex -ini"
 LATEX=latex
+OUTDIR="-output-directory="
 LATEXCOMMANDLINE=
 LATEXCOMMANDS=
 FORMAT=latex
@@ -321,6 +325,8 @@ do
   fi
 done
 
+# hereafter, configuration should not change
+
 # Selecting source file extension.
 
 case "$EXT" in
@@ -329,10 +335,17 @@ esac
 
 WHIZZY=_whizzy_$NAME
 WHIZZYDIR=${WHIZZY}_d
-WFORMAT="&$WHIZZY"
-LOCK=.$WHIZZY$EXT
-SLICE=$WHIZZY.new
+WOUT="$WHIZZYDIR/out"
+WFORMAT="&$WOUT/$WHIZZY"
+LOCK=.${WHIZZY}$EXT
+SLICE=${WHIZZY}.new
 WSYNCTEX=${WHIZZY}.synctex.gz
+
+WHIZZYOUT="$WOUT/$WHIZZY"
+WHIZZYVIEW="$WHIZZYOUT.$VIEW"
+NAMEOUT="$WOUT/$NAME"
+NAMEVIEW="$NAMEOUT.$VIEW"
+
 
 # Be careful fullnames may contain a space.
 
@@ -354,6 +367,8 @@ echo "
         MKFILE=$MKFILE
         INITEX=$INITEX
         LATEX=$LATEX
+        OUTDIR=$OUTDIR
+	WOUT=$WOUT
         FORMAT=$FORMAT
         MULTIPLE=$MULTIPLE
         DUPLEX=$DUPLEX
@@ -459,12 +474,12 @@ clean () {
 }
 
 cleanquit () {
+   clean
    trap - SIGTERM
    echo "Quitting ($1)"
    clean
    kill -TERM 0
-
-      exit 0
+   exit 0
 }
 trap "cleanquit SIGTERM" SIGTERM
 trap "cleanquit SIGHUP" SIGHUP
@@ -483,9 +498,9 @@ cleankill () {
 }
 
 wakeup () { [ -f $LOCK ] && kill -CONT $(cat $LOCK); }
-runinitex () { ( ulimit -t $LIMIT; $INITEX "$@" ); }
-runlatex  () { ( ulimit -t $[ 3 * $LIMIT ] ; $LATEX  "$@" ); }
-runslice  () { ( ulimit -t $LIMIT ; $LATEX  "$@" ); }
+runinitex () { ( ulimit -t $LIMIT; $INITEX $OUTDIR$WOUT "$@" ); }
+runlatex  () { ( ulimit -t $[ 3 * $LIMIT ] ; $LATEX $OUTDIR$WOUT  "$@" ); }
+runslice  () { ( ulimit -t $LIMIT ; $LATEX $OUTDIR$WOUT "$@" ); }
 
 
 # Making format
@@ -502,7 +517,7 @@ format () {
 # BEGIN sections
 
 atomiccopy () {
-   $DVICOPY "$1" "$TMP/$2" && mv "$TMP/$2" "$2";
+   $DVICOPY "$1" "$TMP/tmp.$$" && mv "$TMP/tmp.$$" "$2";
 }
 
 LATER=04$(date +%m%d%H%M.%S)
@@ -532,7 +547,7 @@ gpdfremote () {
 makebibtex () {
   if $BIBTEX $NAME 1>"$OUTPUT/bibtex"
   then : 
-    [ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
+    [ -f $NAMEOUT.bbl ] && cp $NAMEOUT.bbl $WHIZZYOUT.bbl
   else
     echo '<bibtex failed: see log in' "$OUTPUT/bibtex" '>'
   fi 
@@ -541,26 +556,26 @@ makebibtex () {
 batchmarks () {
     if runlatex $WFORMAT '\WhizzytexInput{'$NAME'}' 1>"$OUTPUT"/latex
     then
-      atomiccopy $NAME.$DVI $NAME.$VIEW 2>"$OUTPUT"/dvicopy
-      [ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
-      if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAME.log
+      atomiccopy $NAMEOUT.$DVI $NAMEOUT.$VIEW 2>"$OUTPUT"/dvicopy
+      [ -f $NAMEOUT.toc ] && cp $NAMEOUT.toc $WOUT/$WHIZZY.toc
+      if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAMEOUT.log
       then
         makebibtex
       fi
-      if $DOINDEX && grep 'Writing index file' $NAME.log
+      if $DOINDEX && grep 'Writing index file' $NAMEOUT.log
       then
-         $MAKEINDEX $NAME.idx 1>"$OUTPUT"/makeindex 
-         [ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
+         $MAKEINDEX $NAMEOUT.idx 1>"$OUTPUT"/makeindex 
+         [ -f $NAME.ind ] && cp $NAMEOUT.ind $WHIZZYOUT.ind
          true
       fi
       # move .raux into .waux so as to preserve the integrity of .raux 
       # when the slice fails. 
-      if [ -f $NAME.$WAUX ]
-      then mv $NAME.$WAUX $NAME.$RAUX
-      else rm -f $NAME.$RAUX
+      if [ -f $NAMEOUT.$WAUX ]
+      then mv $NAMEOUT.$WAUX $NAMEOUT.$RAUX
+      else rm -f $NAMEOUT.$RAUX
       fi
     else 
-       rm -f $WHIZZY.pag; false
+       rm -f $WHIZZYOUT.pag; false
     fi
 }
 
@@ -577,7 +592,7 @@ wordify () {
 worddiff () { 
   FST="$1"
   SND="$2"
-  DIF=$WHIZZY.dif
+  DIF=$WHIZZYOUT.dif
   diff "$FST" "$SND" > "$DIF"
   if [ $(grep -v -e '^[-><]' "$DIF" | wc -l) -eq 1 ] && \
      [ $(wc -l < "$DIF") -lt 3 ] && \
@@ -636,7 +651,7 @@ esac
 # We go for good
 
 # These directories are normally created by Emacs
-mkdir $WHIZZYDIR "$INPUT" "$OUTPUT" "$TMP" 2>/dev/null
+mkdir $WHIZZYDIR "$INPUT" "$OUTPUT" "$TMP" "$WOUT" 2>/dev/null
 echo '# Begin Whizzytex command line (one argument per line)' \
         >"$OUTPUT"/command
 echo "$COMMAND"  >> "$OUTPUT"/command
@@ -672,12 +687,12 @@ else
          echo Removing $NAME.aux; 
          echo '<Retrying '; 
          rm -f $NAME.aux && format >"$OUTPUT"/format 2>"$ERR"; }; } \
-     && [ -f $NAME.$FMT ] 
+     && [ -f $NAMEOUT.$FMT ] 
   then
-     mv $NAME.$FMT $WHIZZY.$FMT
+     mv $NAMEOUT.$FMT $WHIZZYOUT.$FMT
      echo 'succeeded>'
   else
-     rm -f $NAME.$FMT
+     rm -f $NAMEOUT.$FMT
      echo 'failed>'
      set +o xtrace
      texlog format
@@ -708,22 +723,24 @@ echo $VIEWCOMMAND 1>&2
 # signal with $SIGPS
 ANTIDATE=$(date +%m%d%H%M.%S)
 
+           
+
 case $VIEW in
   ps)
     preview () {
-        $DVIPS -o $WHIZZY.pst $WHIZZY.$DVI 2>/dev/null && \
+        cd $WOUT && $DVIPS -o $WHIZZY.pst $WHIZZY.$DVI 2>/dev/null && \
         { [ ! $WHIZZY.pst -nt $WHIZZY.ps ] && touch -t $ANTIDATE $WHIZZY.pst
           mv $WHIZZY.pst $WHIZZY.ps ; }
     }
     SIG=$SIGPS
     ;;   
   wdvi)
-    preview () { atomiccopy $WHIZZY.$DVI $WHIZZY.$VIEW; }
+    preview () { atomiccopy $WOUT/$WHIZZY.$DVI $WHIZZYVIEW; }
     SIG=$SIGDVI
     SIGINPUT=$SIGINPUTDVI
     ;;   
   wpdf)
-    preview () { atomiccopy $WHIZZY.$DVI $WHIZZY.$VIEW; }
+    preview () { atomiccopy $WOUT/$WHIZZY.$DVI $WHIZZYVIEW; }
     SIG=$SIGPDF
     ;;   
 esac
@@ -758,7 +775,7 @@ process () {
   if { runslice $WFORMAT $WHIZZY$EXT && preview; } 1>"$OUTPUT"/slice
   then
      echo "<Compilation succeeded>"
-     ln -f $WHIZZY$EXT $WHIZZY.last
+     ln -f $WHIZZY$EXT $WHIZZYOUT.last
      # We say whizzy auxilliary information to avoid yoyo in case of errors. 
      if [ -f $WHIZZY.$WAUX ]
      then mv $WHIZZY.$WAUX $WHIZZY.$RAUX
@@ -767,12 +784,12 @@ process () {
      true
   else
      echo "<Recompilation failed>"
-     if [ -f $WHIZZY.last ] && worddiff  $WHIZZY.last $WHIZZY$EXT
+     if [ -f $WHIZZYOUT.last ] && worddiff  $WHIZZYOUT.last $WHIZZY$EXT
      then 
        :
      else
-       if [ -f $WHIZZY.last ] 
-       then texlog slice 'l.'$[ $(wc -l < $WHIZZY.last) - 1 ]' '
+       if [ -f $WHIZZYOUT.last ] 
+       then texlog slice 'l.'$[ $(wc -l < $WHIZZYOUT.last) - 1 ]' '
        else texlog slice
        fi
      fi
@@ -787,7 +804,8 @@ process () {
 # We ensure that the dvi [or pdf] file exists 
 if runslice "$WFORMAT" ${WHIZZY}_nil$EXT > "$OUTPUT"/nil
 then
-  mv "${WHIZZY}_nil.$DVI" $WHIZZY.$DVI
+  mv  ${WHIZZY}_nil$EXT $WOUT
+  mv "$WOUT/${WHIZZY}_nil.$DVI" $WHIZZYOUT.$DVI
   preview || fatal 'Cannot preview initial page'
 else
   cat "$OUTPUT"/nil
@@ -796,11 +814,11 @@ fi
 
 # To give it a chance to see citations and other global information.
 
-[ -f $NAME.bbl ] && cp $NAME.bbl $WHIZZY.bbl
-[ -f $NAME.ind ] && cp $NAME.ind $WHIZZY.ind
-[ -f $NAME.toc ] && cp $NAME.toc $WHIZZY.toc
+[ -f $NAMEOUT.bbl ] && cp $NAMEOUT.bbl $WHIZZYOUT.bbl
+[ -f $NAMEOUT.ind ] && cp $NAMEOUT.ind $WHIZZYOUT.ind
+[ -f $NAMEOUT.toc ] && cp $NAMEOUT.toc $WHIZZYOUT.toc
 
-# process $WHIZZY$EXT is present. Will override $WHIZZY.$DVI if it succeeds
+# process $WHIZZY$EXT is present. Will override $WHIZZYOUT.$DVI if it succeeds
 
 if $NEWFILES; then preprocess && process; fi
 
@@ -812,15 +830,15 @@ rm -f "$TMP"/ID
 
 if $MULTIPLE
 then
-   # we are going to launch $NAME.$VIEW as a secondary file
-   [ -f $NAME.$VIEW ] || cp $WHIZZY.$VIEW $NAME.$VIEW
-   CLIENTVIEW=$NAME.$VIEW
+   # we are going to launch $NAMEOUT.$VIEW as a secondary file
+   [ -f $NAMEVIEW ] || cp $WHIZZYVIEW $NAMEVIEW
+   CLIENTVIEW=$NAMEVIEW
 else
    CLIENTVIEW=''
 fi
 
 (echo '# Begin Viewer command line (one argument per line)'; \
- echo "$VIEWCOMMAND"; echo "$WHIZZY.$VIEW"; echo "$CLIENTVIEW"; \
+ echo "$VIEWCOMMAND"; echo "$WHIZZYVIEW"; echo "$CLIENTVIEW"; \
  echo '2>'"$OUTPUT"/view; \
  echo '# End of command' ) >> "$OUTPUT"/command
 
@@ -839,7 +857,7 @@ noviewer () {
 }
 
 {
-  $VIEWCOMMAND $WHIZZY.$VIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &
+  $VIEWCOMMAND $WHIZZYVIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &
   echo $! >> "$TMP"/pids
   ID=$!
   echo $ID > "$TMP"/ID
@@ -866,23 +884,23 @@ skimreload () {
 
 xpdfreload () {
    case "$1" in curso) 
-       $VIEWCOMMAND $WHIZZY.$VIEW +Start-Document;;
+       $VIEWCOMMAND $WHIZZYVIEW +Start-Document;;
    esac
    $VIEWCOMMAND -reload
 }
 
 kpdfreload () {
    case "$1" in cursor) 
-       $VIEWCOMMAND "$WHIZZY.$VIEW#Start-Document" 2>/dev/null ;;
+       $VIEWCOMMAND "$WHIZZYVIEW#Start-Document" 2>/dev/null ;;
    esac
-   $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
+   $VIEWCOMMAND "$WHIZZYVIEW" 2>/dev/null
 }
 
 gpdfreload () {
    case "$1" in 
      cursor) 
-       $VIEWCOMMAND --page-label=Start-Document "$WHIZZY.$VIEW" 2>/dev/null ;;
-     *) $VIEWCOMMAND "$WHIZZY.$VIEW" 2>/dev/null
+       $VIEWCOMMAND --page-label=Start-Document "$WHIZZYVIEW" 2>/dev/null ;;
+     *) $VIEWCOMMAND "$WHIZZYVIEW" 2>/dev/null
    esac
    wmctrl -R emacs@arbois
 }
@@ -924,11 +942,11 @@ wholereload () {
 # in file $(TMP)/recompilation 
 whole () {
    echo '<Recompiling whole document>'
-#    echo 'BEFORE: '$(stat -c 'inode:%i, time:%Z' $NAME.$VIEW)
+#    echo 'BEFORE: '$(stat -c 'inode:%i, time:%Z' $NAMEVIEW)
    if batchmarks </dev/null >"$LOG"
    then
       echo '<Whole document updated>'
-#       echo 'AFTER: '$(stat -c 'inode:%i, time:%Z' $NAME.$VIEW)
+#       echo 'AFTER: '$(stat -c 'inode:%i, time:%Z' $NAMEVIEW)
       if $1; then echo '<Pages and sections updated>'; fi
       if [ -f "$TMP"/DID ]
           then kill -$SIG $(cat "$TMP"/DID) || rm -f "$TMP"/DID
@@ -948,7 +966,7 @@ reformat () {
   touch -r $NAME$EXT $WHIZZY.$FMT
   if format 1>"$OUTPUT"/format 2>"$ERR"
   then
-      mv -f $NAME.$FMT $WHIZZY.$FMT
+      mv -f $NAMEOUT.$FMT $WHIZZYOUT.$FMT
       echo '<Reformatting succeeded>'
       PROCESS=true
       # do the slice with the new format (quick)
@@ -965,11 +983,11 @@ reformat () {
 ## Duplex
 
 duplex () {
-  [ -f $NAME.$VIEW ] || \
-  { cp $WHIZZY.$VIEW $NAME.$VIEW; 
-    warning '(duplex) Using ' $WHIZZY.$VIEW ' instead of missing ' $NAME.$VIEW
+  [ -f $NAMEVIEW ] || \
+  { cp $WHIZZYVIEW $NAMEVIEW; 
+    warning '(duplex) Using ' $WHIZZYVIEW ' instead of missing ' $NAMEVIEW
   }
-  $VIEWCOMMAND $NAME.$VIEW &
+  $VIEWCOMMAND $NAMEVIEW &
   echo $! > "$TMP"/DID
   echo $! >> "$TMP"/pids
 }
@@ -1005,10 +1023,10 @@ kpdfswitch () {
   if $SWITCHED
   then
       SWITCHED=false
-      $VIEWCOMMAND "$WHIZZY.$VIEW" 
+      $VIEWCOMMAND "$WHIZZYVIEW" 
   else
       SWITCHED=true
-      $VIEWCOMMAND "$NAME.$VIEW" 
+      $VIEWCOMMAND "$NAMEVIEW" 
   fi
 }
 
@@ -1037,7 +1055,7 @@ do
          if $NAVIGATION && [ -n "$REST" ]; then sendcommand $REST; fi;;
        recompile) whole && wholereload ;;
        # maybe more should be removed.
-       clear) rm -f $NAME.aux ;;
+       clear) rm -f $NAMEOUT.aux ;;
        whole) checkMKfile $REST; whole $DOMAKS && wholereload;;
        bibtex) makebibtex;;
        viewps-slice) viewps true;;

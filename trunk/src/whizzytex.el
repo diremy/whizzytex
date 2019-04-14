@@ -474,8 +474,8 @@ unless for debugging purposes. Fields are:
 
  `whizzy-running' `whizzy-process' `whizzy-process-window'
  `whizzy-master-buffer' `whizzy-active-buffer' `whizzy-process-buffer'
- `whizzy-dir' `whizzy-input-dir' `whizzy-output-dir' `whizzy-filename'
- `whizzy-basename' `whizzy-slicename' `whizzy-slaves'
+ `whizzy-dir' `whizzy-input-dir' `whizzy-output-dir'  `whizzy-out-dir'
+  `whizzy-filename' `whizzy-basename' `whizzy-slicename' `whizzy-slaves'
  `whizzy-slice-start' `whizzy-slice-time' `whizzy-slice-date'
  `whizzy-slice-fed' `whizzy-slicing-mode' `whizzy-view-mode'
  `whizzy-counters' `whizzy-layers' `whizzy-log-buffer' `whizzy-custom'
@@ -530,12 +530,14 @@ in format.")
 (defconst whizzy-initialized 26)
 ; (defconst whizzy-error-string 27)
 ; (defconst whizzy-speed-string 28)
+(defconst whizzy-out-dir 29)
 
 (defconst whizzy-length 30)
 (defun whizzy-get (f)
   (if whizzy-status (elt whizzy-status f)
      ;; (error "whizzy-get")
      ))
+
 (defun whizzy-set (f v)
   (if whizzy-status (aset whizzy-status f v)
     (error "Attempting to set field %d when whizzy-status is nil" f)))
@@ -544,6 +546,25 @@ in format.")
   (interactive "S")
   (with-output-to-temp-buffer "*Help*"
     (print (whizzy-get f))))
+
+;; special lazy acces
+(defun whizzy-get-out-dir ()
+  (or
+   ;; already set
+   (whizzy-get whizzy-out-dir)
+   ;; unset
+   (let ((dir (whizzy-get whizzy-output-dir)))
+     (if (file-directory-p dir)
+         ;; initialized, we can set it
+         (let ((filename
+                (concat (file-name-directory (string-trim dir nil "/"))
+                        "out/")))
+           (message "%S" filename):Ú
+           (whizzy-set whizzy-out-dir
+                       (if (file-directory-p filename) filename "./")))
+       ;; otherwise return "./" as a temporary value
+       "./"
+       ))))
       
 ;; Tell if buffer is a slave and give its relative name to the master dir
 
@@ -672,7 +693,8 @@ alist is not empty, and nil otherwise."
 (defun whizzy-read-sections (&optional arg)
   "Read, build and set sections-counters mappings.
 
-Mappings are read form file _whizzy_BASEFILENAME.pag
+Mappings are read form file <OUTPUTDIR>/_whizzy_BASEFILENAME.pag
+where OUTPUTDIR is either \".\" or \"_whizzy_BASEFILENAME_d/out/\"
 Each line is an entry, whose fields are separated by a COLON.
 FILENAME : LINENUMBER : SECTIONNING @ S0.S1.S2.S3
 where S0 is chapter, S1 is section, etc.
@@ -681,7 +703,7 @@ Entries are sorted per source-file and set to the whizzy variable
   (if (or (whizzy-get whizzy-counters) arg)
       ;; (save-excursion (set-buffer (whizzy-get whizzy-master-buffer))
       (with-current-buffer (whizzy-get whizzy-master-buffer)
-        (let* ((filename (concat (whizzy-get whizzy-dir)
+        (let* ((filename (concat (whizzy-get-out-dir)
                                  (whizzy-get whizzy-basename) ".pag"))
                (tmp) (list) (all) (elem) (last))
           (if (file-exists-p filename)
