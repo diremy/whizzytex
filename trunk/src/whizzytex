@@ -368,7 +368,7 @@ echo "
         INITEX=$INITEX
         LATEX=$LATEX
         OUTDIR=$OUTDIR
-	WOUT=$WOUT
+        WOUT=$WOUT
         FORMAT=$FORMAT
         MULTIPLE=$MULTIPLE
         DUPLEX=$DUPLEX

@@ -556,10 +556,7 @@ in format.")
    (let ((dir (whizzy-get whizzy-output-dir)))
      (if (file-directory-p dir)
          ;; initialized, we can set it
-         (let ((filename
-                (concat (file-name-directory (string-trim dir nil "/"))
-                        "out/")))
-           (message "%S" filename):Ú
+         (let ((filename (concat (substring dir 0 -7) "out/")))
            (whizzy-set whizzy-out-dir
                        (if (file-directory-p filename) filename "./")))
        ;; otherwise return "./" as a temporary value
