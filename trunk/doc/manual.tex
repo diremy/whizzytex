@@ -1,9 +1,9 @@
 % manual.tex --- WhizzyTeX, a wysiwyg environment for TeX
 %
-%  Copyright (C) 2001, 2002, 2003, 2004, 2010, 2011, 2013 INRIA
+%  Copyright (C) 2001, 2002, 2003, 2004, 2010, 2011, 2013, 2020 INRIA
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.3.3
+%  Version        : 1.3.6
 %  Bug Reports    : whizzytex-bugs@inria.fr
 %  Web Site       : http://gallium.inria.fr/whizzytex
 % 
@@ -43,20 +43,22 @@
 \end{rawhtml}
 \pagestyle {empty}
 \author {\rightline {Didier R{\'e}my}}
-\date {\hfill Version {\version}, \today}
+\date {\hfill Version {\version}}
 \begingroup
 \let \@\relax
 \title {
-\hfilneg{\huge \Whizzy\footnote{{\whizzy} is free software, 
-Copyright \copyright 2001, 2002 INRIA
+\hfilneg{\huge \Whizzy
+\footnote{{\whizzy} is free software, 
+Copyright \copyright 2001, 2002, 2003, 2004, 2010, 2011, 2013, 2020 INRIA
 and distributed under the GNU General Public License
 (See the COPYING file enclosed with the distribution).}}
 \\[1em]
 {\em
-%HEVEA An {\bfseries Emacs} minor-mode \\
-%HEVEA for {\bfseries incremental viewing of} \\ 
-%HEVEA {\bfseries {\LaTeX} documents}
-%BEGIN LATEX
+\ifhevea
+An {\bfseries Emacs} minor-mode \\
+for {\bfseries incremental viewing of} \\ 
+{\bfseries {\LaTeX} documents}
+\else
 \vbox {%
 \centerline
 {{\raggedright \normalsize \activedvi {Whizzy-}{Te\/X}{WhizzyTeX}}
@@ -69,7 +71,7 @@ An {\bfseries Emacs} minor-mode for\\
 {\bfseries incremental viewing of} \\ 
 {\bfseries {\LaTeX} documents}
 \end{tabular}}}}\vskip -1em}
-%END LATEX
+\fi
 }
 }
 

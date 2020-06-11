@@ -1,11 +1,11 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-;;               2015, 2016.
+;;               2015, 2016, 2020.
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.4
+;; Version        : 1.3.6
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -62,7 +62,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.4"
+(defconst whizzytex-version "1.3.6"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -1601,8 +1601,11 @@ a sequence of editing while slicing could be distracting or annoying."
 
 (defun whizzy-suspended-slice ()
   (interactive)
-  (whizzy-observe-changes t t) 
-)
+  (if (equal whizzytex-mode 'suspended)
+      (whizzy-observe-changes t t)
+    (if (functionp 'mytex-switch-view)
+        (mytex-switch-view))
+    ))
 
 (defvar whizzy-load-factor 0.6
   "Control the interval between slicing as a factor of the slicing REAL time.
@@ -1712,10 +1715,13 @@ during initialization."
   "Reformat the document."
   (interactive "p")
   (or arg (setq arg 1))
+  ;; (message "Reformating %d" arg)
   (cond 
    ((= arg 0) (whizzy-auto-recompile 0))
    ((= arg 9) (whizzy-auto-recompile 1))
    ((= arg 4) (whizzy-call "whole" 'filename))
+   ((= arg 8) (whizzy-call "bibtex" 'filename))
+   ((= arg 16) (whizzy-call "bibtex" 'filename))
    (t (whizzy-call "reformat" 'filename))
    ))
 
@@ -2871,8 +2877,8 @@ the interpretation of the rest of the line:
   The is used for files mastered by another file. That is, it is not
   LaTeX-ed directly, but  loaded by another LaTeX file. Conversely, the
   second and last line are used for master files. For WhizzyTeX, a master
-  file is one that contains a \documentclass command and \begin{document}
-  commands. Other files are treated as mastered.
+  file is one that contains a \\=\\documentclass command and
+  \\=\\begin{document} commands. Other files are treated as mastered.
 
   <name>
      is the relative or fullname of the master file

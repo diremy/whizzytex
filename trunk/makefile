@@ -1,18 +1,27 @@
-SHELL=bash
+infoSHELL=bash
+LC_CTYPE=C
 LANG=C
 BIN=$(HOME)/bin
 TEX=$(HOME)/lib/tex
 # Stable version
-RELEASE=1.3.1
+RELEASE=1.3.5
 # Current version
-VERSION=1.3.3
+VERSION=1.3.6
 # rpm release version
 Release=1
 # YAP version -- independant versionning. 
 NAME=whizzytex-$(VERSION)
 TAG=.VERSION_$(VERSION)
 PACKDIR=packdir
-YQUEM=yquem:/net/yquem/infosystems/www/gallium/gallium/whizzytex
+
+WHERE=homepage 
+
+ifeq ($(WHERE), homepage)
+  YQUEM=yquem:/home/nas/gallium/remy/public_html/whizzytex
+else
+  YQUEM=yquem:/net/yquem/infosystems/www/gallium/gallium/whizzytex
+endif
+
 # BASEURL=http://gallium.inria.fr/whizzytex/
 SCP=scp
 
@@ -83,7 +92,8 @@ index.html: index.htm makefile
 	 -e 's/@Release@/$(Release)/g' \
 	 -e 's|href="@|href="|g' \
 	 $< > $@
-	chmod -w index.html
+
+# chmod -w index.html
 
 animation.html: index.html
 	sed -e 's/009.gif/.gif/g' \
@@ -98,11 +108,11 @@ older.html: makefile archive
 
 
 emacs.gif: anim/animation.tex anim/animation.sty anim/Makefile
-	cd anim; make $@
+	make -C anim $@
 	cp anim/$*{,009}.gif .
 
 activedvi.gif: anim/animation.tex anim/animation.sty anim/Makefile
-	cd anim; make $@
+	make -C anim $@
 	cp anim/$*{,009}.gif .
 
 INSTALL.txt: doc/whizzytex.html
@@ -161,11 +171,18 @@ $(PACKDIR)/whizzytex.el: src/whizzytex.el $(PACKDIR)
 	cp $< $@
 
 $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
+	if which emacs; then \
+	echo 'Compiling with emacs'; \
 	cd $(PACKDIR); \
 	emacs --batch -q -l ../byte-compile.el 2>log && cat log  && \
-	if grep -e '\*\*' log; then rm -f ../$@; false; fi && \
+	if grep -e '\*\*' log; then rm -f ../$@; false; fi; \
+	fi
+	if which xemacs; then \
+	echo 'Compiling with xemacs'; \
+	cd $(PACKDIR); \
 	xemacs -batch -q -l ../byte-compile.el 2>log && cat log && \
-	if grep -e '\*\*' log; then rm -f ../$@; false; fi 
+	if grep -e '\*\*' log; then rm -f ../$@; false; fi ; \
+	fi
 
 rpm: $(RPMNAME).src.rpm 
 

@@ -2,11 +2,11 @@
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-#                2015, 2016.
+#                2015, 2016, 2020.
 #                INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.3.4
+#  Version        : 1.3.6
 #  Bug Reports    : whizzytex-bugs@inria.fr
 #  Web Site       : http://gallium.inria.fr/whizzytex
 #  
@@ -28,7 +28,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.3.3"
+VERSION="1.3.6"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -43,8 +43,8 @@ DVICOPY=mv
 # Default LaTeX implementation
 MODE=dvi
 
-# Default LateX output dir
-WOUT=.
+# Default LateX 
+WOUT=././out
 
 INITEX="latex -ini"
 LATEX=latex
@@ -316,6 +316,7 @@ NAME=$(basename "$BASENAME" "$FILEEXT")
 # Load configuration files, all files are loaded in order
 
 for CONFIG in \
+    "$CONFIGDIR/whizzytex.conf" {"$HOME",.}/.whizzytexrc \
     {"$CONFIGDIR","$HOME"/.whizzytex}/whizzy.sh whizzy.sh "$NAME.wsh"
 do
   if [ -f "$CONFIG" ]
@@ -335,7 +336,9 @@ esac
 
 WHIZZY=_whizzy_$NAME
 WHIZZYDIR=${WHIZZY}_d
-WOUT="$WHIZZYDIR/out"
+case "$WOUT" in
+    "././out") WOUT="$WHIZZYDIR/out" ;;
+esac
 WFORMAT="&$WOUT/$WHIZZY"
 LOCK=.${WHIZZY}$EXT
 SLICE=${WHIZZY}.new
@@ -545,7 +548,7 @@ gpdfremote () {
 
 
 makebibtex () {
-  if $BIBTEX $NAME 1>"$OUTPUT/bibtex"
+  if $BIBTEX $NAMEOUT 1>"$OUTPUT/bibtex"
   then : 
     [ -f $NAMEOUT.bbl ] && cp $NAMEOUT.bbl $WHIZZYOUT.bbl
   else
@@ -558,7 +561,8 @@ batchmarks () {
     then
       atomiccopy $NAMEOUT.$DVI $NAMEOUT.$VIEW 2>"$OUTPUT"/dvicopy
       [ -f $NAMEOUT.toc ] && cp $NAMEOUT.toc $WOUT/$WHIZZY.toc
-      if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAMEOUT.log
+      # if grep -e '\(LaTeX Warning: Citation\|No file [^ ]*\.bbl\)' $NAMEOUT.log
+      if grep -e 'Warning: There were undefined \(citation\|reference\)s\.' $NAMEOUT.log
       then
         makebibtex
       fi
@@ -777,8 +781,8 @@ process () {
      echo "<Compilation succeeded>"
      ln -f $WHIZZY$EXT $WHIZZYOUT.last
      # We say whizzy auxilliary information to avoid yoyo in case of errors. 
-     if [ -f $WHIZZY.$WAUX ]
-     then mv $WHIZZY.$WAUX $WHIZZY.$RAUX
+     if [ -f $WHIZZYOUT.$WAUX ]
+     then mv $WHIZZYOUT.$WAUX $WHIZZYOUT.$RAUX
      else rm -f $WHIZZY.$RAUX
      fi
      true
@@ -1065,7 +1069,7 @@ do
        help) help;;
        info) info;;
        rmaux) 
-             rm ${WHIZZY}.aux ${NAME}.aux ;;
+             rm ${WHIZZYOUT}.aux ${NAMEOUT}.aux ;;
        trace)
           case $REST in
               on) set -o xtrace; TRACE=true;; 

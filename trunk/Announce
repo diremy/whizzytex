@@ -1,6 +1,6 @@
 Dear WhizzyTeX users and maintainers,
 
-It is my pleasure to announce the new release 1.3.3 of WhizzyTeX. 
+It is my pleasure to announce the new release 1.3.6 of WhizzyTeX. 
 
 WhizzyTeX is an Emacs minor mode for incrementally viewing LaTeX documents
 that you are editing. It works under Unix with gv, xpdf, and xdvi viewers,
@@ -14,7 +14,7 @@ The source code, documentation, and information are available at
 Bug reports to whizzytex-bugs@inria.fr
 
 This release is a maintanance release.  It contains several bug fixes and 
-only a few visible improvements since version 1.3.0.  See CHANGES on the
+only a few visible improvements since version 1.3.1.  See CHANGES on the
 whizzytex website for more details.
 
 Enjoy, 

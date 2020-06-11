@@ -3,17 +3,11 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 
 Emacs-mode:
 
-- mupdf: added entry
-
 
 Shell-script: 
 
-- mupdf: new entry, with specific reloading command, rquires xdotool
 
 LaTeX macros:
-
-- mupdf: dump page info in _whizzy_NAME.mark when cursor mark is inserted
-- Fixed preloading of fonts by deactivating line info on *.fd files.
 
 
 Installation/Documentation:
@@ -24,16 +18,33 @@ SINCE LAST MAJOR RELEASE:
 
 Emacs-mode:
 
+ - version 1.3.6
+ * Small fixes for debian
+ - version 1.3.5
+ * move most temporary output files into _whizzy_<basename>_d/out/
+ * mupdf: added entry
+ 
  - version 1.3.4
  * fix enumiio <- enumiii
  * changed \rm and \bf for \rmfamily and \bfseries
 
 Shell-script: 
 
+ - version 1.3.6
+ * Small fixes for debian
+ - version 1.3.5
+ * move most temporary output files into _whizzy_<basename>_d/out/
+ * mupdf: new entry, with specific reloading command, rquires xdotool
  - version 1.3.4
 
 LaTeX macros:
 
+ - version 1.3.6
+ * Small fixes for debian
+ * Fixed patch of \begin using etoolbox (now assuming eTeX)
+ - version 1.3.5
+ * mupdf: dump page info in _whizzy_NAME.mark when cursor mark is inserted
+ * Fixed preloading of fonts by deactivating line info on *.fd files.
  - version 1.3.4
 
 Installation/Documentation:

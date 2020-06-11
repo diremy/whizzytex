@@ -1,11 +1,11 @@
 % whizzytex.sty --- WhizzyTeX, a wysiwyg environment for TeX
 %
 %  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-%                2015, 2016.
+%                2015, 2016, 2020.
 %                INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.3.4
+%  Version        : 1.3.6
 %  Bug Reports    : whizzytex-bugs@inria.fr
 %  Web Site       : http://gallium.inria.fr/whizzytex
 % 
@@ -29,7 +29,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.3.4}
+\def \whizzy@version {1.3.6}
 %% The Church Boolean
 \newcommand{\Whizzytex}[2]{#1}
 
@@ -592,7 +592,7 @@ to slice!\par \bigskip}}%
 %% so as to be stable in presence of errors. 
 
 \AtBeginDocument 
- {\ifwhizzy@latexmode \else \@input {\jobname .raux}\fi 
+ {\ifwhizzy@latexmode \else \@input {\jobname .raux}\fi
   \newwrite \whizzy@out \immediate \openout \whizzy@out \jobname.waux
   \def \whizzy@aux #1{\immediate \write \whizzy@out {#1}}%
  }
@@ -664,15 +664,20 @@ to slice!\par \bigskip}}%
 
 % To insert the mark ``around'' the current line number
 
+%% We assume eTeX engine
+\RequirePackage {etoolbox}
+\let \whizzy@beginhook \relax
+\pretocmd {\begin}{\whizzy@beginhook}{}{}
+
 \def \whizzy@start@here
    {\whizzy@putlink{Start-Document}%
     %% To produce info for starting at the right page
-    \newwrite \whizzy@outmark
+    \immediate \global \newwrite \whizzy@outmark
     \immediate \openout \whizzy@outmark \jobname.mark\relax
     \immediate \write \whizzy@outmark 
-        {Start-Document: file=\whizzy@curfile;\space
-                         line=\whizzy@line->\the\whizzy@count;\space
-                         page=\the\c@page;\space End}%
+          {Start-Document: file=\whizzy@curfile;\space
+                           line=\whizzy@line->\the\whizzy@count;\space
+                           page=\the\c@page;\space End}%
     \immediate \closeout \whizzy@outmark
     \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
                \whizzy@curfile]}%
@@ -680,7 +685,8 @@ to slice!\par \bigskip}}%
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
     \global \let \whizzy@check@line \relax
-    \global \let \begin \whizzy@begin
+    %% \global \let \begin \whizzy@begin
+    \global \let \whizzy@beginhook \relax
     \global \let \whizzy@start@here \relax
     }
 \let \latex@@par \@@par
@@ -745,7 +751,8 @@ to slice!\par \bigskip}}%
   \expandafter \everydisplay
          \expandafter {\the \everydisplay \whizzy@display}%
   \let \whizzy@display \whizzy@@display
-  \let \begin \whizzy@@begin%
+  %% \let \begin \whizzy@@begin%
+  \global \let \whizzy@beginhook \whizzy@checkline
 }
 \def \WhizzyLinePoint
    {\global \let \whizzy@starthere \relax\WhizzyLine}
@@ -862,8 +869,26 @@ to slice!\par \bigskip}}%
 %% Ignore ^^A when copying to file. 
 %% Redefine \beamer@verbatimreadframe{%
 %% Adding ^^A as \dospecial would ignore ^^A in verbatim, which is not
-%% desired. 
-\def \whizzy@dospecials {\catcode `\^^A 12\dospecials}%
+%% desired.
+\let \latex@dospecials \dospecials
+\def \whizzy@dospecials {\catcode `\^^A 12\latex@dospecials}%
+\let \dospecials \whizzy@dospecials
+
+% frome .../tex/latex/beamer/beamerbaseverbatimreadframe
+%% \def\beamer@verbatimreadframe{%
+%%   \begingroup
+%%   \let\do\@makeother\dospecials
+%%   \count@=127 %
+%%   \@whilenum\count@<255 \do{%
+%%     \advance\count@ by 1 %
+%%     \catcode\count@=11 %
+%%   }%
+%%   \@makeother\^^L% and whatever other special cases
+%%   \@makeother\^^I % Allow tab chars
+%%   \endlinechar`\^^M \catcode`\^^M=12%
+%%   \@ifnextchar\bgroup{\afterassignment\beamer@specialprocessframefirstline\let\beamer@temp=}{\beamer@processframefirstline}}%
+
+
 
 \AtBeginDocument
   {\@ifundefined{beamer@verbatimreadframe}{}
@@ -872,20 +897,26 @@ to slice!\par \bigskip}}%
          \immediate \write \beamer@verbatimfileout
           {\string \SetLineno {\the\whizzy@count}%
            \string \SourceFile {\whizzy@curfile}%
-       }}%
-     \def \beamer@verbatimreadframe{%
-       \begingroup
-       \setline@beamer
-       \let\do\beamer@makeinnocent\whizzy@dospecials
-       \count@=127%
-       \@whilenum\count@<255 \do{%
-         \advance\count@ by 1%
-         \catcode\count@=11%
-       }%
-       \beamer@makeinnocent\^^L% and whatever other special cases
-       \endlinechar`\^^M \catcode`\^^M=12 \beamer@processframefirstline
-       }%
-    }}
+          }}%
+    \def\beamer@verbatimreadframe{%
+      \begingroup
+      %% Added next line
+      \setline@beamer
+      %% \dospecials should now be \whizzy@dospecials...
+      \let\do\@makeother\dospecials
+      \count@=127 %
+      \@whilenum\count@<255 \do{%
+        \advance\count@ by 1 %
+        \catcode\count@=11 %
+      }%
+      \@makeother\^^L% and whatever other special cases
+      \@makeother\^^I % Allow tab chars
+      \endlinechar`\^^M \catcode`\^^M=12%
+      \@ifnextchar\bgroup
+        {\afterassignment \beamer@specialprocessframefirstline \let \beamer@temp=}
+        {\beamer@processframefirstline}%
+      }%
+   }}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EXPERIMENTAL FEATURES
