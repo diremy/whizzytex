@@ -6,6 +6,8 @@ Emacs-mode:
 
 Shell-script: 
 
+ - Added switch view in llpp (with limited support)
+ - Added llpp-syntex file in example/llpp/ for synctex support
  - minimum fixes for the verion v32-66 of llpp previewer
  - small fixes for Debian
 

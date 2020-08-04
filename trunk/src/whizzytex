@@ -207,7 +207,6 @@ do
        FORMAT="pdflatex"
        DUPLEX=false
        DVICOPY=pdfcopy
-       WRELOAD=false
        case "$1" in
            -pdf)
                MODE=pdf
@@ -245,7 +244,8 @@ do
        .|xpdf|kpdf|gpdf|noviewer|"") ;;
        llpp) 
           # SIGPDF=SIGUSR1
-          LATEX="$PDFLATEX -synctex=1"
+          MODE=llpp
+          LATEX="$PDFLATEX -synctex=15"
           VIEWCOMMAND="llpplaunch"
           RELOAD=llppreload
           ;;
@@ -1056,6 +1056,17 @@ kpdfswitch () {
   fi
 }
 
+llppswitch () {
+  if $SWITCHED
+  then
+      SWITCHED=false
+      echo "gotor \"$WHIZZY.$VIEW\"" >> $WREMOTE
+  else
+      SWITCHED=true
+      echo "gotor \"$NAME.$VIEW\"" >> $WREMOTE
+  fi
+}
+
 echo '<Initialization succeeded, entering loop>'
 while true
 do
@@ -1106,6 +1117,7 @@ do
              case $MODE in
                  advi) sendcommand w ;;
                  kpdf) kpdfswitch ;;
+                 llpp) llppswitch ;;
              esac;;
        # nextslice) preprocess && process && $RELOAD ;;
        # reslice) preprocess && process && $RELOAD $REST;;

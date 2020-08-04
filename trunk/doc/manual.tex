@@ -1272,7 +1272,37 @@ When compiling with \lst"pdflatex", you need to explicitly use the package
 Another solution is to compile via the generation of a Postscript file
 \lst"ps" and its translation to PDF using \lst"ps2pdf". 
 This allows the use of \lst"pstricks". In this case, you tune the
-configuration manually, following the example given in \lst"examples/ps2pdf/". 
+configuration manually, following the example given in \lst"./examples/ps2pdf/". 
+
+\subsection{Viewing with \texttt{llpp}}
+
+\href{https://wiki.archlinux.org/index.php/Llpp}{\texttt{llpp}}
+is a PDF previwer based on the \href {https://mupdf.com/}{\texttt{mupdf}}
+renderer and implemented in OCaml (and C).
+
+It allows for remote control of file reloading without blinking as well
+as synctex facilities and is therefore well-suited as a PDF
+\WhizzyTeX\ previewer.
+
+Examples with \lst"llpp" are provided in \lst"./examples/llpp/".
+
+This is activated with the line in the source file.
+\begin{verbatim}
+        %; whizzy -pdf llpp
+\end{verbatim}
+It can also be controled in a shell configuration file by setting
+\begin{verbatim}
+        LATEX="$PDFLATEX -synctex=15"
+        VIEWCOMMAND=llpplaunch
+        RELOAD=llppreload
+\end{verbatim}
+
+For synctex use, you may copy the file \lst"./examples/llpp/llpp-synctex" in
+a directory in your executable path.
+
+\lst"llpp" currently lacks support to jump to some anchor as well as
+contextual information for synctex (which it could have since it can tell
+the word under the mouse).
 
 
 \section{Whizzy Effects}
