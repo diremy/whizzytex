@@ -6,11 +6,15 @@ Emacs-mode:
 
 Shell-script: 
 
+ - minimum fixes for the verion v32-66 of llpp previewer
+ - small fixes for Debian
 
 LaTeX macros:
 
 
 Installation/Documentation:
+
+ - adding directory ./example/llpp/
 
 
 SINCE LAST MAJOR RELEASE:
@@ -19,7 +23,7 @@ SINCE LAST MAJOR RELEASE:
 Emacs-mode:
 
  - version 1.3.6
- * Small fixes for debian
+ * Small fixes for Debian
  - version 1.3.5
  * move most temporary output files into _whizzy_<basename>_d/out/
  * mupdf: added entry

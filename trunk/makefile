@@ -64,10 +64,10 @@ whatelse:
 pack: FILES $(EXPORTS) $(addprefix $(PACKDIR)/, .exists checked whizzytex.elc)
 
 doc/version.tex: RELEASE VERSION
-	(echo '\def\release{'`cat RELEASE`'}' ; \
-	 echo '\def\Release{'$(Release)'}' ; \
-	 echo '\def\version{'`cat VERSION`'}' ; \
-	 echo '\def\YAPVERSION{'$(YAPVERSION)'}' ) > $@
+	(echo '\\def\\release{'`cat RELEASE`'}' ; \
+	 echo '\\def\\Release{'$(Release)'}' ; \
+	 echo '\\def\\version{'`cat VERSION`'}' ; \
+	 echo '\\def\\YAPVERSION{'$(YAPVERSION)'}' ) > $@
 
 
 doc/FILES: doc/manual.tex doc/manual.sty doc/Makefile

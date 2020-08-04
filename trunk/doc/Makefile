@@ -10,7 +10,7 @@ FILES: $(addprefix whizzytex., dvi ps pdf html info) \
 	Makefile whizzytex.info.head
 	cd ..; \
 	ls $(addprefix doc/whizzytex., dvi ps pdf html info) \
-	   doc/whizzytex00?.png doc/whizzytex.info-* \
+	   doc/whizzytex00?.png doc/whizzytex.info-* doc/whizzytex.info.head \
 	   $(addprefix doc/, $(DOCSOURCES)) \
 	> doc/$@
 

@@ -132,6 +132,13 @@ LEVEL=0
 RELOAD=sigreload
 RELAODARG=""
 
+llpplaunch () {
+    rm -f $WREMOTE && \
+    mkfifo $WREMOTE && \
+    llpp -remote $WREMOTE "$1"
+}
+
+
 while true
 do
   case "$1" in
@@ -237,10 +244,10 @@ do
        case "$2" in
        .|xpdf|kpdf|gpdf|noviewer|"") ;;
        llpp) 
-          SIGPDF=SIGHUP
+          # SIGPDF=SIGUSR1
           LATEX="$PDFLATEX -synctex=1"
-          VIEWCOMMAND="llpp -wtmode -dest Start-Document"
-          RELOAD=sigreload
+          VIEWCOMMAND="llpplaunch"
+          RELOAD=llppreload
           ;;
         skim)
           MODE=skim
@@ -349,7 +356,6 @@ WHIZZYVIEW="$WHIZZYOUT.$VIEW"
 NAMEOUT="$WOUT/$NAME"
 NAMEVIEW="$NAMEOUT.$VIEW"
 
-
 # Be careful fullnames may contain a space.
 
 INPUT="$HERE/$WHIZZYDIR/input"
@@ -359,6 +365,10 @@ TMP="$HERE/$WHIZZYDIR/tmp"
 SECTIONS="$OUTPUT/sections"
 LOG="$TMP/log"
 ERR="$TMP/err"
+WREMOTE="$TMP/llpp.remote"
+
+
+
 
 INITPHASE=true
 
@@ -908,6 +918,18 @@ gpdfreload () {
    esac
    wmctrl -R emacs@arbois
 }
+
+llppreload() {
+  echo reload >> $WREMOTE
+  if [ -f ${WHIZZYOUT}.mark ]
+  then
+      PAGE=$(cat ${WHIZZYOUT}.mark)
+      PAGE=$(expr "$PAGE" : ".*page=\([0-9]*\);")
+      PAGE=$(expr "$PAGE" - 1)
+      echo "goto ${PAGE} 0 0" >> $WREMOTE
+  fi
+}
+
 
 WINDOWID="unset"
 # Require xwinfo and xdotool

@@ -1,0 +1,78 @@
+%; whizzy -pdf llpp
+
+% Note that the above line is not active if you have a file whizzy.sh
+% Unless you set whizzy-configuration-path to nil or a string
+
+\documentclass{article}
+
+%% \PassOptionsToPackage{pdftex}{hyperref}
+
+\usepackage[ignore]{advi}
+\usepackage{hyperref}
+
+\begin{document}
+
+\section{First section}
+
+There should be hyperlinks for pages to follow the cursor.  
+
+\tableofcontents
+
+
+
+Some text in the section.  
+ 
+\subsection {Sub}
+
+Some text in the subsection. 
+Another subsection on \hyperlink{next}{next page}.
+
+
+blalalla  
+\newpage
+
+aaaajklj kljkluj kl
+\subsubsection {SubSub} 
+
+Some text this \hypertarget{next}{next page} in the sub-subsection. 
+
+Move cursor to see if pages follow cursor.
+
+\newpage
+
+aaa hjkhjk h
+\newpage
+khjkhkjk
+
+hjkh kjh jk  hjh kj hjkh k uu iuio uoi foo
+hjkhjkhk  dfsf dddd hjh jkhjkhk aa hjkl
+aa aa  bb  h hkj    hjkhjkh  hjkhkj hh hjk hjhhh
+
+\medskip
+
+
+
+
+The cursor should follow own other pages as well.
+This requires loading the package hyperref, which is done
+automatically in pdf mode (if after loading the package \texttt{ifpdf}, 
+the command \verb"\ifpdf" is true). 
+
+
+
+\section{Foo}
+
+\subsection {Bar}
+
+
+\paragraph {Par}
+
+And a paragraph.
+
+
+\section {TEST}
+
+aaaa  hjhkjhkj 
+
+\end{document}   
+
