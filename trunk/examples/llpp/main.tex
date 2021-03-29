@@ -34,7 +34,8 @@ blalalla
 aaaajklj kljkluj kl
 \subsubsection {SubSub} 
 
-Some text this \hypertarget{next}{next page} in the sub-subsection. 
+Some text this \hypertarget{next}{next page} in the sub-subsection.
+
 
 Move cursor to see if pages follow cursor.
 
@@ -46,8 +47,6 @@ khjkhkjk
 
 hjkh kjh jk  hjh kj hjkh k uu iuio uoi foo
 hjkhjkhk  dfsf dddd hjh jkhjkhk aa hjkl
-aa aa  bb  h hkj    hjkhjkh  hjkhkj hh hjk hjhhh
-
 \medskip
 
 
@@ -69,9 +68,27 @@ the command \verb"\ifpdf" is true).
 And a paragraph.
 
 
-\section {TEST}
+\section {SPEED TEST}
 
-aaaa  hjhkjhkj 
+Test the speed by typing in very quickly and check the speed marker in
+the Emacs line mode.
+
+Typically, llpp loads is 3-4 (as with xpdf or skim) while advi load remains
+1.
+
+Indeed,
+\begin{itemize}
+
+\item 
+The size of the PDF file is about 10 times larger that of the DVI file!
+So there seems to be no way PDF could compete with DVI formats...
+
+\item
+Compilation time is at least twice slower when producing PDF than DVI
+output. 
+
+\end{itemize}
+Once loaded, previewing speed does not seem to be an issue with \verb"llpp".
 
 \end{document}   
 

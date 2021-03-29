@@ -8,16 +8,20 @@ pdf_tex=$(basename $pdf_base .wpdf).tex
 page=$(($2 + 1)) # The page number star at zero in llpp
 x=$3
 y=$4
-# context=$5
+context=$5
 
 # for vim
 # synctex edit -o "$page:$x:$y:$pdf_file" \
 #        -x "gvim --servername synctex --remote-wait-silent +%{line} '%{input}'"
 
 # for testing/debugging
-# synctex edit -o "$page:$x:$y:$pdf_file" -x "echo #line %{line}:%{column}+%{offset}:${context} '<<<<pa>><<ges>>>>' '%{input}'"
+case "$5" in
+    "") ;;
+    *) synctex edit -o "$page:$x:$y:$pdf_file" -x "echo #line %{line}:%{column}+%{offset}:${context} '<<<<'$context>><<>>>>' '%{input}'"
+esac 
 
 # for emacs
-synctex edit -o "$page:$x:$y:$pdf_file" -x "emacsclient +%{line} '%{input}' -n"
+# synctex edit -o "$page:$x:$y:$pdf_file" -x "emacsclient +%{line} '%{input}' -n"
+synctex edit -o "$page:$x:$y:$pdf_file" -x "echo #line %{line}:%{column}+%{offset}:${context} '<<<<'$context>><<>>>>' '%{input}'"
 
 

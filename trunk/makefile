@@ -6,7 +6,7 @@ TEX=$(HOME)/lib/tex
 # Stable version
 RELEASE=1.3.5
 # Current version
-VERSION=1.3.6
+VERSION=1.3.7
 # rpm release version
 Release=1
 # YAP version -- independant versionning. 

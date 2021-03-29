@@ -1,11 +1,11 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-;;               2015, 2016, 2020.
+;;               2015, 2016, 2020, 2021.
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.6
+;; Version        : 1.3.7
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -62,7 +62,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.6"
+(defconst whizzytex-version "1.3.7"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the

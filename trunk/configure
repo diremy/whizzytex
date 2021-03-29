@@ -31,7 +31,7 @@ xemacsdir=''
 
 bash=bash
 latex=latex
-initex=initex
+initex="$latex -ini"
 format=''
 fmt=''
 bibtex=bibtex
@@ -414,10 +414,14 @@ output XEMACS "$xemacs"
 output XEMACSDIR "$xemacsdir"
 
 
-# initex
-message "Checking initex, latex and format"
+# latex
 
+message "Checking latex"
 findcommand "$latex" true 1>/dev/null
+
+# latex
+
+message "Checking initex"
 if findcommand "$initex" false 1>/dev/null
 then  :
 else 
@@ -439,8 +443,16 @@ cat <<EOF > dummy.tex
 \end{document}
 EOF
 
+message "Checking format"
+
 if test -z "$format"
-then formats="$(basename $latex) latex"
+then
+    formats=$(basename $latex)
+    case "$formats" in
+        latex) ;;
+        "") foramts=latex;;
+        *) formats="$formats latex";;
+    esac
 else formats="$format"
 fi
 
