@@ -4,11 +4,13 @@ NOT COMMITTED YET (OR EXPERIMENTAL):
 Emacs-mode:
 
 
-Shell-script: 
+Shell-script:
 
+ - Fixed whizzytex --formatonly to create subdirs
 
 LaTeX macros:
 
+ - Fixed \document for new versions of latex.cls
 
 Installation/Documentation:
 
