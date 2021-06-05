@@ -172,8 +172,14 @@
    {\whizzy@loadconfig %{whizzy.cfg}
     \makeatother \endinput}%
 
+%% In new version of TeX there is \begin{grooup} does not call \begingroup
+%% before calling \document by some unclear hook mecanism....  This appeared
+%% texlive-core-2020.57066 together with significant changes in
+%% latex.ltx. The macro {@kernel@after@begindocument@before is undefined in
+%% older versions.
+
 \def \document 
-  {\endgroup
+  {\@ifundefined {@kernel@after@begindocument@before}{\endgroup}{}%
    \whizzy@beforeauxhook
    %% \whizzy@loadconfig %{whizzy.sty}%
    \begingroup \def \@currenvir {document}%
