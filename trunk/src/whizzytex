@@ -649,7 +649,9 @@ worddiff () {
 case $DO in
   kill) cleankill && exit 0 || exit 1;;
   wakeup) wakeup && exit 0 || exit 1;;
-  format) format && exit 0 || exit 1;;
+  format)
+      # mkdir $WHIZZYDIR "$WOUT" 2>/dev/null
+      format && exit 0 || exit 1;;
   normal) 
     # To ensure that only one deamon is running on the spool file.
     if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
