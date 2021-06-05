@@ -95,7 +95,7 @@ To customize whizzytex, you can
     (setq-default whizzytex-mode-hook
        '(lambda () ... <your settings> ...))
 
-where <your settings> should include `whizzy-default-bindings' if you wish
+where <your settings> may include `(whizzy-default-bindings)' if you wish
 to keep default bindings, since your value of the hook will be used instead
 of default one.  You can use `whizzy-unset-options' to unset most
 default options.")
@@ -786,6 +786,7 @@ Entries are sorted per source-file and set to the whizzy variable
                       (kill-process (get-buffer-process buf)))
                   (message "Quitted"))
                 ))))
+    (message "Launching %s with args %S" whizzy-command-name args)
     (setq buf (apply 'make-comint (buffer-name)
                      whizzy-command-name nil args))
     (whizzy-set whizzy-process-buffer buf)
@@ -2588,6 +2589,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
              (string-match "\\./\\([^/]*\\)\\.log" filename))
          (match-string 1 filename)))
        )
+       ;; (message "%S" command)
     (or
      (and
       (or (file-exists-p (setq filename (concat basename ".tex")))
@@ -3277,7 +3279,15 @@ face \(type \\[list-faces-display] for a list of existing faces).")
 
 (defun whizzy-show-interaction (&optional arg)
   "Display WhizzyTeX process buffer according to ARG.
-Toggle if ARG is ommitted."
+Toggle if ARG is ommitted.
+
+Also, according to prefix-numeric value of ARG (or value returned
+interactively):
+
+ 6  toggle `whizzy-auto-show-output' variable.
+ 7  toggle `whizzy-sync-lines' variable.
+ 9  reset both previous variables to nil.
+"
   (interactive "P")
   (if (and whizzy-status
         (or whizzytex-mode (whizzy-get whizzy-active-buffer))) ;
@@ -3289,8 +3299,8 @@ Toggle if ARG is ommitted."
               (and window
                    (window-live-p window)
                    (equal (window-buffer window) shell)))
-             (hide (if (null arg) window-alive
-                     (= (prefix-numeric-value arg) 0)))
+             (narg (prefix-numeric-value arg))
+             (hide (if (null arg) window-alive (= narg 0)))
              (height (window-height))
              (resize))
         (if (and window-alive
@@ -3326,6 +3336,13 @@ Toggle if ARG is ommitted."
                   (select-window (previous-window))
                   (enlarge-window resize)
                   ))
+            (cond
+             ((= narg 6) (whizzy-toggle-auto-show))
+             ((= narg 7) (whizzy-toggle-sync-lines))
+             ((= narg 9)
+              (setq whizzy-auto-show-output nil)
+              (setq whizzy-sync-lines nil)
+              ))
             (if whizzy-status (whizzy-set whizzy-process-window window)))
           )
         )
