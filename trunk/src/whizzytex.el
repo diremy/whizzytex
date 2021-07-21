@@ -5,7 +5,7 @@
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.3.7
+;; Version        : 1.4.0
 ;; Bug Reports    : whizzytex-bugs@inria.fr
 ;; Web Site       : http://gallium.inria.fr/whizzytex
 ;; 
@@ -62,7 +62,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.3.7"
+(defconst whizzytex-version "1.4.0"
    "*This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the

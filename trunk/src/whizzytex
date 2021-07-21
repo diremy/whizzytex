@@ -6,7 +6,7 @@
 #                INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.3.7
+#  Version        : 1.4.0
 #  Bug Reports    : whizzytex-bugs@inria.fr
 #  Web Site       : http://gallium.inria.fr/whizzytex
 #  
@@ -28,7 +28,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.3.7"
+VERSION="1.4.0"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -256,7 +256,8 @@ do
           VIEWCOMMAND=Skim
           ;;
        *) warning "Use an xpdf like viewer, or redefine RELOAD."
-          VIEWCOMMAND="$2";;
+          VIEWCOMMAND="$2"
+          ;;
        esac
        shift
        ;;
@@ -873,7 +874,7 @@ noviewer () {
 }
 
 {
-  $VIEWCOMMAND $WHIZZYVIEW $CLIENTVIEW <&3 2>"$OUTPUT"/view &
+  $VIEWCOMMAND "$WHIZZYVIEW" "$CLIENTVIEW" <&3 2>"$OUTPUT"/view &
   echo $! >> "$TMP"/pids
   ID=$!
   echo $ID > "$TMP"/ID
@@ -899,7 +900,7 @@ skimreload () {
 }
 
 xpdfreload () {
-   case "$1" in curso) 
+   case "$1" in cursor) 
        $VIEWCOMMAND $WHIZZYVIEW +Start-Document;;
    esac
    $VIEWCOMMAND -reload

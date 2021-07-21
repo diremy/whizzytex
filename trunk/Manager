@@ -1,4 +1,4 @@
-ORIGIN=1.3.7
+ORIGIN=1.4.0
 VERSION=$(ORIGIN)
 
 # Url of sources
