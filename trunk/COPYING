@@ -1,8 +1,14 @@
 WhizzyTeX, a WYSIWIG previewer for LaTeX 
 
-Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011  INRIA.
+Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
+              2015, 2016, 2020, 2021.
+              INRIA.  
 
-WhizzyTeX has been developed by Didier Rémy. 
+Author         : Didier Remy <Didier.Remy@inria.fr>
+Version        : 1.4.0
+Bug Reports    : https://github.com/diremy/whizzytex/issues
+Web Site       : http://gallium.inria.fr/whizzytex
+Github         : https://github.com/diremy/whizzytex
 
 WhizzyTeX is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
