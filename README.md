@@ -7,7 +7,7 @@ and some LaTeX macros. It works under Unix with gv and xdvi viewers, but the
 Active-DVI viewer will provide much better visual effects and will offer
 more functionalities.
 
-See the home page http://gallkum.inria.fr/whizzytex/
+See the home page http://gallium.inria.fr/whizzytex/
 
 # Warning!
 
