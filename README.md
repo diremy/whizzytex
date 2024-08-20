@@ -8,7 +8,7 @@ Active-DVI viewer will provide much better visual effects and will offer
 more functionalities.
 
 See the home page http://gallium.inria.fr/whizzytex/
-and [CHANGES](http://gallium.inria.fr/whizzytex/trunk/CHANGES.md).
+and [CHANGES](https://github.com/diremy/whizzytex/blob/master/trunk/CHANGES.md).
 
 # Warning!
 
