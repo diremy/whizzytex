@@ -5,7 +5,7 @@
 %                INRIA.
 %
 %  Author         : Didier Remy <Didier.Remy@inria.fr>
-%  Version        : 1.4.0
+%  Version        : 1.5.0
 %  Bug Reports    : https://github.com/diremy/whizzytex/issues
 %  Github         : https://github.com/diremy/whizzytex/
 %  Web Site       : http://gallium.inria.fr/whizzytex
@@ -30,9 +30,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.4.0}
+\def \whizzy@version {1.5.0}
 %% The Church Boolean
-\newcommand{\Whizzytex}[2]{#1}
+\providecommand{\Whizzytex}[2]{#1}
 
 %% The best to remove problem with hyperref.
 %% Because hyperref does not behave well when precompiled in a format, it
@@ -42,8 +42,6 @@
 %% running pdflatex 
 %% \providecommand*{\Hy@defaultdriver}{hypertex}%
 %% \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
-
-
 
 %% General purpose
 
@@ -73,13 +71,20 @@
   {\whizzy@advifalse}
   {\ifx \WhizzyLevel2\whizzy@advitrue\fi}
 
+%% Logging...
+\newcount \whizzy@loglevel
+\whizzy@loglevel 1
+\let \WhizzyLogLevel \whizzy@loglevel
+\def \whizzy@log #1#2{\ifnum #1>\whizzy@loglevel\else \message {[WHIZZY<#1>: #2]}\fi}
 
 %% \documentclass should be redefined to skip to \begin{document} 
 %% and resumpe. No space must be there, emacs should check that.
 
 %% Right before dumping
 \def \whizzy@documentclass
-   {\begingroup \let \do \@makeother \dospecials \whizzy@skip}
+   {\whizzy@log1 {Right before dumping}%
+    \ifwhizzy@flatheader \let \do \begingroup \else \let \do \relax \fi \do
+    \let \do \@makeother \dospecials \whizzy@skip}
 
 \begingroup
 \catcode `\[ 1 \catcode `\] 2
@@ -98,10 +103,14 @@
   {\endgroup 
    \message {[WhizzyTeX is resuming in LaTeX mode]}%
    \whizzy@latexmodetrue
+   \whizzy@log2 {Running whizzy hook (before)loadaux}%
    \whizzy@fulldocumenthook
    \relax
    \let \documentclass \latex@documentclass
-   \begin{document}}
+   \ifwhizzy@flatheader \let \do \relax \else \let \do \begingroup\fi \do
+   \document
+   %% \begin{document}%
+   }
 \def \WhizzyAtFullDocument {\g@addto@macro \whizzy@fulldocumenthook}
 \def \WhizzyAtBeginSlice {\g@addto@macro \whizzy@beginslicehook}
 
@@ -115,7 +124,10 @@
 \def \whizzy@document {\aftergroup \whizzy@begindocumenthook \latex@document}
 \def \whizzy@begindocumenthook {}
 %% This will fire after resume, rather use AtBeforeWhizzyDump
-\def \WhizzyAtBeginDocument {\g@addto@macro \whizzy@begindocumenthook}
+\def \WhizzyAtBeginDocument {%
+  \whizzy@log2 {Running whizzy hook begindocument}%
+  \g@addto@macro \whizzy@begindocumenthook
+  }
 \def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
 \def \Whizzy #1{\ifwhizzy@latexmode \let \@do \relax\else \def \@do {#1}\fi
 \@do}
@@ -133,8 +145,10 @@
  {\begingroup
     \@floatplacement \@dblfloatplacement \makeatletter \let \@writefile
      \@gobbletwo \global \let \@multiplelabels \relax 
+     \whizzy@log2 {Running whizzy hook (before)loadaux}%
      \whizzy@loadauxhook
      \@input {\jobname .aux}%
+     \whizzy@log2 {Runnining whizzy hook endloadaux}%
      \whizzy@endloadauxhook
      \global \let \whizzy@multiplelabels \@multiplelabels
      \global \let \@newl@bel \whizzy@newl@bel
@@ -179,12 +193,20 @@
 %% latex.ltx. The macro {@kernel@after@begindocument@before is undefined in
 %% older versions.
 
+%% We are using the new latex engine, which does not install \begingroup
+%% before \document
+\newif \ifwhizzy@flatheader
+\@ifundefined {@kernel@after@begindocument@before}
+     {\whizzy@flatheaderfalse}
+     {\whizzy@flatheadertrue}
+
 \def \document 
-  {\@ifundefined {@kernel@after@begindocument@before}{\endgroup}{}%
+  {\ifwhizzy@flatheader \let \do \relax \else \let \do \endgroup\fi \do
    \whizzy@beforeauxhook
    %% \whizzy@loadconfig %{whizzy.sty}%
-   \begingroup \def \@currenvir {document}%
-   \whizzy@loadaux
+   \begingroup
+     \def \@currenvir {document}%
+     \whizzy@loadaux
    \endgroup
    \whizzy@beforedumphook
    \let \latex@documentclass \documentclass
@@ -201,16 +223,17 @@
 %% OLD:  hyperref does not behave well when precompiled in a format
 
 \def \WhizzyNIL {nil}
+\def \WhizzyPS {ps}
 \def \WhizzyPDF {pdf}
 \def \WhizzyDVI {dvi}
 
 \@ifundefined {WhizzyMode}
   {}
-  {\message {[\string\WhizzyMode\space is preset to \WhizzyMode]}}
+  {\whizzy@log0 {\string\WhizzyMode\space is preset to \WhizzyMode}}
   
 \def \WhizzyProvideMode #1%
   {\@ifundefined {WhizzyMode}
-    {\let \WhizzyMode=#1\message {\string\WhizzyMode set to \WhizzyMode}}
+    {\let \WhizzyMode=#1\whizzy@log0 {\string\WhizzyMode set to \WhizzyMode}}
     {}}
 
 \@ifundefined {pdfoutput}
@@ -223,16 +246,20 @@
   \providecommand* {\Hy@defaultdriver}{pdftex}%
   \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
   \RequirePackage{hyperref}%
+\else \ifx \WhizzyMode \WhizzyPS
+  \providecommand* {\Hy@defaultdriver}{dvips}%
+  \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
+  \RequirePackage{hyperref}%
 \else
   \providecommand* {\Hy@defaultdriver}{hypertex}%
   \PassOptionsToPackage{\Hy@defaultdriver}{hyperref}%
-\fi
+\fi\fi
 
-\message {[Default hyperref driver is set to \Hy@defaultdriver]}
+\whizzy@log0 {Default hyperref driver is set to \Hy@defaultdriver}
 
 %% To be investigated
 %% Too late + does not work even if passed before \documentclass. 
-%%   \message{**PassOptionsToClass{beamer}{hypertex}}%
+%%   \whizzy@log0{**PassOptionsToClass{beamer}{hypertex}}%
 %%   \PassOptionsToClass{beamer}{hypertex}%
 
 
@@ -282,7 +309,7 @@ to slice!\par \bigskip}}%
 }
 
 \def \WhizzytexInput #1{%
-\message {[WhizzyTeX is dumping positions in _whizzy_#1.pag]}%
+\whizzy@log0 {WhizzyTeX is dumping positions in _whizzy_#1.pag}%
 \newwrite \whizzy@pag
 \immediate \openout \whizzy@pag _whizzy_#1.pag\relax
 \whizzy@putmarks
@@ -302,7 +329,7 @@ to slice!\par \bigskip}}%
    {\whizzy@count \inputlineno 
     \advance \whizzy@count by \whizzy@linediff\relax}
 \def \whizzy@setlinediff #1{\global \xdef \whizzy@linediff {#1}%
-   \message{^^J##line+=\whizzy@linediff^^J}}
+   \whizzy@log0{^^J##line+=\whizzy@linediff^^J}}
 \def \whizzy@addtolineno 
    {\advance \whizzy@count by \whizzy@linediff
     \whizzy@setlinediff {\the \whizzy@count}}
@@ -449,7 +476,7 @@ to slice!\par \bigskip}}%
 
 %% Note the use of a function to work with recursive inputs: we cannot 
 %% open groups around the \input to save the name of current file to reset
-%% it at the end. The function call just save the name over \input{...}
+%% it at the end. The function call just save the name over \inpu{...}
 
 \def \whizzy@pfd {.fd}
 \def \whizzy@undo@fd #1.fd#2\relax
@@ -460,9 +487,9 @@ to slice!\par \bigskip}}%
       {\whizzy@setnorm{#3}%
        %% To be fix: \whizzy@curfile may be have an extension
        %% Problem when input is called for loading stmaryrd/Ustmry.fd font
-       %% This occurs when \string \def expands to def
-       %% Previous fix was to force \input{Ustmry.fd} before \beging{document}
-       %% New fix is don't do it when \the\catcode `\\ is non 0
+       %% This occurs when \string \def expands to def:
+       %%  - Previous fix was to force \input{Ustmry.fd} before \beging{document}
+       %%  - New fix is don't do it when \the\catcode `\\ is non 0
        %% The following need to be in a group so that \immediate is not
        %% evaluated  \ifnum \immediate \write... \fi does not seem to work
        %% \expandafter \ifnum \the\catcode `\\=0 \@do \fi neither
@@ -495,14 +522,16 @@ to slice!\par \bigskip}}%
 \def \whizzy@fill 
   {%\if \vmode\leavevmode\fi
    \leaders \hrule height 0.15em \hfill \kern \z@}
+\newif \ifWhizzyShowBanner \WhizzyShowBannertrue
 \def \whizzy@banner #1{%
   \whizzy@outputline {0}{\whizzy@local}%
+  \ifWhizzyShowBanner  
   \whizzy@setfile {\whizzy@master}%
    \vbox
     {\whizzy@outputline {0}{\whizzy@master}%
      \whizzy@outputline {0}{\whizzy@master}%
      #1%
-     \whizzy@outputline {0}{\whizzy@master}}%
+     \whizzy@outputline {0}{\whizzy@master}}\fi%
      \whizzy@setfile {\whizzy@local}\par
      \whizzy@outputline {0}{\whizzy@local}%
    }
@@ -513,14 +542,25 @@ to slice!\par \bigskip}}%
        Mastered by \whizzy@master\space \whizzy@fill}}\fi}
 \def \whizzy@outputmaster {\whizzy@master@banner}
 \def \whizzy@master@end{\ifWhizzyShowMaster 
-        \par \bigskip \whizzy@master@banner \par\fi}
+        \par \bigskip \whizzy@master@banner \par
+        \fi}
 
-
+\let \WhizzyMasterHook \relax
 \def \WhizzyMaster #1{%
   \def \whizzy@local {#1}%
   \par \whizzy@master@banner \par\bigskip
+  \relax
+  \whizzy@log2 {Running whizzy hook Master}%
+  \WhizzyMasterHook
+  \relax
   \AtEndDocument {\whizzy@master@end}%\Whizzy@file
 }
+
+\AtBeginDocument
+  {\@ifundefined{new@pdflink}{}{\let \whizzy@putlink \new@pdflink}}
+
+\AtEndDocument
+  {\whizzy@log2 {At End Document}}
 
 %%% Not necessary, but will make .idx file at every global run, and
 %%% will not erase it when slicing.
@@ -609,16 +649,16 @@ to slice!\par \bigskip}}%
 %%%% Section 4: independent cool, robust stuff
 
 \let \whizzy@tt \texttt
-\long \def \@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
+\long \def \end@Meaning #1{\string #1=\meaning #1\egroup\egroup \endgroup}
 \newcommand{\Meaning}
   {\par \medskip \hrule \smallskip \begingroup \hsize 0.75\hsize
        \vbox \bgroup \def \ttdefault{cmtt}\whizzy@tt \bgroup \makeatletter
-       \@Meaning} 
+       \end@Meaning} 
 \newcommand{\xMeaning}[1]
-  {\expandafter \Meaning \csname \string#1\endcsname}
+  {\expandafter \Meaning \csname \string #1\endcsname}
 
 \newcommand{\pMeaning}[1]
-  {\expandafter \Meaning \csname \string#1 \endcsname}
+  {\expandafter \Meaning \csname \string #1 \endcsname}
 
 \newcommand{\csMeaning}[1]
   {\expandafter \Meaning \csname #1\endcsname}
@@ -647,8 +687,8 @@ to slice!\par \bigskip}}%
 
 \edef\whizzy@quote{\string"}
 \def \whizzy@putlink #1{%
-      \special {html:<A name=\whizzy@quote #1\whizzy@quote>}%
-      \special {html:</A>}}%
+      \special {html:<a name=\whizzy@quote #1\whizzy@quote>}%
+      \special {html:</a>}}%
 \AtBeginDocument
     {\@ifundefined{new@pdflink}{}{\let \whizzy@putlink \new@pdflink}}
 
@@ -674,7 +714,10 @@ to slice!\par \bigskip}}%
 %% We assume eTeX engine
 \RequirePackage {etoolbox}
 \let \whizzy@beginhook \relax
-\pretocmd {\begin}{\whizzy@beginhook}{}{}
+\pretocmd {\begin}{%
+  \whizzy@log2 {Running whizzy hook begin}%
+  \whizzy@beginhook
+}{}{}
 
 \def \whizzy@start@here
    {\whizzy@putlink{Start-Document}%
@@ -686,8 +729,8 @@ to slice!\par \bigskip}}%
                            line=\whizzy@line->\the\whizzy@count;\space
                            page=\the\c@page;\space End}%
     \immediate \closeout \whizzy@outmark
-    \message {[Start-Document @ \whizzy@line -> \the\whizzy@count\space
-               \whizzy@curfile]}%
+    \whizzy@log0 {Start-Document @ \whizzy@line -> \the\whizzy@count\space
+               \whizzy@curfile}%
     \whizzy@makelineno
     \global \let \whizzy@checkline \relax
     \global \let \whizzy@@checkline \relax
@@ -833,7 +876,12 @@ to slice!\par \bigskip}}%
 %%% Should I do that -- load advi.sty if not loaded? 
 %%% Provides floating table of contents
 
-\IfFileExists{advi.sty}{\usepackage{advi}}{}%
+%% %% XXX [2024-06-04] this is experimental, still to be tested
+%% \IfFileExists{advi.sty}{\usepackage{advi}}{}%
+%% \IfFileExists{advi.sty}{\usepackage{softref}}{}%
+%% \renewcommand{\contentsline}[4]
+%%    {\gdef \@contentsline@destination {#3}\csname l@#1\endcsname
+%%      {\softlink {page.#3}{#2}}{#3}}
 
 %%% For whizzy-edition
 
@@ -895,7 +943,16 @@ to slice!\par \bigskip}}%
 %%   \endlinechar`\^^M \catcode`\^^M=12%
 %%   \@ifnextchar\bgroup{\afterassignment\beamer@specialprocessframefirstline\let\beamer@temp=}{\beamer@processframefirstline}}%
 
-
+%% % XXX:  I don't remember why this has been added
+%% \def \whizzy@checkbeamer {%
+%%   \ifpdfoutput=1
+%%     \@ifclassloaded{beamer}{%
+%%     \typeout{this uses beamer class}%
+%%     }{%
+%%      \usepackage{titling}
+%%     \typeout{this does not use beamer class}%
+%%   \fi
+%% }}
 
 \AtBeginDocument
   {\@ifundefined{beamer@verbatimreadframe}{}
@@ -961,7 +1018,7 @@ to slice!\par \bigskip}}%
      \whizzy@count=999\relax
   \else
     \afterassignment \whizzy@skipto@relax \whizzy@count 0#1\relax
-    \message {COUNT #1 => \the\whizzy@count}%
+    \whizzy@log0 {COUNT #1 => \the\whizzy@count}%
   \fi
 }
 
@@ -1042,7 +1099,7 @@ to slice!\par \bigskip}}%
 %\let \caption \whizzy@caption
 
 %% CUT OF for course
-\AtBeginDocument
+\def \whizzy@labelref@activate
   {\ifwhizzy@latexmode \else 
    %% Check whether it is still the default binding
    %% The cleverref package redefines it with an optional argument!
@@ -1055,11 +1112,20 @@ to slice!\par \bigskip}}%
    %% Else do not patch
    \fi}
 
-%%%% To deactivate, just comment the previous line
+%%%% To deactivate, just comment the following line
+\AtBeginDocument {\whizzy@labelref@activate}
+
+\def \WhizzyNewpage {%
+  \catcode `\^^L \active
+  \def  {\newpage}}
+
+
 %%%% END Experimental feature: adjustement of labels.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 \whizzy@endinput
+
+
+
 
 % whizzytex.sty ends here

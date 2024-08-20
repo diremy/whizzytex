@@ -2,11 +2,11 @@
 #
 #  whizzytex --- WhizzyTeX, a WYSIWIG environment for TeX
 #  Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-#                2015, 2016, 2020, 2021.
+#                2015, 2016, 2020, 2021, 2024.
 #                INRIA.
 #
 #  Author         : Didier Remy <Didier.Remy@inria.fr>
-#  Version        : 1.4.0
+#  Version        : 1.5.0
 #  Bug Reports    : https://github.com/diremy/whizzytex/issues
 #  Web Site       : http://gallium.inria.fr/whizzytex
 #  
@@ -28,7 +28,7 @@
 
 ### Configuration (manual or automatic)
 
-VERSION="1.4.0"
+VERSION="1.5.0"
 
 # name (or full path) of the dump latex2e package file (without the extension)
 PACKAGE=whizzytex.sty
@@ -76,7 +76,7 @@ TEXERRORMAXLINES=50
 TEXERRORAROUND=20
 
 # time limit for running initex in case this could loop, undetectedly!
-LIMIT=20
+LIMIT=60
 
 # Signals telling gv and xdvi/advi to refresh
 SIGDVI=SIGUSR1
@@ -132,6 +132,10 @@ LEVEL=0
 RELOAD=sigreload
 RELAODARG=""
 
+# DEBUGGING
+
+# 
+
 llpplaunch () {
     rm -f $WREMOTE && \
     mkfifo $WREMOTE && \
@@ -145,6 +149,8 @@ do
    -kill) DO=kill;;
    -wakeup) DO=wakeup;;
    -formatonly) DO=format;;
+   -sliceonly) DO=slice;;
+   -batch) DO=batch;;
    -mkslice) MKSLICE="$2"; shift;;
    -mkfile) MKFILE="$2"; shift;;
    -duplex) DUPLEX=true;;
@@ -294,6 +300,11 @@ where <option> is
     -kpdf kpdf
     -display <X display> 
     -version 
+
+# additional debuging options:
+
+    -formatonly         # dump format and exit
+    -batch              # dump format, resume compilation with that format, and exit
   ' 1>&2
        exit 1;;
    *) break;;
@@ -323,14 +334,19 @@ NAME=$(basename "$BASENAME" "$FILEEXT")
 
 # Load configuration files, all files are loaded in order
 
+# PATHS would expose the user to attacks ../whizzy.sh  ../lib/whizzy.sh \
+
 for CONFIG in \
-    "$CONFIGDIR/whizzytex.conf" {"$HOME",.}/.whizzytexrc \
-    {"$CONFIGDIR","$HOME"/.whizzytex}/whizzy.sh whizzy.sh "$NAME.wsh"
+    "$NAME.wsh" \
+        whizzy.sh \
+        "$CONFIGDIR/whizzytex.conf" {"$HOME",.}/.whizzytexrc \
+        {"$CONFIGDIR","$HOME"/.whizzytex}/whizzy.sh 
 do
   if [ -f "$CONFIG" ]
   then
     echo "Loading configuration file: $CONFIG"
     . "$CONFIG"
+    break
   fi
 done
 
@@ -347,7 +363,6 @@ WHIZZYDIR=${WHIZZY}_d
 case "$WOUT" in
     "././out") WOUT="$WHIZZYDIR/out" ;;
 esac
-WFORMAT="&$WOUT/$WHIZZY"
 LOCK=.${WHIZZY}$EXT
 SLICE=${WHIZZY}.new
 WSYNCTEX=${WHIZZY}.synctex.gz
@@ -356,6 +371,9 @@ WHIZZYOUT="$WOUT/$WHIZZY"
 WHIZZYVIEW="$WHIZZYOUT.$VIEW"
 NAMEOUT="$WOUT/$NAME"
 NAMEVIEW="$NAMEOUT.$VIEW"
+
+WFORMAT="&$WHIZZYOUT"
+
 
 # Be careful fullnames may contain a space.
 
@@ -388,6 +406,7 @@ echo "
         DUPLEX=$DUPLEX
         VIEW=$VIEW
         MODE=$MODE
+	RELOADARGS
         VIEWCOMMAND=$VIEWCOMMAND
         RELOAD=$RELOAD
         LEVEL=$LEVEL
@@ -522,7 +541,9 @@ runslice  () { ( ulimit -t $LIMIT ; $LATEX $OUTDIR$WOUT "$@" ); }
 echo DVI=$DVI
 
 format () {
- ( echo runinitex \'"&$FORMAT"\' \'"$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}'\'; runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}' )
+    ( echo runinitex \'"&$FORMAT"\' \'"$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}'\';
+      runinitex "&$FORMAT" "$LATEXCOMMANDLINE$LATEXCOMMANDS"'\nonstopmode\makeatletter\def\WhizzyMode {'$DVI'}\def\SourceFile{\def\whizzy@master}\def\WHIZZYCONFIGDIR{'"$CONFIGDIR"'}\def\WHIZZYHOME{'"$HOME"'}\makeatother\let\Documentclass\documentclass\renewcommand{\documentclass}[2][]{\Documentclass[#1]{#2}\let\WhizzyLevel'"$LEVEL"'\def\WhizzyExt{'"$EXT"'}\input{'"$PACKAGE"'}}\input{'"$NAME$EXT"'}'
+    )
 }
 
 #############################################################################
@@ -651,9 +672,33 @@ case $DO in
   kill) cleankill && exit 0 || exit 1;;
   wakeup) wakeup && exit 0 || exit 1;;
   format)
-      # mkdir $WHIZZYDIR "$WOUT" 2>/dev/null
+      mkdir $WHIZZYDIR "$WOUT" 2>/dev/null
       format && exit 0 || exit 1;;
-  normal) 
+  slice)
+      # asumes format exists
+      runslice $WFORMAT $TMP/$WHIZZY$EXT && exit 0 || exit 1;;
+  slice)
+      # asumes format exists
+      runslice $WFORMAT $WHIZZY$EXT && exit 0 || exit 1;;
+  batch)
+      mkdir $WHIZZYDIR "$WOUT" "$OUTPUT" 2>/dev/null
+      if format
+      then
+          if runlatex "&$WOUT/$NAME" $NAME
+
+          then
+              echo '# Whole compilation SUCCEEDED'
+              exit 0
+          else 
+              echo '# Whole compilation FAILED'
+              exit 1
+          fi
+      else
+          echo 'Formatting FAILED'
+          exit 2
+      fi
+      ;;
+  normal)
     # To ensure that only one deamon is running on the spool file.
     if [ -f $LOCK ] && kill -CONT $(cat $LOCK) 2>/dev/null 
     then
@@ -723,6 +768,8 @@ else
         additional information.
         **************************************************************
 '         
+       echo 'You may also try the command'
+       echo '     whizzytex -formatonly' $FULLNAME 
      }
      fatal initialization 'Could not build format ---See message above'
   fi
@@ -875,9 +922,9 @@ noviewer () {
 
 {
   $VIEWCOMMAND "$WHIZZYVIEW" "$CLIENTVIEW" <&3 2>"$OUTPUT"/view &
-  echo $! >> "$TMP"/pids
   ID=$!
   echo $ID > "$TMP"/ID
+  echo $ID >> "$TMP"/pids
   wait $ID && quit || fatal 'Viewing process terminated abnormally'
   } &
 
@@ -965,7 +1012,6 @@ mupdfreload () {
 wholereload () {
    if $MULTIPLE; then sigreload; fi
 }
-
 
 
 # Recompilation should run in batch, with a status
@@ -1072,6 +1118,13 @@ llppswitch () {
   fi
 }
 
+case $MODE in
+    advi) SWITCH="sendcommand w" ;;
+    kpdf) SWITCH=kpdfswitch ;;
+    llpp) SWITCH=llppswitch ;;
+    *)    SWITCH=true ;;
+esac
+
 echo '<Initialization succeeded, entering loop>'
 while true
 do
@@ -1086,7 +1139,8 @@ do
      echo '<Waiting>'
      read $READOPTION COMMAND REST
      case "$COMMAND" in
-       duplex) duplex ;;
+         duplex) duplex ;;
+         reload) $RELOAD ;;
        reformat) checkMKfile $REST; reformat $RELOAD ;;
        autorecompile)
          case $REST in
@@ -1118,12 +1172,7 @@ do
        exit) break ;;
        nextslice) RELOADARG="";;
        reslice) RELOADARG="$REST";;
-       switch)
-             case $MODE in
-                 advi) sendcommand w ;;
-                 kpdf) kpdfswitch ;;
-                 llpp) llppswitch ;;
-             esac;;
+       switch) $SWITCH ;;
        # nextslice) preprocess && process && $RELOAD ;;
        # reslice) preprocess && process && $RELOAD $REST;;
        "") ;;

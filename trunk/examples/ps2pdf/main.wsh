@@ -2,13 +2,16 @@
 # We asume that it was lauched with -advi 
 
 mycopy () {
-    FROM="$1"
-    $DVIPS -o "$TMP/$FROM.ps" "$FROM" 2>/dev/null && \
-    rm $FROM && \
-    ps2pdf "$TMP/$FROM.ps" "$FROM.pdf" && \
+    FROM=$(basename $1 .dvi)
+    (cd $WOUT && \
+    $DVIPS -o "$FROM.ps" "$FROM.dvi" 2>/dev/null && \
+    rm "$FROM.dvi" && \
+    ps2pdf -dALLOWPSTRANSPARANCY "$FROM.ps" "$FROM.pdf" && \
     # Change of target should be atomic. 
-    mv "$FROM.pdf" "$2"
+    mv "$FROM.pdf" "$2")
 }
+
+set -x
 
 WHIZZYTMPFILES="{$NAME.dvi.ps,$WHIZZY.dvi.ps}"
 
@@ -17,4 +20,3 @@ DVICOPY=mycopy
 LEVEL=1
 RELOAD=xpdfreload
 VIEWCOMMAND="xpdf -remote $$"
-

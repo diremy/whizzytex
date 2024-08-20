@@ -1,0 +1,78 @@
+%; whizzy -advi "advi -html Start-Document -edit" -mkfile ls
+
+\documentclass{article}
+\usepackage{subfiles}
+\usepackage{hyperref}
+
+\csname WhizzyShowMasterfalse\endcsname
+  
+\begin{document}
+
+\section {This is the {\em master} file}
+   
+This is a test with the
+\href
+{https://ctan.tetaneutral.net/macros/latex/contrib/subfiles/subfiles.pdf}
+{subfiles} \LaTeX\ package and document style.
+
+This is an aternative to \texttt{\string\includes} that allows
+a document to be split in several files and latexed either all at once or
+file-by-file.  See the the
+\href
+{https://ctan.tetaneutral.net/macros/latex/contrib/subfiles/subfiles.pdf}
+{package documentation} for details.
+
+
+This text  is the {\bf master} file \verb"main.tex".   
+It has two two subfiles \verb"first.tex" and \verb"second.tex"
+in the same directory
+
+This is the fist section that of the main feil.  Move to next section
+for file inclusion.
+
+\section {A master section, loading the first slave} 
+
+The rest of this section is input from \texttt{first.tex}.
+The rest of this section ends with:
+\begin{verbatim}
+\subfile {first}   
+\end{verbatim}
+\subfile {first}   
+
+
+ 
+\section {Another master section, loading the first slave}
+
+The next example is a few sections from an included file (hence the rest of
+the slice follows on the next page). Note that, even though slices are by
+section the included file, which contained several section is not sliced.
+You may click on one of the included sections, which will move the pointer
+and pass contol to the included file. Then, only one section of the
+included file will be sliced. The sliced is delimited with lines: 
+$$
+\centerline{\hrulefill\space \lower 0.5ex \hbox{\bf Mastered by main.tex}
+\hrulefill}
+$$
+on which you click to return to the master. 
+
+The rest of this section ends with:
+\begin{verbatim}
+\subfile {second}
+\end{verbatim}
+\subfile {second}
+
+\section {Last section, from master}
+
+You may also input a file from a subdirectory: 
+The rest of this section ends with:
+\begin{verbatim}
+\subfile {subdir/subdirfile}
+\end{verbatim}
+\subfile {subdir/subdirfile}
+
+\section{The end}
+The document ends here. 
+
+
+\end{document}
+

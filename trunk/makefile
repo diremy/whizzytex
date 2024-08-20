@@ -6,7 +6,7 @@ TEX=$(HOME)/lib/tex
 # Stable version
 RELEASE=1.3.5
 # Current version
-VERSION=1.4.0
+VERSION=1.5.0
 # rpm release version
 Release=1
 # YAP version -- independant versionning. 
@@ -177,7 +177,7 @@ $(PACKDIR)/whizzytex.elc: $(PACKDIR)/whizzytex.el byte-compile.el
 	emacs --batch -q -l ../byte-compile.el 2>log && cat log  && \
 	if grep -e '\*\*' log; then rm -f ../$@; false; fi; \
 	fi
-	if which xemacs; then \
+	if which XXXxemacs; then \
 	echo 'Compiling with xemacs'; \
 	cd $(PACKDIR); \
 	xemacs -batch -q -l ../byte-compile.el 2>log && cat log && \

@@ -1,0 +1,29 @@
+\documentclass[main.tex]{subfiles}
+
+\begin{document}
+
+\subsection {This is the first (sub)section of the slave}
+
+This file {\tt first.tex} is mastered by {\tt main.tex}.  The slice is at
+most the current file (but may be smaller).  The slice is surrounded by
+titles reminding the master, and written in such a way that positioning on
+these in the previwer (if you are previeweing with advi) should point to the
+master file (at a non-existing position interpretted as the old position).
+ 
+
+You can edit the slave, move in the slave, or position in the previewer. 
+
+You can also return to the master from emacs or by clicking on the master
+text in the previewer. 
+
+\section {Another slice in the first slave}
+
+The slave will only show its own slice (and the surronding master marks)
+
+The slace can input another slave, recursively:
+
+\subfile {insidefirst}
+
+Now we are back.
+
+\end{document}

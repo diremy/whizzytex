@@ -16,6 +16,8 @@ SINCE LAST MAJOR RELEASE:
 
 Emacs-mode:
 
+ - version 1.5.0
+ * Fix slave setting for subfiles package and format.
  - version 1.4.0
  - version 1.3.7
  - version 1.3.6
@@ -29,7 +31,7 @@ Emacs-mode:
 
 Shell-script: 
 
-
+ - version 1.5.0
  - version 1.4.0
  * Fixed whizzytex --formatonly to create subdirs
  - version 1.3.7
@@ -47,6 +49,8 @@ Shell-script:
 
 LaTeX macros:
 
+ - version 1.5.0
+ * Still missing instrumentation forsubfiles package and format.
  - version 1.4.0
  * Fixed \document for new versions of latex.ltx in textlive 2021
  - version 1.3.7

@@ -1,11 +1,11 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-;;               2015, 2016, 2020, 2021.
+;;               2015, 2016, 2020, 2021, 2024.
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.4.0
+;; Version        : 1.5.0
 ;; Bug Reports    : https://github.com/diremy/whizzytex/issues
 ;; Github         : https://github.com/diremy/whizzytex/
 ;; Web Site       : http://gallium.inria.fr/whizzytex
@@ -63,8 +63,8 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.4.0"
-   "*This tells the version of WhizzyTeX emacs-mode.
+(defconst whizzytex-version "1.5.0"
+   "This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
 unix PATH and \"whizzytex.sty\" visible from the TEXINPUTS path (this later
@@ -83,7 +83,7 @@ if your using advi gadgets---see the manual for details.")
 
 ;;; Bindings
 (defvar whizzytex-mode-hook 'whizzy-default-bindings
-  "*Hook run when `whizzytex-mode' is turned on (before default setting).
+  "Hook run when `whizzytex-moden' is turned on (before default setting).
 
 By default it is equal to `whizzy-default-bindings' which setup useful 
 bindings, including a menu bar.  If you wish to cancel default bindings, 
@@ -94,17 +94,27 @@ just add in your Emacs configuration file (usually ~/.emacs.el):
 To customize whizzytex, you can
 
     (setq-default whizzytex-mode-hook
-       '(lambda () ... <your settings> ...))
+       \\='(lambda () ... <your settings> ...))
 
 where <your settings> may include `(whizzy-default-bindings)' if you wish
 to keep default bindings, since your value of the hook will be used instead
 of default one.  You can use `whizzy-unset-options' to unset most
 default options.")
 
+;;; Helper elisp functions
+
+(defvar whizzy-elisp-debug nil
+  "WhizzyTeX elisp debug mode")
+
+(defun whizzy-debug (arg &rest more)
+  (if whizzy-elisp-debug (apply 'message arg more)))
+
+
 ;;; User variables
 
+
 (defvar whizzy-command-name "whizzytex"
-  "*Short or full name of the WhizzyTeX deamon.")
+  "Short or full name of the WhizzyTeX deamon.")
 
 (defvar whizzy-viewers
   '(
@@ -119,12 +129,12 @@ default options.")
     ("-mupdf" "mupdf")
     ("-nopdf" "noviewer")
    )
-  "*Alist defining accepted previewers and their default configuration.
+  "Alist defining accepted previewers and their default configuration.
 
 The first element of the list (which should never be empty), defines the 
 default previewer. Hence, you can use:
 
-    (setq-default whizzy-viewers \'((\"-dvi\" \"xdvi\") (\"-ps\" \"gv\")))
+    \(setq-default whizzy-viewers \\='((\"-dvi\" \"xdvi\") (\"-ps\" \"gv\")))
 
 to make xdvi the default previewer.
 
@@ -134,7 +144,9 @@ Each element of the alist is of the form
 
 where
 
-  <type> can only be \"-advi\", \"-dvi\", \"-nodvi\", \"-ps\", \"-pdf\", \"-kpdf\",  \"-gpdf\" or \"-nopdf\".
+  <type> can only be
+   \"-advi\", \"-dvi\", \"-nodvi\",\"-ps\",
+   \"-pdf\", \"-kpdf\",  \"-gpdf\" or \"-nopdf\".
 
   <command>
 
@@ -197,16 +209,16 @@ See also `whizzy-write-configuration'.")
 
 (defvar whizzy-slicing-commands
   (list 'set-mark-command)
-  "*List of commands that should force a slice, anyway.
+  "List of commands that should force a slice, anyway.
 Should remain small for efficiency...")
 
 (defvar whizzy-noslicing-commands
   (list 'handle-switch-frame)
-  "*List of commands that should always be ignored for slicing.
+  "List of commands that should always be ignored for slicing.
 Should remain small for efficiency...")
 
 (defvar whizzy-line t
-  "*Tell whether DVI should be instrumented with source line numbers.
+  "Tell whether DVI should be instrumented with source line numbers.
 
 Only useful with advi type of previwers.
 
@@ -226,7 +238,7 @@ This can be toggled from the menu bar or with `whizzy-toggle-line'.")
 (make-variable-buffer-local 'whizzy-line)
 
 (defvar whizzy-point-visible t
-  "*Make point visible (and refresh when not too busy). 
+  "Make point visible (and refresh when not too busy). 
 
 When the previewer is advi like, this also enables advi to turn pages
 automatically, much as `whizzy-line' but in a most precise way. 
@@ -250,7 +262,7 @@ not be printed  in the current slice.")
 (make-variable-buffer-local 'whizzy-point)
 
 (defvar whizzy-paragraph-regexp "\n *\n *\n"
-  "*Regexp for paragraph mode.")
+  "Regexp for paragraph mode.")
 (make-variable-buffer-local 'whizzy-paragraph-regexp)
 
 (defvar whizzy-overlays
@@ -262,31 +274,31 @@ not be printed  in the current slice.")
            (functionp 'delete-overlay)
            (functionp 'overlay-put))
       )
-  "*If true  WhizzyTeX will overlay LaTeX errors. 
-In XEmacs, this requires the package 'overlay to be loaded.")
+  "If true  WhizzyTeX will overlay LaTeX errors. 
+In XEmacs, this requires the package \\='overlay to be loaded.")
 
 (defvar whizzy-pop-up-windows nil
-  "*Local value of `pop-up-windows' for WhizzyTeX.
+  "Local value of `pop-up-windows' for WhizzyTeX.
 If set, WhizzyTeX can split windows when visiting new buffers.")
 
 (defvar whizzy-auto-visit 'whizzytex
-  "*Determine what WhizzyTeX should do when a slace buffer is visited.
+  "Determine what WhizzyTeX should do when a slave buffer is visited.
 
-Nil means nothing, 'whizzytex means turn WhizzyTeX mode on, 'ask means ask
+Nil means nothing, \\='whizzytex means turn WhizzyTeX mode on, \\='ask means ask
 using y-or-no before turning on, and t means visit the  buffer, but do
 not turn WhizzyTeX mode on.")
 
 (defvar whizzy-save-buffers nil
-  "*Determine whether WhizzyTeX should save buffer when starting.
-If set to 'ask will prompt the user with y-or-n, otherwise will save or
+  "Determine whether WhizzyTeX should save buffer when starting.
+If set to \\='ask will prompt the user with y-or-n, otherwise will save or
 not according to the value of this variable."
 )
 
 (defvar whizzy-auto-raise t
-  "*If true WhizzyTeX will raise the frame a WhizzyTeX buffer is visited.")
+  "If true WhizzyTeX will raise the frame a WhizzyTeX buffer is visited.")
 
 (defconst whizzy-mode-regexp-prefix
-  "\n\\(%WHIZZY\\|\\\\begin{[A-Za-z]*}[ \n]*\\|\\)")
+  "\n\\(%%* *WHIZZY\\|\\\\begin{[A-Za-z]*}[ \n]*\\|\\)")
 
 (defvar whizzy-mode-regexp-alist
   (append
@@ -313,7 +325,7 @@ not according to the value of this variable."
      (none . nil)
      )
    ))
-  "*An alist defining slicing modes.
+  "An alist defining slicing modes.
 
 Each element is a pair (<mode> .  regexp) that defines for the regexp that
 separates slices in mode <mode>.
@@ -330,7 +342,7 @@ it overrides this regexp locally, even if the slicing mode is not paragraph.")
     (cons "book" 'chapter)
     (cons "memoir" 'chapter)
     )
-  "*Alist mapping latex document class to slicing modes.
+  "Alist mapping latex document class to slicing modes.
 \(See also `whizzy-mode-regexp-alist')"
 )
 
@@ -513,7 +525,9 @@ in format.")
 (defconst whizzy-filename 10)
 (defconst whizzy-basename 11)
 (defconst whizzy-slicename 12)
-(defconst whizzy-slaves 13)
+(defconst whizzy-slaves 13
+  "List input files under control of `whizzy-master-buffer'"
+  )
 
 (defconst whizzy-slice-start 14)
 (defconst whizzy-slice-time 15)
@@ -1247,11 +1261,11 @@ numeric value is 0.
 
 For example, 
 
-        '(whizzy-customize \"\\\\large\")
+        \\='(whizzy-customize \"\\\\large\")
 
 will preview the document in larger font, which you can later cancel with
 
-        '(whizzy-customize nil)
+        \\='(whizzy-customize nil)
 
 For permanent customization, you may use a file whizzy.sty in the current
 latex path, which is automatically loaded when WhizzyTeX-ing the document. 
@@ -1570,9 +1584,9 @@ Can be set with `whizzy-slice-adjust' and from entry adjust in menu Slicing."
 (defun whizzy-suspend (&optional arg)
   "Suspend, slice once, or resume slicing in the current buffer.
 
-If `whizzytex-mode' is t, then set it to 'suspended and suspend WhizzyTeX. 
+If `whizzytex-mode' is t, then set it to \\='suspended and suspend WhizzyTeX. 
 
-If `whizzytex-mode' is 'suspended, just slice once if ARG is 1; 
+If `whizzytex-mode' is \\='suspended, just slice once if ARG is 1; 
 otherwise, resume WhizzyTeX and set mode to t. 
 
 This only stops slicing and does not kill WhizzyTeX.  It can be useful to do
@@ -1601,12 +1615,12 @@ a sequence of editing while slicing could be distracting or annoying."
     (error "Unknown whizzytex-mode %S" whizzytex-mode)))
   )
 
-(defun whizzy-suspended-slice ()
-  (interactive)
+(defun whizzy-suspended-slice (&optional arg)
+  (interactive "p")
   (if (equal whizzytex-mode 'suspended)
       (whizzy-observe-changes t t)
     (if (functionp 'mytex-switch-view)
-        (mytex-switch-view))
+        (mytex-switch-view arg))
     ))
 
 (defvar whizzy-load-factor 0.6
@@ -1698,6 +1712,9 @@ during initialization."
         (whizzy-call (if debug "trace on" "trace off"))
     (whizzytex-mode 16))))
 
+
+
+
 (defun whizzy-auto-recompile (arg)
   "Set shell variable AUTORECOMPILE according to arg.
    If arg numeric value is strictly positive, then reformating
@@ -1742,7 +1759,7 @@ during initialization."
 ;;                 '((?p "p")
 ;;                   (?  "p")
 ;;                   (?n "n")
-;;                   (? "n")
+;;                   (? "n"
 ;;                   (?w "w")
 ;;                   (? "w")
 ;;                   ))))
@@ -1754,14 +1771,31 @@ during initialization."
 (defun whizzy-send-next-page (arg)
   (interactive "p")
   (whizzy-send-command "n" arg))
+
 (defun whizzy-send-switch-duplex (arg)
+  "In duplex mode, switch between slice and document
+  With prefix arg set `whizzy-point-visible' as follows: 
+  '0  =>  nil
+  '9  =>  `whizzy-point-safer'
+  '4  =>  t"
   (interactive "P")
-  (if whizzytex-mode
-      (whizzy-call "switch")
-    (whizzytex-mode arg)))
+  ;; (message "%S" arg)
+  (cond
+   ((or (null arg) (equal arg '1))
+    (if whizzytex-mode
+        (whizzy-call "switch")
+      (whizzytex-mode arg)))
+   ((equal arg '0)
+    (setq whizzy-point-visible nil))
+   ((equal arg '9)
+    (setq whizzy-point-visible 'whizzy-show-point-safer))
+   ((equal arg '(4))
+    (setq whizzy-point-visible t))
+   ))
 (defun whizzy-send-goto-end (arg)
   (interactive "p")
   (whizzy-send-command "."))
+
 (defun whizzy-send-goto-home (arg)
   (interactive "p")
   (whizzy-send-command ","))
@@ -2019,6 +2053,7 @@ These can be defined with `whizzy-add-configuration'.
 (defun whizzy-mode-on (&optional query)
   "See `whizzytex-mode' for meaning of QUERY"
   (let ((case-fold-search) (mode-set) (new-status))
+    (whizzy-debug "Turning `whizzy-mode-on'")
     (if whizzytex-mode nil
       (or whizzy-status
           (setq new-status (setq whizzy-status (make-vector whizzy-length nil))))
@@ -2117,7 +2152,7 @@ These can be defined with `whizzy-add-configuration'.
             (setq mode-set t)
             ;; move to first slice?
             (unless
-                (or whizzy-slave
+                (or (and whizzy-slave nil)
                     (save-excursion
                       (end-of-line)
                       (re-search-backward "^[ \t]*\\\\begin{document}"
@@ -2135,6 +2170,7 @@ These can be defined with `whizzy-add-configuration'.
             (sleep-for 1)
             )
         ;; could not turn mode on. Should switch it off (maybe in slaves). 
+       (message "mode = %S" whizzytex-mode)
         (unless whizzytex-mode
           (whizzy-mode-off t))
         ;; did not even turn mode on. whizzy-status could be inconsistent.
@@ -2143,7 +2179,10 @@ These can be defined with `whizzy-add-configuration'.
               (if buf (add-to-list 'whizzy-master-buffers buf)))
           (setq whizzy-status nil))
         (force-mode-line-update)
-        ))))
+        )
+      )
+    (whizzy-debug "whizzy-mode: %S" whizzytex-mode)
+    ))
 
 (defun whizzy-mode-off (&optional arg)
   "Turn WhizzyTeX mode off.
@@ -2152,6 +2191,7 @@ If ARG is a buffer turn mode off in that buffer (usually the master buffer).
 If ARG turn mode off even if apparently allready off. 
 "
   (interactive "p")
+  (whizzy-debug "Turning whizzy-mode OFF")
   (if whizzy-status
       (if (and (equal arg 'master) (whizzy-get whizzy-running))
           (let ((master (whizzy-get whizzy-master-buffer)))
@@ -2413,12 +2453,35 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
        ))))
 
 
+(defun whizzy-subfile-p ()
+  (save-excursion
+    (goto-char (point-min))
+    (and
+     (re-search-forward
+      "^[ \t]*\\\\documentclass\\[\\([^]]*\\)\\]{subfiles}"
+      (point-max) t)
+     (match-string 1)
+     )
+    ))
+
 (defun whizzy-setup (&optional query)
   (run-hooks 'whizzytex-mode-hook)
   (whizzy-load-configuration)
   (whizzy-run-file-hooks)
   (cond
    ;; XXX two first condition have been inverted 23/08/04
+   ((whizzy-subfile-p)
+    (whizzy-setup-slave))
+   ((or whizzy-slave
+        (let ((master
+               (whizzy-read-file-config "whizzy *-ma\\(ster\\|cros\\)")))
+          (and master
+               (not (string-equal
+                     (expand-file-name master)
+                     buffer-file-name))))
+        ;; (and (boundp 'TeX-master) (stringp TeX-master))
+        )
+    (whizzy-setup-slave))
    ((or
      (equal (current-buffer) (whizzy-get whizzy-master-buffer))
      (save-excursion
@@ -2431,16 +2494,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
             (delete-region (match-beginning 2) (match-end 2))))))
     (whizzy-setup-master query)
     )
-   ((or whizzy-slave
-        (let ((master
-               (whizzy-read-file-config "whizzy *-ma\\(ster\\|cros\\)")))
-          (and master
-               (not (string-equal
-                     (expand-file-name master)
-                     buffer-file-name))))
-        ;; (and (boundp 'TeX-master) (stringp TeX-master))
-        )
-    (whizzy-setup-slave))
+
    (t
     (whizzy-setup-slave)
     )
@@ -2597,7 +2651,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
           (file-exists-p (setq filename (concat basename ".ltx"))))
       filename)
      (let ((files
-            (split-string 
+            (split-string 2
              (shell-command-to-string
               "find . -depth 1 -name '[a-z]*.tex' \
                 -exec grep -l -E '^\\\\begin{document}' '{}' ';'")
@@ -2623,6 +2677,9 @@ nil means do not guess.
            (master-file) (status)
            (auto))
       ;; master buffer might have been killed
+      (whizzy-debug "whizzy-setup-slave: \n\t\
+              	slave=%S master=%S current=%S"
+                whizzy-slave master-buffer (current-buffer))
       (if (buffer-live-p master-buffer) nil
         (whizzy-set whizzy-master-buffer nil)
         (setq master-buffer nil))
@@ -2640,6 +2697,7 @@ nil means do not guess.
                          (file-readable-p TeX-master)
                          (not (file-directory-p TeX-master))
                          TeX-master)
+                    (whizzy-subfile-p)
                     (with-temp-buffer (whizzy-find-running-master) buffer-file-name)
                     (let ((default
                             (and whizzy-guess-master
@@ -2658,7 +2716,7 @@ nil means do not guess.
                  (setq master-buffer (find-file-noselect master-file)))
             (error "Run whizzytex on the master %s first" master-file)))
       (if (equal master-buffer this-buffer)
-          (error "A slave file should not be mastered by itself."))
+          (error "A slave file %S should not be mastered by itself." master-buffer))
       ;; check that master is running whizzytex
       (unwind-protect
           (save-excursion
@@ -2686,7 +2744,8 @@ nil means do not guess.
       (setq whizzy-status status)
       (unless (equal (whizzy-get whizzy-master-buffer) master-buffer)
           (setq whizzy-status nil)
-          (error "Fatal error: Inconsistent master. Maybe equal to itself."))
+          (error "Fatal error: Inconsistent master. Maybe equal to itself %S?"
+                 master-buffer))
       ;; we must compute the relative basename of the slave
       (let* ((this-name
              ;; (file-name-sans-extension
@@ -2740,16 +2799,16 @@ must be added last.
 
 For example, 
 
-    (whizzy-add-configuration \"main\\.tex\"
-      '(lambda () (whizzy-customize \"\\\\large\")))
+    \(whizzy-add-configuration \"main\\.tex\"
+      \\='(lambda () (whizzy-customize \"\\\\large\")))
 
 will add the pair (\"main\.tex\" . (lambda () (whizzy-customize \"\\\\large\"))
 ahead of `whizzy-hook-alist', while
 
-    (whizzy-add-configuration \"draft\\.tex\"
-      '((whizzy . \"section\")))
+    \(whizzy-add-configuration \"draft\\.tex\"
+      \\='((whizzy . \"section\")))
 
-will add the pair (\"draft\.tex\" . '((whizzy . \"section\")))
+will add the pair (\"draft\.tex\" . \\='((whizzy . \"section\")))
 ahead of `whizzy-configuration-alist'. 
 "
   (if (string-match "^/" regexp) nil
@@ -2892,7 +2951,8 @@ the interpretation of the rest of the line:
   macros. Such a file is not sliced while editing, but saving it reformats
   the master. 
 
-%; whizzy [ <slicing> ] [ <viewer> [ <command> ] ] [ -pre <make> ]  ... [ -trace ]
+%; whizzy [ <slicing> ] [ <viewer> [ <command> ] ]
+              [ -pre <make> ] ... [ -trace ]
 
   All arguments are optional, but if present they must be passed in order:
 
@@ -2942,12 +3002,12 @@ the interpretation of the rest of the line:
 
   -makeindex <command>
 
-     uses <command> instead of 'makeindex' to build index if needed.
+     uses <command> instead of \\=`makeindex' to build index if needed.
      If command is false, indexes will never be recompiled.
 
   -initex <command>
 
-     uses <command> instead of the default, usually 'initex', 
+     uses <command> instead of the default, usually \\='initex', 
      to create the initial format. 
 
   -latex <command>
@@ -2957,7 +3017,7 @@ the interpretation of the rest of the line:
 
   -format <format>
 
-     uses <format> instead the default, usually 'latex' 
+     uses <format> instead the default, usually \\`latex' 
      (the format extension ---see below--- is always added). 
      For instance, hugelatex may be needed for processing large files.
 
@@ -3191,13 +3251,13 @@ Otherwise, output is kept as long as the window is visible
 )
 
 (defvar whizzy-error-face 'whizzy-error-face
-  "*Face for error overlays.
+  "Face for error overlays.
 
 This is a variable whose value should be a face.
 
-Its default value is the face 'whizzy-error-face', which can be configured
+Its default value is the face `whizzy-error-face', which can be configured
 with \\[customize-face]. You can also set this variable to another existing
-face \(type \\[list-faces-display] for a list of existing faces).")
+face (type \\[list-faces-display] for a list of existing faces).")
 
 (unless (facep whizzy-error-face)
   (defface whizzy-error-face
@@ -3206,11 +3266,11 @@ face \(type \\[list-faces-display] for a list of existing faces).")
     :group 'whizzytex))
 
 (defvar whizzy-point-face 'whizzy-point-face
-  "*Face for tracing the advi cursors position back into the emacs buffer.
+  "Face for tracing the advi cursors position back into the emacs buffer.
 
 This is a variable whose value should be a face.
 
-Its default value is the face 'whizzy-point-face', which can be configured
+Its default value is the face `whizzy-point-face', which can be configured
 with \\[customize-face]. You can also set this variable to another existing
 face \(type \\[list-faces-display] for a list of existing faces).")
 
@@ -3441,9 +3501,9 @@ interactively):
 Do nothing if not called from a buffer already running whizzytex. 
 Implicitly add extension .tex to FILE if FILE does not exists, and fails if
 FILE.tex does not exists either. If no buffer is visiting FILE, then visit
-FILEaccording to the value of `whizzy-auto-visit'.  If the buffer associate
-to FILE did not exits or was not in whizzytex-mode,  and the value of
-`whizzy-auto-visit' is 'whizzytex, then start mode on the buffer.  
+FILE according to the value of `whizzy-auto-visit'.  If the buffer associated
+to FILE did not exist or was not in whizzytex-mode,  and the value of
+`whizzy-auto-visit' is \\='whizzytex, then start whizzytex mode on the buffer.  
 "
   (let ((dest-buffer (whizzy-get whizzy-active-buffer))
         (status whizzy-status))
@@ -3451,7 +3511,8 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
         (set-buffer dest-buffer)
       (setq dest-buffer nil))
     (and
-     file (not (equal  file ""))
+     file
+     (not (equal  file ""))
      (let* ((longname (concat (whizzy-get whizzy-dir) file))
             (fullname longname))
        (or (file-readable-p longname)
@@ -3482,7 +3543,15 @@ to FILE did not exits or was not in whizzytex-mode,  and the value of
          (or whizzy-status (setq whizzy-status status))
          (or whizzy-slave (setq whizzy-slave t))
          (if (equal whizzy-auto-visit 'whizzytex)
-             (whizzytex-mode)
+             (progn
+               (whizzy-debug
+                "goto-file -> whizzytex-mode: mode=%S slave=%S running=%S"
+                whizzytex-mode whizzy-slave (whizzy-get whizzy-running))
+               (whizzytex-mode)
+               (whizzy-debug
+                "goto-file <- whizzytex-mode: mode=%S slave=%S running=%S"
+                whizzytex-mode whizzy-slave (whizzy-get whizzy-running))
+               )
            (message
             (substitute-command-keys
              "Type \\[whizzytex-mode] to whizzytex this file"
@@ -4399,7 +4468,7 @@ the following functions:
 
 For instance, you may include the following line in your ~/.emacs:
 
-  (setq-default whizzy-key-bindings 'whizzy-auctex-bindings)
+  \(setq-default whizzy-key-bindings \\='whizzy-auctex-bindings)
 ")
 
 (defun whizzy-default-bindings ()
