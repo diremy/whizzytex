@@ -8,10 +8,11 @@ Active-DVI viewer will provide much better visual effects and will offer
 more functionalities.
 
 See the home page http://gallium.inria.fr/whizzytex/
+and [CHANGES](http://gallium.inria.fr/whizzytex/trunk/CHANGES.md).
 
 # Warning!
 
-You need version 1.4.0 or above to work with the lastest version of
+You need version (>= 1.4.0_ or above to work with the lastest version of
 latex.ltx in textlive 2021.
 
 # Bug reports 
