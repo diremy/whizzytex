@@ -12,8 +12,9 @@ and [CHANGES](https://github.com/diremy/whizzytex/blob/master/trunk/CHANGES.md).
 
 # Warning!
 
-You need version (>= 1.4.0_ or above to work with the lastest version of
-latex.ltx in textlive 2021.
+You need version (>= 1.4.0) to work with version of latex.ltx in
+textlive 2021 and the lasters version (1.6.0) to work with version of
+textlive 2024. 
 
 # Bug reports 
 

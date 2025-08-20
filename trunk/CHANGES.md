@@ -16,6 +16,7 @@ SINCE LAST MAJOR RELEASE:
 
 Emacs-mode:
 
+ - version 1.6.0
  - version 1.5.0
  * Fix slave setting for subfiles package and format.
  - version 1.4.0
@@ -31,7 +32,7 @@ Emacs-mode:
 
 Shell-script: 
 
- - version 1.5.0
+ - version 1.6.0
  - version 1.4.0
  * Fixed whizzytex --formatonly to create subdirs
  - version 1.3.7
@@ -49,6 +50,8 @@ Shell-script:
 
 LaTeX macros:
 
+ - version 1.6.0
+ * Made it compatible with later format of 2024-11-01. 
  - version 1.5.0
  * Still missing instrumentation forsubfiles package and format.
  - version 1.4.0
@@ -64,6 +67,8 @@ LaTeX macros:
 
 Installation/Documentation:
 
+ - versoin 1.6
+ * Fixed typos and improve the description of the implementation
  - versoin 1.4
  - version 1.3.7
  * adding directory ./example/llpp/
