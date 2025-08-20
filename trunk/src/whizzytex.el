@@ -1,11 +1,11 @@
 ;; whizzytex.el --- WhizzyTeX, a WYSIWIG environment for LaTeX
 ;; 
 ;; Copyright (C) 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2010, 2011, 2013
-;;               2015, 2016, 2020, 2021, 2024.
+;;               2015, 2016, 2020, 2021, 2024, 2025.
 ;;               INRIA.
 ;; 
 ;; Author         : Didier Remy <Didier.Remy@inria.fr>
-;; Version        : 1.5.0
+;; Version        : 1.6.0
 ;; Bug Reports    : https://github.com/diremy/whizzytex/issues
 ;; Github         : https://github.com/diremy/whizzytex/
 ;; Web Site       : http://gallium.inria.fr/whizzytex
@@ -63,7 +63,7 @@
 (require 'comint)
 (require 'timer)
 
-(defconst whizzytex-version "1.5.0"
+(defconst whizzytex-version "1.6.0"
    "This tells the version of WhizzyTeX emacs-mode.
 
 It should be the same number as \"whizzytex\" shell script visible from the
@@ -2651,7 +2651,7 @@ See also `whizzy-mode-regexp-alist' for the list of all modes and
           (file-exists-p (setq filename (concat basename ".ltx"))))
       filename)
      (let ((files
-            (split-string 2
+            (split-string
              (shell-command-to-string
               "find . -depth 1 -name '[a-z]*.tex' \
                 -exec grep -l -E '^\\\\begin{document}' '{}' ';'")
@@ -2697,7 +2697,7 @@ nil means do not guess.
                          (file-readable-p TeX-master)
                          (not (file-directory-p TeX-master))
                          TeX-master)
-                    (whizzy-subfile-p)
+                    (whizzy-unquote (whizzy-subfile-p))
                     (with-temp-buffer (whizzy-find-running-master) buffer-file-name)
                     (let ((default
                             (and whizzy-guess-master
@@ -3587,10 +3587,12 @@ to FILE did not exist or was not in whizzytex-mode,  and the value of
   )
 
 (defun whizzy-skip-font-info (str)
-  (let ((start 0))
-    (while (setq start (string-match "\\[[^]]*\\]" str start))
-      (setq str (replace-match "" nil nil str)))
-    str))
+  ;; (let ((start 0))
+  ;;   (while (setq start (string-match "\\[[^]]*\\]" str start))
+  ;;     (setq str (replace-match "" nil nil str)))
+  ;;   str))
+  (replace-regexp-in-string "\\[[-A-Za-z0-9]+\\]" "" str)
+)  
 
 (defun whizzy-goto-line-string (s)
   (if (string-match "\#line .*\\[[^]]*\\]" s)

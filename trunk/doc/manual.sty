@@ -6,18 +6,18 @@
 %  Version        : 1.3.6
 %  Bug Reports    : whizzytex-bugs@pauillac.inria.fr
 %  Web Site       : http://pauillac.inria.fr/whizzytex
-% 
+%
 %  WhizzyTeX is free software; you can redistribute it and/or modify
 %  it under the terms of the GNU General Public License as published by
 %  the Free Software Foundation; either version 2, or (at your option)
 %  any later version.
-%  
+%
 %  WhizzyTeX is distributed in the hope that it will be useful,
 %  but WITHOUT ANY WARRANTY; without even the implied warranty of
 %  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%  GNU General Public License for more details 
+%  GNU General Public License for more details
 %  (enclosed in the file GPL).
-%  
+%
 %  See the file COPYING enclosed with the distribution.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  File manual.sty (WhizzyTeX documentation macros)
@@ -53,7 +53,7 @@
 \def \whizzy {{Whizzy\kern -0.3ex\raise 0.2ex\hbox{\TeX}}}
 \def \Whizzy{\textbf {\textcolor {blue}{\whizzy}}}
 \def \instruction #1{\par\medskip \noindent$\Rightarrow$ {\em #1}}
-\def \WhizzyEdit {Whizzy{\sc 
+\def \WhizzyEdit {Whizzy{\sc
 \raise 0.2ex \hbox{E}\kern -0.2ex%
 \lower 0.0ex \hbox{d}\kern -0.2ex%
 \lower 0.2ex \hbox{i}\kern -0.5ex%
@@ -83,16 +83,16 @@
 \usepackage {color}
 \definecolor{pale}{rgb}{0.95,0.95,0.95}
 
-\def \whizzy@markend 
+\def \whizzy@markend
    {\bgroup
       \setbox1 \hbox
          {\colorbox{yellow} {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}%
       \wd1 \wd0 \dp1 0em \ht1 0em \box1
-    \egroup} 
+    \egroup}
 
 \def \/{%
    \ifmmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
-   \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else 
+   \ifhmode \rlap {\setbox0 \hbox {\strut \space}\whizzy@markend}\else
       \ifvmode
         \nobreak
         \vskip -\baselineskip \nobreak
@@ -106,14 +106,14 @@
 \def \activedvi #1#2#3{\fboxsep=0em \parindent=0em \hsize=7em
 \fcolorbox{black}{pale}
 {\vbox to 6.3em{
-\noindent 
+\noindent
 \fboxsep=4pt
-\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil 
+\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil
 \textcolor{pale}{\bfseries \em Active-DVI}\hfil}}
 \par
 \vskip 0.2em
 \parindent=0.5em
-\Large \sc 
+\Large \sc
 \indent\hbox{}#1\par
 \indent\hbox{}#2\par%
 \vfil
@@ -122,9 +122,9 @@
 \def \emacs #1#2#3{\fboxsep=0em \parindent=0em \hsize=6.3em
 \fcolorbox{black}{pale}
 {\vbox to 6.3em{
-\noindent 
+\noindent
 \fboxsep=4pt
-\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil 
+\colorbox{blue}{\advance \hsize by -8pt\vbox {\hfil
 \textcolor{pale}{\bfseries \em Emacs \hfil}}}
 \par
 \vskip 0.2em
@@ -139,10 +139,10 @@
 \ifhevea \else
 \message {jobname=\jobname}
 
-\expandafter \def \csname activedvi.image\endcsname 
+\expandafter \def \csname activedvi.image\endcsname
 {\message {output=activedvi} \let \page \activedvi}
 
-\expandafter \def \csname emacs.image\endcsname 
+\expandafter \def \csname emacs.image\endcsname
 {\message {output=emacs} \let \page \emacs}
 
 \csname \jobname\endcsname
@@ -157,3 +157,5 @@
 
 \@mparswitchfalse  \@reversemargintrue
 \def \NEW#1{\def \@test{#1}\ifx \@test \version\marginpar{\textbf{New!}}\fi}
+
+\providecommand{\WhizzyTeX}{WhizzyTeX}

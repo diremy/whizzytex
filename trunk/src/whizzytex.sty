@@ -30,7 +30,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Section 1: The core engine
 
-\def \whizzy@version {1.5.0}
+\def \whizzy@version {1.6.0}
+\def \whizzy@latex@fmtversion {2024-11-01}
+\def \whizzy@latex@patchlevel {2}
+
 %% The Church Boolean
 \providecommand{\Whizzytex}[2]{#1}
 
@@ -153,7 +156,6 @@
 \def \whizzy@begindocumenthook {}
 %% This will fire after resume, rather use AtBeforeWhizzyDump
 \def \WhizzyAtBeginDocument {%
-  \whizzy@log2 {Running whizzy hook begindocument}%
   \g@addto@macro \whizzy@begindocumenthook
   }
 \def \AtBeforeWhizzyDump {\g@addto@macro \whizzy@beforedumphook}
@@ -769,11 +771,7 @@ to slice!\par \bigskip}}%
 %% We assume eTeX engine
 \RequirePackage {etoolbox}
 \let \whizzy@beginhook \relax
-\pretocmd {\begin}{%
-  \whizzy@log2 {Running whizzy hook begin}%
-  \whizzy@beginhook
-  \whizzy@log2 {whizzy hook end}%
-}{}{}
+\pretocmd {\begin}{\whizzy@beginhook}{}{}
 
 \def \whizzy@start@here
    {\whizzy@putlink{Start-Document}%
