@@ -657,6 +657,17 @@ to slice!\par \bigskip}}%
    }
 \let \whizzy@AAA \whizzy@A
 \def \whizzy@activeA {\catcode `\^^A \active}
+\def \whizzy@fboxA {\whizzy@fbox}
+\def \whizzy@circle@color {red}
+\def \whizzy@circleA
+  {\setbox2 \hbox {%
+     \setlength{\unitlength}{1ex}%
+     \begin{picture}(0,0)(0,0)%
+        \color{\whizzy@circle@color}%
+        \put(.5,.5){\circle{7}}%
+     \end{picture}}%
+   \wd2 0em \ht2 0em\wd2 0em \box2}
+
 \begingroup
 \whizzy@activeA
 \gdef \whizzy@defA {\def ^^A{\whizzy@AAA}}
@@ -664,7 +675,8 @@ to slice!\par \bigskip}}%
 \def \whizzy@markend
    {\bgroup
       \setbox1 \hbox
-         {\whizzy@fbox {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}%
+         {\whizzy@circleA \whizzy@fboxA
+            {\hskip -\fboxsep\strut \copy0\hskip -\fboxsep}}%
       \wd1 \wd0 \dp1 0em \ht1 0em \box1
     \egroup}
 
