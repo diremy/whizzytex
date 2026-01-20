@@ -1,9 +1,10 @@
 \PassOptionsToPackage{dvips}{hyperref}
-\documentclass[xcolor=pst]{beamer}
+%% \documentclass[xcolor=pst]{beamer}
+ \documentclass{beamer}
 \usepackage{hyperref}
 
 
-%% Beamer settings 
+%% Beamer settings
 \beamertemplatenavigationsymbolsempty
 \usetheme{Warsaw}
 
@@ -54,10 +55,10 @@
 \begin{frame}{Whizzytex}
 \begin{itemize}
 \item<1-> {\WhizzyTeX} is a useful tool for preparing latex documents
-\\   and especially... for preparing presentations. 
+\\   and especially... for preparing presentations.
 
 \item<2->
-{\WhizzyTeX} is works with different previewers: ghostview, xpdf, xdvi, 
+{\WhizzyTeX} is works with different previewers: ghostview, xpdf, xdvi,
 and, gets even more expressive when used wiht Advi.
 
 \end{itemize}
@@ -65,11 +66,11 @@ and, gets even more expressive when used wiht Advi.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}{Combining the two}
 \relax
-{\WhizzyTeX} works with the beamer class either 
-with xpdf, or  with advi. 
+{\WhizzyTeX} works with the beamer class either
+with xpdf, or  with advi.
 
 
-However, previewing with advi requires some minor configuration. 
+However, previewing with advi requires some minor configuration.
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Xpdf}
@@ -79,13 +80,13 @@ This pauses no major problem.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Advi}
 \begin{frame}{Using \WhizzyTeX with Advi}
-Previewing with advi requires some minor configuration. 
+Previewing with advi requires some minor configuration.
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}[fragile=singleslide]{Configuration}
 \begin{itemize}
 \item This requires a version of advi  dated from Sep 7th, 2007 or later.
-\item This requires version of whizzytex dated from Sep 7th, 2007 or later. 
+\item This requires version of whizzytex dated from Sep 7th, 2007 or later.
 \end{itemize}
 Documentclass should be called with option hypertex:
 \begin{verbatim}
@@ -96,7 +97,7 @@ Documentclass should be called with option hypertex:
 \section{Testing}
 \begin{frame}[fragile=singleslide]{Using PStricks with advi}
 
-You may need the following option (depending on your version of PStricks). 
+You may need the following option (depending on your version of PStricks).
 \begin{verbatim}
         \documentclass[xcolor=pst]{beamer}
 \end{verbatim}
@@ -107,9 +108,9 @@ Another tricks: by the way, we recommend calling
 \end{verbatim}
 To get read of useless anchors.
 
-See also 
+See also
 \href{http://www.giref.ulaval.ca/~ctibirna/work/readings/beamer_pstricks.pdf}
-{this document} 
+{this document}
 \end{frame}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{frame}{An example with Overlays}
@@ -137,7 +138,7 @@ This frame works well written as
     \frametitle{Fragile (with no argument)}
     ...
 \end{verbatim}
-\item <2-> 
+\item <2->
 But it would brake if written as
  \begin{verbatim}
     \begin{frame}[fragile]{Fragile (with no argument)}
@@ -158,7 +159,7 @@ Named colors should work fine.
 \pstree[treesep=2em,levelsep=2.5em]{\Toval A}
   {\pstree {\Toval B} {
      \Ttri*[fillcolor=blue] x
-     \Ttri* y 
+     \Ttri* y
      \Ttri*[fillcolor=red] z}}
 \end{block}
 \end{frame}

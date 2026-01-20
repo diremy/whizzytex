@@ -2170,7 +2170,7 @@ These can be defined with `whizzy-add-configuration'.
             (sleep-for 1)
             )
         ;; could not turn mode on. Should switch it off (maybe in slaves). 
-       (message "mode = %S" whizzytex-mode)
+       ;; (message "mode = %S" whizzytex-mode)
         (unless whizzytex-mode
           (whizzy-mode-off t))
         ;; did not even turn mode on. whizzy-status could be inconsistent.
@@ -3617,11 +3617,11 @@ to FILE did not exist or was not in whizzytex-mode,  and the value of
           nil)
          ;; below this line, we are in a buffer visiting file
          ((string-equal right "Next-Slice")
-          (whizzy-previous-slice 1)
+          (whizzy-next-slice 1)
           (whizzy-observe-changes)
           )
          ((string-equal left "Previous-Slice")
-          (whizzy-next-slice 1)
+          (whizzy-previous-slice 1)
           (whizzy-observe-changes)
           )
          (t
